@@ -1,0 +1,106 @@
+package tooling.leyden;
+
+import io.quarkus.runtime.QuarkusApplication;
+import io.quarkus.runtime.annotations.QuarkusMain;
+import jakarta.inject.Inject;
+import org.fusesource.jansi.AnsiConsole;
+import org.jline.builtins.ConfigurationPath;
+import org.jline.console.SystemRegistry;
+import org.jline.console.impl.Builtins;
+import org.jline.console.impl.SystemRegistryImpl;
+import org.jline.reader.EndOfFileException;
+import org.jline.reader.LineReader;
+import org.jline.reader.LineReaderBuilder;
+import org.jline.reader.MaskingCallback;
+import org.jline.reader.Parser;
+import org.jline.reader.UserInterruptException;
+import org.jline.reader.impl.DefaultParser;
+import org.jline.reader.impl.history.DefaultHistory;
+import org.jline.terminal.Terminal;
+import org.jline.terminal.TerminalBuilder;
+import picocli.CommandLine;
+import picocli.shell.jline3.PicocliCommands;
+import picocli.shell.jline3.PicocliCommands.PicocliCommandsFactory;
+import tooling.leyden.commands.DefaultCommand;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.function.Supplier;
+
+@QuarkusMain
+@CommandLine.Command(name = "demo", mixinStandardHelpOptions = true)
+public class QuarkusPicocliLineApp implements Runnable, QuarkusApplication {
+
+	@Inject
+	CommandLine.IFactory factory;
+
+	@Override
+	public void run() {
+		AnsiConsole.systemInstall();
+		try {
+			Supplier<Path> workDir = () -> Paths.get(System.getProperty("user.dir"));
+			// set up JLine built-in commands
+			Builtins builtins = new Builtins(workDir, new ConfigurationPath(workDir.get(), workDir.get()), null);
+			builtins.rename(Builtins.Command.TTOP, "top");
+
+			DefaultCommand commands = new DefaultCommand();
+			PicocliCommandsFactory factory = new PicocliCommandsFactory();
+
+			CommandLine cmd = new CommandLine(commands, factory);
+			PicocliCommands picocliCommands = new PicocliCommands(cmd);
+
+			Parser parser = new DefaultParser();
+			try (Terminal terminal = TerminalBuilder.builder().build()) {
+				SystemRegistry systemRegistry = new SystemRegistryImpl(parser, terminal, workDir, null);
+				systemRegistry.setCommandRegistries(builtins, picocliCommands);
+				systemRegistry.register("help", picocliCommands);
+
+				LineReader reader = LineReaderBuilder.builder()
+						.terminal(terminal)
+						.completer(systemRegistry.completer())
+						.history(new DefaultHistory())
+						.parser(parser)
+						.variable(LineReader.LIST_MAX, 50) // max tab completion candidates
+						.build();
+
+
+				// Don't add duplicate entries to history
+				reader.setOpt(LineReader.Option.HISTORY_IGNORE_DUPS);
+
+				// Don't add entries that start with space
+				reader.setOpt(LineReader.Option.HISTORY_IGNORE_SPACE);
+				builtins.setLineReader(reader);
+				commands.setReader(reader);
+				factory.setTerminal(terminal);
+
+				String prompt = "> ";
+
+				// start the shell and process input until the user quits with Ctrl-D
+				String line;
+				while (true) {
+					try {
+						systemRegistry.cleanUp();
+						line = reader.readLine(prompt, null, (MaskingCallback) null, null);
+						systemRegistry.execute(line);
+					} catch (UserInterruptException e) {
+						// Ignore
+					} catch (EndOfFileException e) {
+						return;
+					} catch (Exception e) {
+						systemRegistry.trace(e);
+					}
+				}
+			}
+		} catch (Throwable t) {
+			t.printStackTrace();
+		} finally {
+			AnsiConsole.systemUninstall();
+		}
+	}
+
+	@Override
+	public int run(String... args) throws Exception {
+		return new CommandLine(this, factory).execute(args);
+	}
+
+}
