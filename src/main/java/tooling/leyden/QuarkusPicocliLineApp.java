@@ -21,6 +21,7 @@ import org.jline.terminal.TerminalBuilder;
 import picocli.CommandLine;
 import picocli.shell.jline3.PicocliCommands;
 import picocli.shell.jline3.PicocliCommands.PicocliCommandsFactory;
+import tooling.leyden.aotcache.AOTCache;
 import tooling.leyden.commands.DefaultCommand;
 
 import java.nio.file.Path;
@@ -30,7 +31,7 @@ import java.util.function.Supplier;
 @QuarkusMain
 @CommandLine.Command(name = "demo", mixinStandardHelpOptions = true)
 public class QuarkusPicocliLineApp implements Runnable, QuarkusApplication {
-
+	
 	@Inject
 	CommandLine.IFactory factory;
 

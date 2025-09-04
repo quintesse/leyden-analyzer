@@ -12,18 +12,26 @@ class ListObjects implements Runnable {
 	@CommandLine.ParentCommand
 	DefaultCommand parent;
 
+
+
 	public void run() {
-		classes();
+		classes("");
 	}
 
 	@Command(mixinStandardHelpOptions = true, subcommands = {
 			CommandLine.HelpCommand.class }, description = "Lists everything on the cache.")
 	public void all() {
-		classes();
+		classes("");
 	}
 	@Command(mixinStandardHelpOptions = true, subcommands = {
 			CommandLine.HelpCommand.class }, description = "Lists classes on the cache.")
-	public void classes() {
+	public void classes(@CommandLine.Option(names = "--packageName", description = "Restrict the listing to this " +
+			"package", defaultValue = "") String packageName) {
 		parent.out.println("Listing all classes");
+		if (packageName == null || packageName.isBlank()) {
+			parent.aotCache.getAll().forEach((key, element) -> parent.out.println("  > " + element));
+		} else {
+			parent.aotCache.getClassesByPackage(packageName).forEach(element -> parent.out.println("  > " + element));
+		}
 	}
 }

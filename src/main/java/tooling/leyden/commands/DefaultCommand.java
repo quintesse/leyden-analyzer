@@ -3,6 +3,7 @@ package tooling.leyden.commands;
 import org.jline.reader.LineReader;
 import picocli.CommandLine;
 import picocli.shell.jline3.PicocliCommands;
+import tooling.leyden.aotcache.AOTCache;
 
 import java.io.PrintWriter;
 
@@ -19,6 +20,8 @@ import java.io.PrintWriter;
 				CommandLine.HelpCommand.class})
 public class DefaultCommand implements Runnable {
 	PrintWriter out;
+	AOTCache aotCache = new AOTCache();
+
 
 	public DefaultCommand() {
 	}
