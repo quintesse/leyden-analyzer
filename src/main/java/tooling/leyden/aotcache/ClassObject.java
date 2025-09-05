@@ -11,6 +11,9 @@ public class ClassObject implements Element {
 
 	private Set<MethodObject> methods = new HashSet<>();
 
+	public String getType() {
+		return "Class";
+	}
 	public String getKey() {
 		return packageName + "." + name;
 	}
@@ -50,6 +53,11 @@ public class ClassObject implements Element {
 
 	@Override
 	public String toString() {
+		return getType() + " -> " + packageName + "." + name;
+	}
+
+	public String getDescription() {
 		return packageName + "." + name + " on address " + address + " with " + methods.size() + " methods.";
 	}
+
 }

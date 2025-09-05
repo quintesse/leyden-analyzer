@@ -13,6 +13,10 @@ public class MethodObject implements Element {
 	private String returnType;
 	private List<String> parameters = new LinkedList<>();
 
+	public String getType() {
+		return "Method";
+	}
+
 	public ClassObject getClassObject() {
 		return classObject;
 	}
@@ -55,12 +59,16 @@ public class MethodObject implements Element {
 
 	@Override
 	public String getKey() {
-		return getClassObject().getKey() + "::" + getName();
+		return getClassObject().getKey() + "." + getName();
 	}
 
 	@Override
 	public String toString() {
+		return getType() + " -> " + getKey();
+	}
+
+	public String getDescription() {
 		return "Method " + getName() + " [compilation level: " + compilationLevel +
-				"]" + " on class [" + getClassObject() + "]";
+				"]" + " on class " +  getClassObject().getKey();
 	}
 }

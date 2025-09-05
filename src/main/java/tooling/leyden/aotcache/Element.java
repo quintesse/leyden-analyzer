@@ -6,4 +6,8 @@ package tooling.leyden.aotcache;
 public interface Element {
 
 	public String getKey();
+
+	public String getType();
+
+	public String getDescription();
 }

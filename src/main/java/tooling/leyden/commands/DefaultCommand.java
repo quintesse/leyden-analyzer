@@ -16,6 +16,7 @@ import java.io.PrintWriter;
 		subcommands = {
 				ListObjects.class,
 				LoadAOTMap.class,
+				DescribeObject.class,
 				PicocliCommands.ClearScreen.class,
 				CommandLine.HelpCommand.class})
 public class DefaultCommand implements Runnable {

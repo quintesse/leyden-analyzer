@@ -77,19 +77,18 @@ class LoadAOTMap implements Runnable {
 				final var typeStart = content.indexOf("@@") + 2;
 				try {
 					String type = content.substring(typeStart, typeStart + 18).trim();
+					final var identifier = content.substring(typeStart + 22).trim();
 					if (type.equalsIgnoreCase("Class")) {
-						String name = content.substring(typeStart + 22).trim();
 						ClassObject classObject = new ClassObject();
-						classObject.setName(name.substring(name.lastIndexOf(".") + 1));
-						classObject.setPackageName(name.substring(0, name.lastIndexOf(".")));
+						classObject.setName(identifier.substring(identifier.lastIndexOf(".") + 1));
+						classObject.setPackageName(identifier.substring(0, identifier.lastIndexOf(".")));
 						classObject.setAddress(address);
 						parent.aotCache.addElement(classObject);
 					} else if (type.equalsIgnoreCase("Method")) {
-						String method = content.substring(typeStart + 22).trim();
 						MethodObject methodObject = new MethodObject();
-						String qualifiedName = method.substring(method.indexOf(" ") + 1, method.indexOf("("));
+						String qualifiedName = identifier.substring(identifier.indexOf(" ") + 1, identifier.indexOf("("));
 						methodObject.setName(qualifiedName.substring(qualifiedName.lastIndexOf(".") + 1));
-						methodObject.setReturnType(method.substring(0, method.indexOf(" ")));
+						methodObject.setReturnType(identifier.substring(0, identifier.indexOf(" ")));
 						String className = qualifiedName.substring(0, qualifiedName.lastIndexOf("."));
 						Element object = parent.aotCache.getObject(className);
 						if (object == null) {
@@ -102,6 +101,7 @@ class LoadAOTMap implements Runnable {
 						} else {
 							parent.out.println("ERROR: " + methodObject + " couldn't be assigned to its class.");
 						}
+						parent.aotCache.addElement(methodObject);
 					}
 				} catch (Exception e) {
 					parent.out.println("ERROR: " + e.getMessage());

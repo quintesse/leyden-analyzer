@@ -20,7 +20,7 @@ public class AOTCache {
 		return elements.get(name);
 	}
 
-	public Set<Element> getClassesByPackage(String packageName) {
+	public Set<Element> getByPackage(String packageName) {
 		Set<Element> result = new HashSet<>();
 
 		elements.forEach((String key, Element e) -> {
