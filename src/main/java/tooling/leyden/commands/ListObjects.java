@@ -5,6 +5,7 @@ import picocli.CommandLine.Command;
 import tooling.leyden.aotcache.Element;
 
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 @Command(name = "ls", mixinStandardHelpOptions = true,
@@ -49,6 +50,10 @@ class ListObjects implements Runnable {
 		if (type != null && !type.isBlank()) {
 			elements = elements.filter(element -> element.getType().equals(type));
 		}
+		final var counter = new AtomicInteger();
+		elements = elements.peek(item -> counter.incrementAndGet());
+
 		elements.forEach(element -> parent.out.println("  > " + element.toString()));
+		parent.out.println("Found " + counter.get());
 	}
 }
