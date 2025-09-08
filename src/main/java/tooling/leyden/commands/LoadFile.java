@@ -40,7 +40,7 @@ public class LoadFile implements Runnable {
 
 	@Command(mixinStandardHelpOptions = true, subcommands = {
 			CommandLine.HelpCommand.class }, description = "Load an AOT Map cache generated with " +
-			"-Xlog:aot+map=trace:file=aot.map:none:filesize=0 ")
+			"-Xlog:aot+map=trace:file=aot.map:none:filesize=0")
 	public void aotCache(
 			@CommandLine.Parameters(arity = "1..*", paramLabel = "<file>",
 					description = "file to load") Path[] files) {
@@ -51,8 +51,8 @@ public class LoadFile implements Runnable {
 		}
 	}
 	@Command(mixinStandardHelpOptions = true, subcommands = {
-			CommandLine.HelpCommand.class }, description = "Load a log generated with -Xlog:class+load:file=aot" +
-			".log:tags.")
+			CommandLine.HelpCommand.class }, description = "Load a log generated with " +
+			"-Xlog:class+load,aot*=warning:file=aot.log:tags")
 	public void log(
 			@CommandLine.Parameters(arity = "1..*", paramLabel = "<file>",
 					description = "file to load") Path[] files) {
