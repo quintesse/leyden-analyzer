@@ -54,6 +54,6 @@ class ListObjects implements Runnable {
 		elements = elements.peek(item -> counter.incrementAndGet());
 
 		elements.forEach(element -> parent.out.println("  > " + element.toString()));
-		parent.out.println("Found " + counter.get());
+		parent.out.println("Found " + counter.get() + " elements.");
 	}
 }

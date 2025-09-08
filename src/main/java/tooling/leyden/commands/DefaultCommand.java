@@ -14,9 +14,10 @@ import java.io.PrintWriter;
 		"Interactive shell to explore the contents of the AOT cache. Start by loading an AOT map file."}, footer
 		= {"", "Press Ctrl-D to exit."},
 		subcommands = {
-				ListObjects.class,
-				LoadAOTMap.class,
+				CleanAOTCache.class,
 				DescribeObject.class,
+				ListObjects.class,
+				LoadFile.class,
 				PicocliCommands.ClearScreen.class,
 				CommandLine.HelpCommand.class})
 public class DefaultCommand implements Runnable {
@@ -33,5 +34,13 @@ public class DefaultCommand implements Runnable {
 
 	public void run() {
 		out.println(new CommandLine(this).getUsageMessage());
+	}
+
+	public AOTCache getAotCache() {
+		return aotCache;
+	}
+
+	public PrintWriter getOut() {
+		return out;
 	}
 }
