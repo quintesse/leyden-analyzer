@@ -59,7 +59,7 @@ public class MethodObject implements Element {
 
 	@Override
 	public String getKey() {
-		return getClassObject().getKey() + "." + getName();
+		return (getClassObject() != null) ? getClassObject().getKey() + "." + getName() : getName();
 	}
 
 	@Override
@@ -69,7 +69,11 @@ public class MethodObject implements Element {
 
 	public String getDescription() {
 		StringBuilder sb = new StringBuilder("Method " + getName() + " [compilation level: " + compilationLevel +
-				"]" + " on class " +  getClassObject().getKey() + " returning " + getReturnType() + " with " + parameters.size() + " parameters.");
+				"]");
+		if (classObject != null) {
+			sb.append(" on class " +  getClassObject().getKey());
+		};
+		sb.append(" returning " + getReturnType() + " " + "with " + parameters.size() + " parameters.");
 		for (String parameter : parameters) {
 			sb.append('\n');
 			sb.append(" [parameter] " + parameter);

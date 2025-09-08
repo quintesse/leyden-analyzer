@@ -3,6 +3,7 @@ package tooling.leyden.commands;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import tooling.leyden.aotcache.Element;
+import tooling.leyden.aotcache.Error;
 
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,6 +39,24 @@ class ListObjects implements Runnable {
 	public void methods(@CommandLine.Option(names = "--packageName", description = "Restrict the listing to this " +
 			"package", defaultValue = "") String packageName) {
 		listElements(packageName, "Method");
+	}
+
+
+	@Command(mixinStandardHelpOptions = true, subcommands = {
+			CommandLine.HelpCommand.class }, description = "Lists errors on creating or loading the AOTCache.")
+	public void errors(@CommandLine.Option(names = "--packageName", description = "Restrict the listing to this " +
+			"package", defaultValue = "") String packageName) {
+		Stream<Error> elements;
+		elements = parent.aotCache.getErrors().stream();
+		if (packageName != null && !packageName.isBlank()) {
+			elements = elements.filter( error -> error.getIdentifier().startsWith(packageName));
+		}
+
+		final var counter = new AtomicInteger();
+		elements = elements.peek(item -> counter.incrementAndGet());
+
+		elements.forEach(element -> parent.out.println("  > " + element.toString()));
+		parent.out.println("Found " + counter.get() + " errors.");
 	}
 
 	private void listElements(String packageName, String type) {

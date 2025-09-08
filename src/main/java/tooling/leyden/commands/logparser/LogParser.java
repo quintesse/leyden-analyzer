@@ -6,11 +6,9 @@ import tooling.leyden.aotcache.Element;
 import tooling.leyden.aotcache.MethodObject;
 import tooling.leyden.commands.LoadFile;
 
+import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public class LogParser implements Consumer<String> {
 
@@ -21,6 +19,10 @@ public class LogParser implements Consumer<String> {
 		this.loadFile = loadFile;
 		this.aotCache = loadFile.getParent().getAotCache();
 	}
+// TODO
+	// [1055.769s][warning][aot] Preload Warning: Verification failed for org.infinispan.remoting.transport.jgroups.JGroupsRaftManager
+	//[1055.813s][warning][aot] Preload Warning: Verification failed for org.apache.logging.log4j.core.async.AsyncLoggerContext
+
 
 	@Override
 	public void accept(String content) {
@@ -30,7 +32,8 @@ public class LogParser implements Consumer<String> {
 
 		if (content.indexOf("[") >=0 && content.indexOf("]") > 0) {
 			String[] tags = content.substring(content.indexOf("[") + 1, content.indexOf("]")).split(",");
-			String message = content.substring(content.indexOf("]") + 1);
+			Arrays.stream(tags).map(String::trim).toArray(unused -> tags);
+			final String message = content.substring(content.indexOf("]") + 1);
 
 			// [class,load] java.lang.invoke.DelegatingMethodHandle$Holder source: shared objects file
 			if (containsTags(tags, "class", "load")) {
@@ -45,6 +48,28 @@ public class LogParser implements Consumer<String> {
 					}
 				} // else this class wasn't loaded from the AOTCache
 				  // are we interested in storing this?
+			} else if (containsTags(tags, "aot")) {
+				//[1055.926s][warning][aot] Skipping org/apache/logging/log4j/core/async/AsyncLoggerContext: Failed verification
+				//[1055.928s][warning][aot] Skipping org/apache/logging/slf4j/Log4jLoggerFactory$$Lambda+0x800000258: nest_host class org/apache/logging/slf4j/Log4jLoggerFactory is excluded
+				//[1055.928s][warning][aot] Skipping jdk/proxy1/$Proxy29: Unsupported location
+				//[1055.929s][warning][aot] Skipping org/slf4j/ILoggerFactory: Old class has been linked
+				//[1055.929s][warning][aot] Skipping jdk/internal/event/SecurityProviderServiceEvent: JFR event class
+				//[1055.929s][warning][aot] Skipping com/thoughtworks/xstream/security/ForbiddenClassException: Unlinked class not supported by AOTConfiguration
+				if (message.trim().startsWith("Skipping ")) {
+					String msg = message.substring(9);
+					String className = msg.substring(0, msg.indexOf(":")).replace("/", ".");
+					String reason = msg.substring(msg.indexOf(":") + 1).trim();
+					if (className.contains("$$")) {
+						MethodObject method = new MethodObject();
+						method.setName(className.trim());
+						aotCache.addError(method, reason);
+					} else {
+						ClassObject classObject = new ClassObject();
+						classObject.setName(className.substring(className.lastIndexOf(".") + 1).trim());
+						classObject.setPackageName(className.substring(0, className.lastIndexOf(".")).trim());
+						aotCache.addError(classObject, reason);
+					}
+				}
 			}
 		}
 	}
