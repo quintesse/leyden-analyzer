@@ -68,7 +68,12 @@ public class MethodObject implements Element {
 	}
 
 	public String getDescription() {
-		return "Method " + getName() + " [compilation level: " + compilationLevel +
-				"]" + " on class " +  getClassObject().getKey();
+		StringBuilder sb = new StringBuilder("Method " + getName() + " [compilation level: " + compilationLevel +
+				"]" + " on class " +  getClassObject().getKey() + " returning " + getReturnType() + " with " + parameters.size() + " parameters.");
+		for (String parameter : parameters) {
+			sb.append('\n');
+			sb.append(" [parameter] " + parameter);
+		}
+		return sb.toString();
 	}
 }

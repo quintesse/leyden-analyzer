@@ -1,5 +1,6 @@
 package tooling.leyden.aotcache;
 
+import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -57,7 +58,13 @@ public class ClassObject implements Element {
 	}
 
 	public String getDescription() {
-		return packageName + "." + name + " on address " + address + " with " + methods.size() + " methods.";
+		StringBuilder sb =
+				new StringBuilder(packageName + "." + name + " on address " + address + " with " + methods.size() + " methods.");
+		for (MethodObject method : this.methods) {
+			sb.append('\n');
+			sb.append(" [method] " + method.getName());
+		}
+		return sb.toString();
 	}
 
 }
