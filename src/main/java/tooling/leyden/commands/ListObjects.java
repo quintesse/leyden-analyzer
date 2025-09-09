@@ -5,7 +5,6 @@ import picocli.CommandLine.Command;
 import tooling.leyden.aotcache.Element;
 import tooling.leyden.aotcache.Error;
 
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -27,6 +26,7 @@ class ListObjects implements Runnable {
 	public void all() {
 		listElements(null, null);
 	}
+
 	@Command(mixinStandardHelpOptions = true, subcommands = {
 			CommandLine.HelpCommand.class }, description = "Lists classes on the cache.")
 	public void classes(@CommandLine.Option(names = "--packageName", description = "Restrict the listing to this " +
@@ -47,7 +47,7 @@ class ListObjects implements Runnable {
 	public void errors(@CommandLine.Option(names = "--packageName", description = "Restrict the listing to this " +
 			"package", defaultValue = "") String packageName) {
 		Stream<Error> elements;
-		elements = parent.aotCache.getErrors().stream();
+		elements = parent.getAotCache().getErrors().stream();
 		if (packageName != null && !packageName.isBlank()) {
 			elements = elements.filter( error -> error.getIdentifier().startsWith(packageName));
 		}
@@ -55,24 +55,18 @@ class ListObjects implements Runnable {
 		final var counter = new AtomicInteger();
 		elements = elements.peek(item -> counter.incrementAndGet());
 
-		elements.forEach(element -> parent.out.println("  > " + element.toString()));
-		parent.out.println("Found " + counter.get() + " errors.");
+		elements.forEach(element -> parent.getOut().println("  > " + element.toString()));
+		parent.getOut().println("Found " + counter.get() + " errors.");
 	}
 
 	private void listElements(String packageName, String type) {
 		Stream<Element> elements;
-		if (packageName == null || packageName.isBlank()) {
-			elements = parent.aotCache.getAll().values().stream();
-		} else {
-			elements = parent.aotCache.getByPackage(packageName).stream();
-		}
-		if (type != null && !type.isBlank()) {
-			elements = elements.filter(element -> element.getType().equals(type));
-		}
+		elements = parent.getAotCache().getByPackage(packageName, type).stream();
+
 		final var counter = new AtomicInteger();
 		elements = elements.peek(item -> counter.incrementAndGet());
 
-		elements.forEach(element -> parent.out.println("  > " + element.toString()));
-		parent.out.println("Found " + counter.get() + " elements.");
+		elements.forEach(element -> parent.getOut().println("  > " + element.toString()));
+		parent.getOut().println("Found " + counter.get() + " elements.");
 	}
 }

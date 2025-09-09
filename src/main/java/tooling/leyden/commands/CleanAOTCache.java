@@ -2,7 +2,6 @@ package tooling.leyden.commands;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
-import tooling.leyden.aotcache.Element;
 
 @Command(name = "clean", mixinStandardHelpOptions = true,
 		version = "1.0",
@@ -14,7 +13,7 @@ class CleanAOTCache implements Runnable {
 	DefaultCommand parent;
 
 	public void run() {
-		parent.aotCache.clear();
-		parent.out.println("Cleaned the memory. Load again files to start.");
+		parent.getAotCache().clear();
+		parent.getOut().println("Cleaned the elements. Load again files to start a new analysis.");
 	}
 }

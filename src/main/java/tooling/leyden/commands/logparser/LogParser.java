@@ -2,21 +2,20 @@ package tooling.leyden.commands.logparser;
 
 import tooling.leyden.aotcache.AOTCache;
 import tooling.leyden.aotcache.ClassObject;
-import tooling.leyden.aotcache.Element;
 import tooling.leyden.aotcache.MethodObject;
 import tooling.leyden.commands.LoadFile;
 
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.function.Consumer;
 
+/**
+ * This class is capable of parsing (certain) Java logs.
+ */
 public class LogParser implements Consumer<String> {
 
-	private final LoadFile loadFile;
 	private final AOTCache aotCache;
 
 	public LogParser(LoadFile loadFile) {
-		this.loadFile = loadFile;
 		this.aotCache = loadFile.getParent().getAotCache();
 	}
 // TODO
@@ -34,20 +33,22 @@ public class LogParser implements Consumer<String> {
 			String[] tags = content.substring(content.indexOf("[") + 1, content.indexOf("]")).split(",");
 			Arrays.stream(tags).map(String::trim).toArray(unused -> tags);
 			final String message = content.substring(content.indexOf("]") + 1);
-
 			// [class,load] java.lang.invoke.DelegatingMethodHandle$Holder source: shared objects file
+			final var thisSource = "Java Log";
 			if (containsTags(tags, "class", "load")) {
 				Integer indexSourceShared = message.indexOf("source: shared objects file");
 				if (indexSourceShared > 0) {
 					String className = message.substring(0, indexSourceShared).trim();
-					if (aotCache.getObject(className) == null) {
+					if (aotCache.getObjects(className, "Class").isEmpty()) {
 						ClassObject classObject = new ClassObject();
 						classObject.setName(className.substring(className.lastIndexOf(".") + 1));
 						classObject.setPackageName(className.substring(0, className.lastIndexOf(".")));
-						aotCache.addElement(classObject);
+						aotCache.addElement(classObject, thisSource);
 					}
-				} // else this class wasn't loaded from the AOTCache
-				  // are we interested in storing this?
+				}
+				// else this class wasn't loaded from the aot.map
+				// are we interested in storing this?
+		 		// we are not adding anything that aot.map doesn't have
 			} else if (containsTags(tags, "aot")) {
 				//[1055.926s][warning][aot] Skipping org/apache/logging/log4j/core/async/AsyncLoggerContext: Failed verification
 				//[1055.928s][warning][aot] Skipping org/apache/logging/slf4j/Log4jLoggerFactory$$Lambda+0x800000258: nest_host class org/apache/logging/slf4j/Log4jLoggerFactory is excluded
@@ -62,12 +63,14 @@ public class LogParser implements Consumer<String> {
 					if (className.contains("$$")) {
 						MethodObject method = new MethodObject();
 						method.setName(className.trim());
-						aotCache.addError(method, reason);
+						method.addSource(thisSource);
+						aotCache.addError(method, reason, false);
 					} else {
 						ClassObject classObject = new ClassObject();
 						classObject.setName(className.substring(className.lastIndexOf(".") + 1).trim());
 						classObject.setPackageName(className.substring(0, className.lastIndexOf(".")).trim());
-						aotCache.addError(classObject, reason);
+						classObject.addSource(thisSource);
+						aotCache.addError(classObject, reason, false);
 					}
 				}
 			}

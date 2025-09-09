@@ -2,13 +2,20 @@ package tooling.leyden.aotcache;
 
 import java.lang.reflect.Method;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
+
+/**
+ * This element represents a class inside the AOT Cache.
+ */
 public class ClassObject implements Element {
 
 	private String name;
 	private String packageName;
 	private String address;
+	private List<String> source = new LinkedList<>();
 
 	private Set<MethodObject> methods = new HashSet<>();
 
@@ -43,6 +50,15 @@ public class ClassObject implements Element {
 		this.name = name;
 	}
 
+	@Override
+	public List<String> getSources() {
+		return source;
+	}
+
+	public void addSource(String source) {
+		this.source.add(source);
+	}
+
 	public void setPackageName(String packageName) {
 		this.packageName = packageName;
 	}
@@ -60,6 +76,10 @@ public class ClassObject implements Element {
 	public String getDescription() {
 		StringBuilder sb =
 				new StringBuilder(packageName + "." + name + " on address " + address + " with " + methods.size() + " methods.");
+		sb.append('\n');
+		sb.append("This element comes from: \n");
+		source.forEach( s -> sb.append("  > " + s + '\n'));
+		sb.append("Methods:");
 		for (MethodObject method : this.methods) {
 			sb.append('\n');
 			sb.append(" [method] " + method.getName());

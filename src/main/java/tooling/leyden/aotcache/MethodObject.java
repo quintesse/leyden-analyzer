@@ -3,15 +3,19 @@ package tooling.leyden.aotcache;
 import java.util.LinkedList;
 import java.util.List;
 
+/**
+ * This class represents a method inside the AOT Cache.
+ */
 public class MethodObject implements Element {
 
 	private ClassObject classObject;
 
 	private String compilationLevel = "unknown";
 
+	private List<String> source = new LinkedList<>();
+
 	private String name;
 	private String returnType;
-	private List<String> parameters = new LinkedList<>();
 
 	public String getType() {
 		return "Method";
@@ -41,14 +45,6 @@ public class MethodObject implements Element {
 		this.returnType = returnType;
 	}
 
-	public List<String> getParameters() {
-		return parameters;
-	}
-
-	public void addParameter(String parameter) {
-		this.parameters.add(parameter);
-	}
-
 	public String getName() {
 		return name;
 	}
@@ -62,6 +58,15 @@ public class MethodObject implements Element {
 		return (getClassObject() != null) ? getClassObject().getKey() + "." + getName() : getName();
 	}
 
+	public void addSource(String source) {
+		this.source.add(source);
+	}
+
+	@Override
+	public List<String> getSources() {
+		return this.source;
+	}
+
 	@Override
 	public String toString() {
 		return getType() + " -> " + getKey();
@@ -73,11 +78,10 @@ public class MethodObject implements Element {
 		if (classObject != null) {
 			sb.append(" on class " +  getClassObject().getKey());
 		};
-		sb.append(" returning " + getReturnType() + " " + "with " + parameters.size() + " parameters.");
-		for (String parameter : parameters) {
-			sb.append('\n');
-			sb.append(" [parameter] " + parameter);
-		}
+		sb.append(" returning " + getReturnType() + ".");
+		sb.append('\n');
+		sb.append("This element comes from: \n");
+		source.forEach( s -> sb.append("  > " + s + '\n'));
 		return sb.toString();
 	}
 }

@@ -8,9 +8,9 @@ import tooling.leyden.aotcache.AOTCache;
 import java.io.PrintWriter;
 
 /**
- * Top-level command that just prints help.
+ * Top-level command. All other commands should be subcommands of this.
  */
-@CommandLine.Command(name = "", description = {
+@CommandLine.Command(name = "", version = "1.0", description = {
 		"Interactive shell to explore the contents of the AOT cache. Start by loading an AOT map file."}, footer
 		= {"", "Press Ctrl-D to exit."},
 		subcommands = {
@@ -21,8 +21,8 @@ import java.io.PrintWriter;
 				PicocliCommands.ClearScreen.class,
 				CommandLine.HelpCommand.class})
 public class DefaultCommand implements Runnable {
-	PrintWriter out;
-	AOTCache aotCache = new AOTCache();
+	private PrintWriter out;
+	private AOTCache aotCache = new AOTCache();
 
 
 	public DefaultCommand() {
