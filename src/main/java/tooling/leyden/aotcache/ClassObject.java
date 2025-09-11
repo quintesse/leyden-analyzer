@@ -1,6 +1,5 @@
 package tooling.leyden.aotcache;
 
-import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -75,7 +74,11 @@ public class ClassObject implements Element {
 
 	public String getDescription() {
 		StringBuilder sb =
-				new StringBuilder(packageName + "." + name + " on address " + address + " with " + methods.size() + " methods.");
+				new StringBuilder("Class " + packageName + "." + name);
+		if (getAddress() != null) {
+			sb.append(" on address " + address);
+		}
+		sb.append(" with " + methods.size() + " methods.");
 		sb.append('\n');
 		sb.append("This element comes from: \n");
 		source.forEach( s -> sb.append("  > " + s + '\n'));
