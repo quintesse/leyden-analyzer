@@ -35,33 +35,31 @@ public class AOTMapParser implements Consumer<String> {
 						"elements.");
 				this.loadFile.getParent().getOut().flush();
 			}
-
-			String address = content.substring(0, content.indexOf(":"));
-			final var typeStart = content.indexOf("@@") + 2;
 			try {
-				final var contentLength = content.length();
-				int end = (contentLength >= typeStart + 18 ? typeStart + 18 : contentLength);
-				final var type = content.substring(typeStart, end).trim();
-
-				end = (contentLength >= typeStart + 22 ? typeStart + 22 : contentLength);
-				final var identifier = content.substring(end).trim();
-
 				final var thisSource = "AOT Map";
+				String[] contentParts = content.split(" +");
+
+				final var address = contentParts[0].substring(0, contentParts[0].length() - 1);
+				final var type = contentParts[2];
+				final var size = Integer.valueOf(contentParts[3]);
+				final var identifier =
+						content.substring(content.indexOf(" " + contentParts[3]) + 1 + contentParts[3].length()).trim();
+				
 				if (type.equalsIgnoreCase("Class")) {
-					processClass(identifier, address, thisSource);
+					processClass(identifier, address, size, thisSource);
 				} else if (type.equalsIgnoreCase("Method")) {
-					processMethod(identifier, thisSource);
+					processMethod(identifier, size, thisSource);
 				} else if (type.equalsIgnoreCase("Symbol")) {
 //					0x0000000801e3c000: @@ Symbol            40 [Ljdk/internal/vm/FillerElement;
 //					0x0000000801e3c028: @@ Symbol            32 jdk/internal/event/Event
 //					0x0000000801e3c048: @@ Symbol            24 jdk/jfr/Event
 //					0x0000000801e3c060: @@ Symbol            8 [Z
-					processReferencingElement(new SymbolObject(), identifier, address, thisSource);
+					processReferencingElement(new SymbolObject(), identifier, address, size, thisSource);
 				} else if (type.equalsIgnoreCase("ConstantPoolCache")) {
 //0x0000000800ec7408: @@ ConstantPoolCache 64 javax.naming.spi.ObjectFactory
-					processReferencingElement(new ConstantPoolCacheObject(), identifier, address, thisSource);
+					processReferencingElement(new ConstantPoolCacheObject(), identifier, address, size, thisSource);
 				} else if (type.equalsIgnoreCase("ConstantPool")) {
-					processReferencingElement(new ConstantPoolObject(), identifier, address, thisSource);
+					processReferencingElement(new ConstantPoolObject(), identifier, address, size, thisSource);
 				} else if (type.startsWith("TypeArray")) {
 					// 0x0000000800001d80: @@ TypeArrayU1       600
 					//TODO typeArray
@@ -116,43 +114,40 @@ public class AOTMapParser implements Consumer<String> {
 		}
 	}
 
-	private void processReferencingElement(ReferencingElement symbol, String identifier, String address, String thisSource) {
-		symbol.setName(identifier);
-		symbol.setAddress(address);
-		fillReferencedElement(identifier, symbol);
-		this.aotCache.addElement(symbol, thisSource);
+	private void processReferencingElement(ReferencingElement e, String identifier, String address, Integer size, String thisSource) {
+		e.setName(identifier);
+		e.setSize(size);
+		e.setAddress(address);
+		fillReferencedElement(identifier, e);
+		this.aotCache.addElement(e, thisSource);
 	}
 
-	private void processMethod(String identifier, String thisSource) {
+	private void processMethod(String identifier, Integer size, String thisSource) {
 		// 0x000000080082ac80: @@ Method            88 char example.Class.example(long)
 		// 0x0000000800773ea0: @@ Method            88 boolean java.lang.Object.equals(java.lang.Object)
 		MethodObject methodObject = new MethodObject();
+		methodObject.setSize(size);
 		String qualifiedName = identifier.substring(identifier.indexOf(" ") + 1, identifier.indexOf("("));
 		methodObject.setName(qualifiedName.substring(qualifiedName.lastIndexOf(".") + 1));
 		methodObject.setReturnType(identifier.substring(0, identifier.indexOf(" ")));
 		String className = qualifiedName.substring(0, qualifiedName.lastIndexOf("."));
-		List<Element> objects = this.aotCache.getObjects(className, null);
+		List<Element> objects = this.aotCache.getObjects(className, "Class");
 		if (objects.isEmpty()) {
 			ClassObject classObject = new ClassObject();
 			classObject.setName(className.substring(className.lastIndexOf(".") + 1));
 			classObject.setPackageName(className.substring(0, className.lastIndexOf(".")));
 			this.aotCache.addElement(classObject, thisSource);
 		} else {
-			for (Element object : objects) {
-				if (object instanceof ClassObject classObject) {
-					classObject.addMethod(methodObject);
-				} else if (object instanceof ReferencingElement referencedElement) {
-					//TODO review this, this may not be the best way to deal with it
-					if (referencedElement.getReference() instanceof ClassObject classObject) {
-						classObject.addMethod(methodObject);
-					}
-				}
+			Element element = objects.get(0);
+			if (element instanceof ClassObject classObject) {
+				//Should always be a class object, but...
+				classObject.addMethod(methodObject);
 			}
 		}
 		this.aotCache.addElement(methodObject, thisSource);
 	}
 
-	private void processClass(String identifier, String address, String thisSource) {
+	private void processClass(String identifier, String address, Integer size, String thisSource) {
 		// 0x000000080082d490: @@ Class             760 java.lang.StackFrameInfo
 		List<Element> elements = this.aotCache.getObjects(identifier, "Class");
 		// It could have been already loaded
@@ -160,18 +155,20 @@ public class AOTMapParser implements Consumer<String> {
 		for (Element element : elements) {
 			if (element instanceof ClassObject object) {
 				classObject = object;
+				break;
 			}
 		}
 		if (classObject == null) {
 			classObject = new ClassObject();
+			classObject.setSize(size);
 			classObject.setName(identifier.substring(identifier.lastIndexOf(".") + 1));
 			if (identifier.indexOf(".") > 0) {
 				classObject.setPackageName(identifier.substring(0, identifier.lastIndexOf(".")));
 			}
+			this.aotCache.addElement(classObject, thisSource);
 		}
 
 		classObject.setAddress(address);
-		this.aotCache.addElement(classObject, thisSource);
 	}
 
 	private void fillReferencedElement(String identifier, ReferencingElement element) {

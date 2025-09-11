@@ -1,19 +1,12 @@
 package tooling.leyden.aotcache;
 
-import java.util.LinkedList;
-import java.util.List;
-
 /**
  * This class represents a method inside the AOT Cache.
  */
-public class MethodObject implements Element {
+public class MethodObject extends Element {
 
 	private ClassObject classObject;
-
 	private String compilationLevel = "unknown";
-
-	private List<String> source = new LinkedList<>();
-
 	private String name;
 	private String returnType;
 
@@ -58,15 +51,6 @@ public class MethodObject implements Element {
 		return (getClassObject() != null) ? getClassObject().getKey() + "." + getName() : getName();
 	}
 
-	public void addSource(String source) {
-		this.source.add(source);
-	}
-
-	@Override
-	public List<String> getSources() {
-		return this.source;
-	}
-
 	@Override
 	public String toString() {
 		return getType() + " -> " + getKey();
@@ -81,7 +65,7 @@ public class MethodObject implements Element {
 		sb.append(" returning " + getReturnType() + ".");
 		sb.append('\n');
 		sb.append("This element comes from: \n");
-		source.forEach( s -> sb.append("  > " + s + '\n'));
+		getSources().forEach( s -> sb.append("  > " + s + '\n'));
 		return sb.toString();
 	}
 }
