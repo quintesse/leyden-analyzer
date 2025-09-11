@@ -6,6 +6,7 @@ import tooling.leyden.aotcache.ConstantPoolCacheObject;
 import tooling.leyden.aotcache.ConstantPoolObject;
 import tooling.leyden.aotcache.Element;
 import tooling.leyden.aotcache.MethodObject;
+import tooling.leyden.aotcache.RecordObject;
 import tooling.leyden.aotcache.ReferencingElement;
 import tooling.leyden.aotcache.SymbolObject;
 import tooling.leyden.commands.LoadFile;
@@ -136,10 +137,9 @@ public class AOTMapParser implements Consumer<String> {
 //					this.aotCache.addElement(symbol);
 				} else if (type.equals("RecordComponent")) {
 					//TODO 0x00000008029329e8: @@ RecordComponent   24
-//					SymbolObject symbol = new SymbolObject();
-//					symbol.setName(identifier);
-//					symbol.setAddress(address);
-//					this.aotCache.addElement(symbol);
+					RecordObject recordObject = new RecordObject();
+					recordObject.setAddress(address);
+					this.aotCache.addElement(recordObject, thisSource);
 				} else if (type.startsWith("AdapterHandlerEnt")) {
 					//TODO 0x0000000801dfbea0: @@ AdapterHandlerEntry 48
 //					SymbolObject symbol = new SymbolObject();
