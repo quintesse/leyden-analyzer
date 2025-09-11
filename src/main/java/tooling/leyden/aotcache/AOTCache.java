@@ -53,7 +53,7 @@ public class AOTCache {
 			Key key = entry.getKey();
 			Element e = entry.getValue();
 			if (key.identifier().equalsIgnoreCase(packageName)
-					&& (type == null || key.type().equalsIgnoreCase(type))) {
+					&& (type == null || type.isBlank() || key.type().equalsIgnoreCase(type))) {
 				result.add(e);
 			}
 		}
