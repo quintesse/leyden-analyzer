@@ -1,9 +1,9 @@
 package tooling.leyden.aotcache;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -26,39 +26,32 @@ public class AOTCache {
 	}
 
 	public List<Element> getByPackage(String packageName, String type) {
-		List<Element> result = new LinkedList<>();
-		if (packageName == null) {
-			packageName = "";
+		var result = elements.entrySet().parallelStream();
+
+		if (packageName != null && !packageName.isBlank()) {
+				result =
+						result.filter(keyElementEntry -> keyElementEntry.getKey().identifier().startsWith(packageName));
+		}
+		if (type != null && !type.isBlank()) {
+			result = result.filter(keyElementEntry -> keyElementEntry.getKey().type().equalsIgnoreCase(type));
 		}
 
-		for (Map.Entry<Key, Element> entry : elements.entrySet()) {
-			Key key = entry.getKey();
-			Element e = entry.getValue();
-			if (key.identifier().startsWith(packageName)
-					&& (type == null || key.type().equalsIgnoreCase(type))) {
-				result.add(e);
-			}
-		}
-
-		return result;
+		return result.map(keyElementEntry -> keyElementEntry.getValue()).toList();
 	}
 
-	public List<Element> getObjects(String packageName, String type) {
-		List<Element> result = new LinkedList<>();
-		if (packageName == null) {
-			packageName = "";
+	public List<Element> getObjects(String objectName, String type) {
+		if (objectName == null || objectName.isBlank()) {
+			return Collections.emptyList();
 		}
 
-		for (Map.Entry<Key, Element> entry : elements.entrySet()) {
-			Key key = entry.getKey();
-			Element e = entry.getValue();
-			if (key.identifier().equalsIgnoreCase(packageName)
-					&& (type == null || type.isBlank() || key.type().equalsIgnoreCase(type))) {
-				result.add(e);
-			}
+		var result = elements.entrySet().parallelStream()
+				.filter(keyElementEntry -> keyElementEntry.getKey().identifier().equalsIgnoreCase(objectName));
+
+		if (type != null && !type.isBlank()) {
+			result = result.filter(keyElementEntry -> keyElementEntry.getKey().type().equalsIgnoreCase(type));
 		}
 
-		return result;
+		return result.map(keyElementEntry -> keyElementEntry.getValue()).toList();
 	}
 
 	public Set<Error> getErrors() {

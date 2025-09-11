@@ -37,6 +37,7 @@ public class LoadFile implements Runnable {
 
 	private void load(Path path, Consumer<String> consumer) {
 		parent.getOut().println("Adding " + path.toAbsolutePath() + " to our analysis.");
+		parent.getOut().flush();
 
 		try (Scanner scanner = new Scanner(Files.newInputStream(path),StandardCharsets.UTF_8)) {
 			while (scanner.hasNextLine()) {
@@ -45,6 +46,12 @@ public class LoadFile implements Runnable {
 		} catch (IOException e) {
 			parent.getOut().println("ERROR: Couldn't load " + path.getFileName());
 			parent.getOut().println("ERROR: " + e.getMessage());
+			parent.getOut().flush();
+
+		} catch (Exception e) {
+			parent.getOut().println("ERROR: Loading " + path.getFileName());
+			parent.getOut().println("ERROR: " + e.getMessage());
+			parent.getOut().flush();
 		}
 		parent.getOut().println("Now the AOTCache contains " + parent.getAotCache().getAll().size() + " elements and "
 				+ parent.getAotCache().getErrors().size() + " errors.");
