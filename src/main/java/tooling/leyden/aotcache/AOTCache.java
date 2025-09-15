@@ -33,7 +33,9 @@ public class AOTCache {
 						result.filter(keyElementEntry -> keyElementEntry.getKey().identifier().startsWith(packageName));
 		}
 		if (type != null && !type.isBlank()) {
-			result = result.filter(keyElementEntry -> keyElementEntry.getKey().type().equalsIgnoreCase(type));
+			result = result.filter(keyElementEntry ->
+				keyElementEntry.getKey().type().equalsIgnoreCase(type)
+			);
 		}
 
 		return result.map(keyElementEntry -> keyElementEntry.getValue()).toList();

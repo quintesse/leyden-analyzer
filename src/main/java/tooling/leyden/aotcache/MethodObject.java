@@ -9,6 +9,7 @@ public class MethodObject extends Element {
 	private String compilationLevel = "unknown";
 	private String name;
 	private String returnType;
+	private Boolean constMethod = false;
 
 	public String getType() {
 		return "Method";
@@ -28,6 +29,14 @@ public class MethodObject extends Element {
 
 	public void setCompilationLevel(String compilationLevel) {
 		this.compilationLevel = compilationLevel;
+	}
+
+	public Boolean isConstMethod() {
+		return constMethod;
+	}
+
+	public void setConstMethod(Boolean constMethod) {
+		this.constMethod = constMethod;
 	}
 
 	public String getReturnType() {
@@ -57,8 +66,11 @@ public class MethodObject extends Element {
 	}
 
 	public String getDescription() {
-		StringBuilder sb = new StringBuilder("Method " + getName() + " [compilation level: " + compilationLevel +
-				"]");
+		StringBuilder sb = new StringBuilder("Method " + getName());
+		if(isConstMethod()) {
+			sb.append(" [CONST]");
+		}
+		sb.append(" [compilation level: " + compilationLevel + "]");
 		if (classObject != null) {
 			sb.append(" on class " +  getClassObject().getKey());
 		};

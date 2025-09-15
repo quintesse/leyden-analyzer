@@ -7,13 +7,19 @@ import java.util.List;
 /** Elements that can be found on the AOTCache.**/
 public abstract class Element {
 
+	private String type;
+
 	/**
 	 * Is this a class, a method,...?
 	 *
 	 * @return The type of element
 	 */
-	public abstract String getType();
-
+	public String getType() {
+		return type;
+	}
+	public void setType(String type) {
+		this.type = type;
+	}
 	/**
 	 * When describing an element, this is the String we are going to use.
 	 *
@@ -57,7 +63,9 @@ public abstract class Element {
 
 	private List<String> source = new LinkedList<>();
 	public void addSource(String source) {
-		this.source.add(source);
+		if (!this.source.contains(source)) {
+			this.source.add(source);
+		}
 	}
 
 	/**

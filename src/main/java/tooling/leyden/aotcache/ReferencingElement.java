@@ -5,7 +5,7 @@ package tooling.leyden.aotcache;
  * Elements that refer to other types of elements. For example: An element in the ConstantPool may be of certain
  * class, which is defined and loaded on the AOTCache independently.
  **/
-public abstract class ReferencingElement extends Element {
+public class ReferencingElement extends Element {
 	private Element reference = null;
 	private String name;
 

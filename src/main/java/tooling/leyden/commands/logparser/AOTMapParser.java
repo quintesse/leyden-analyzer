@@ -2,13 +2,11 @@ package tooling.leyden.commands.logparser;
 
 import tooling.leyden.aotcache.AOTCache;
 import tooling.leyden.aotcache.ClassObject;
-import tooling.leyden.aotcache.ConstantPoolCacheObject;
 import tooling.leyden.aotcache.ConstantPoolObject;
 import tooling.leyden.aotcache.Element;
 import tooling.leyden.aotcache.MethodObject;
-import tooling.leyden.aotcache.RecordObject;
+import tooling.leyden.aotcache.BasicObject;
 import tooling.leyden.aotcache.ReferencingElement;
-import tooling.leyden.aotcache.SymbolObject;
 import tooling.leyden.commands.LoadFile;
 
 import java.util.List;
@@ -44,68 +42,63 @@ public class AOTMapParser implements Consumer<String> {
 				final var size = Integer.valueOf(contentParts[3]);
 				final var identifier =
 						content.substring(content.indexOf(" " + contentParts[3]) + 1 + contentParts[3].length()).trim();
+
+				Element element = null;
 				
 				if (type.equalsIgnoreCase("Class")) {
-					processClass(identifier, address, size, thisSource);
+//					0x0000000800868d58: @@ Class             520 java.lang.constant.ClassDesc
+//					0x0000000800869078: @@ Class             512 [Ljava.lang.constant.ClassDesc;
+					element = processClass(identifier);
 				} else if (type.equalsIgnoreCase("Method")) {
-					processMethod(identifier, size, thisSource);
-				} else if (type.equalsIgnoreCase("Symbol")) {
+//					0x0000000800831250: @@ Method            88 void java.lang.management.MemoryUsage.<init>(javax.management.openmbean.CompositeData)
+//					0x0000000800831250:   0000000800001710 0000000802c9dc38 0000000000000000 0000000000000000   ........8.................
+					element = processMethod(identifier, thisSource);
+				}  else if (type.equalsIgnoreCase("ConstMethod")) {
+//					 0x0000000804990600: @@ ConstMethod       88 void jdk.internal.access.SharedSecrets.setJavaNetHttpCookieAccess(jdk.internal.access.JavaNetHttpCookieAccess)
+					element = processMethod(identifier, thisSource);
+					((MethodObject) element).setConstMethod(true);
+				}  else if (type.equalsIgnoreCase("Symbol")) {
 //					0x0000000801e3c000: @@ Symbol            40 [Ljdk/internal/vm/FillerElement;
 //					0x0000000801e3c028: @@ Symbol            32 jdk/internal/event/Event
 //					0x0000000801e3c048: @@ Symbol            24 jdk/jfr/Event
 //					0x0000000801e3c060: @@ Symbol            8 [Z
-					processReferencingElement(new SymbolObject(), identifier, address, size, thisSource);
+					element = processReferencingElement(new ReferencingElement(), identifier);
 				} else if (type.equalsIgnoreCase("ConstantPoolCache")) {
-//0x0000000800ec7408: @@ ConstantPoolCache 64 javax.naming.spi.ObjectFactory
-					processReferencingElement(new ConstantPoolCacheObject(), identifier, address, size, thisSource);
+//					0x0000000800ec7408: @@ ConstantPoolCache 64 javax.naming.spi.ObjectFactory
+					element = processReferencingElement(new ConstantPoolObject(), identifier);
+					((ConstantPoolObject) element).setCache(true);
 				} else if (type.equalsIgnoreCase("ConstantPool")) {
-					processReferencingElement(new ConstantPoolObject(), identifier, address, size, thisSource);
-				} else if (type.startsWith("TypeArray")) {
-					// 0x0000000800001d80: @@ TypeArrayU1       600
-					//TODO typeArray
-//					SymbolObject symbol = new SymbolObject();
-//					symbol.setName(identifier);
-//					symbol.setAddress(address);
-//					this.aotCache.addElement(symbol);
-				} else if (type.startsWith("Object (")) {
-					//TODO Object
-//					SymbolObject symbol = new SymbolObject();
-//					symbol.setName(identifier);
-//					symbol.setAddress(address);
-//					this.aotCache.addElement(symbol);
-				} else if (type.equalsIgnoreCase("ConstMethod")) {
-					//TODO 0x0000000804990600: @@ ConstMethod       88 void jdk.internal.access.SharedSecrets.setJavaNetHttpCookieAccess(jdk.internal.access.JavaNetHttpCookieAccess)
-//					SymbolObject symbol = new SymbolObject();
-//					symbol.setName(identifier);
-//					symbol.setAddress(address);
-//					this.aotCache.addElement(symbol);
-				} else if (type.equalsIgnoreCase("Annotations")) {
-					//TODO 0x0000000802ef37b8: @@ Annotations       32
-//					SymbolObject symbol = new SymbolObject();
-//					symbol.setName(identifier);
-//					symbol.setAddress(address);
-//					this.aotCache.addElement(symbol);
-				} else if (type.equals("RecordComponent")) {
-					//TODO 0x00000008029329e8: @@ RecordComponent   24
-					RecordObject recordObject = new RecordObject();
-					recordObject.setAddress(address);
-					this.aotCache.addElement(recordObject, thisSource);
-				} else if (type.startsWith("AdapterHandlerEnt")) {
-					//TODO 0x0000000801dfbea0: @@ AdapterHandlerEntry 48
-//					SymbolObject symbol = new SymbolObject();
-//					symbol.setName(identifier);
-//					symbol.setAddress(address);
-//					this.aotCache.addElement(symbol);
-				} else if (type.startsWith("AdapterFingerPrin")) {
-					//TODO 0x0000000800002ba0: @@ AdapterFingerPrint 8
-//					SymbolObject symbol = new SymbolObject();
-//					symbol.setName(identifier);
-//					symbol.setAddress(address);
-//					this.aotCache.addElement(symbol);
+					element = processReferencingElement(new ConstantPoolObject(), identifier);
+				}else if (type.startsWith("TypeArray")
+//					0x0000000800001d80: @@ TypeArrayU1       600
+//					0x000000080074cc50: @@ TypeArrayOther    800
+						|| type.equalsIgnoreCase("AdapterFingerPrint")
+//					0x000000080074cc20: @@ AdapterFingerPrint 8
+//					0x000000080074cc20:   bbbeaaaa00000001                                                      ........
+//					0x000000080074cc28: @@ AdapterFingerPrint 16
+//					0x000000080074cc28:   bbbeaaaa00000002 000000000000aaaa
+						|| type.equalsIgnoreCase("AdapterHandlerEntry")
+//					0x00000008008431b0: @@ AdapterHandlerEntry 48
+//					0x00000008008431b0:   0000000800019868 00007f276e002e60 00007f276e002ee5 00007f276e002ec4   h.......`..n'......n'......n'...
+//					0x00000008008431d0:   00007f276e002f20 0000000000000001
+						|| type.equals("RecordComponent")
+//					 0x00000008029329e8: @@ RecordComponent   24
+						|| type.equalsIgnoreCase("Annotations")
+//					0x0000000802bf50f0: @@ Annotations       32
+//					0x0000000802bf50f0:   0000000802b719a0 0000000000000000 0000000000000000 0000000000000000   ................................
+
+				) {
+					element = new BasicObject();
 				} else {
 					loadFile.getParent().getOut().println("Unidentified: " + type);
 					loadFile.getParent().getOut().println(identifier);
 					loadFile.getParent().getOut().println(content);
+				}
+				if (element != null) {
+					element.setAddress(address);
+					element.setType(type);
+					element.setSize(size);
+					this.aotCache.addElement(element, thisSource);
 				}
 			} catch (Exception e) {
 				loadFile.getParent().getOut().println("ERROR: " + e.getMessage());
@@ -114,19 +107,16 @@ public class AOTMapParser implements Consumer<String> {
 		}
 	}
 
-	private void processReferencingElement(ReferencingElement e, String identifier, String address, Integer size, String thisSource) {
+	private Element processReferencingElement(ReferencingElement e, String identifier) {
 		e.setName(identifier);
-		e.setSize(size);
-		e.setAddress(address);
 		fillReferencedElement(identifier, e);
-		this.aotCache.addElement(e, thisSource);
+		return e;
 	}
 
-	private void processMethod(String identifier, Integer size, String thisSource) {
+	private Element processMethod(String identifier, String thisSource) {
 		// 0x000000080082ac80: @@ Method            88 char example.Class.example(long)
 		// 0x0000000800773ea0: @@ Method            88 boolean java.lang.Object.equals(java.lang.Object)
 		MethodObject methodObject = new MethodObject();
-		methodObject.setSize(size);
 		String qualifiedName = identifier.substring(identifier.indexOf(" ") + 1, identifier.indexOf("("));
 		methodObject.setName(qualifiedName.substring(qualifiedName.lastIndexOf(".") + 1));
 		methodObject.setReturnType(identifier.substring(0, identifier.indexOf(" ")));
@@ -144,10 +134,10 @@ public class AOTMapParser implements Consumer<String> {
 				classObject.addMethod(methodObject);
 			}
 		}
-		this.aotCache.addElement(methodObject, thisSource);
+		return methodObject;
 	}
 
-	private void processClass(String identifier, String address, Integer size, String thisSource) {
+	private Element processClass(String identifier) {
 		// 0x000000080082d490: @@ Class             760 java.lang.StackFrameInfo
 		List<Element> elements = this.aotCache.getObjects(identifier, "Class");
 		// It could have been already loaded
@@ -160,15 +150,13 @@ public class AOTMapParser implements Consumer<String> {
 		}
 		if (classObject == null) {
 			classObject = new ClassObject();
-			classObject.setSize(size);
 			classObject.setName(identifier.substring(identifier.lastIndexOf(".") + 1));
 			if (identifier.indexOf(".") > 0) {
 				classObject.setPackageName(identifier.substring(0, identifier.lastIndexOf(".")));
 			}
-			this.aotCache.addElement(classObject, thisSource);
 		}
 
-		classObject.setAddress(address);
+		return classObject;
 	}
 
 	private void fillReferencedElement(String identifier, ReferencingElement element) {
