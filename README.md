@@ -13,7 +13,7 @@ It's using picocli and JLine to run.
 ## How to use it
 
 There is a `help` command:
-```
+```bash
 > help
 Usage:  [COMMAND]
 Interactive shell to explore the contents of the AOT cache. Start by loading an
@@ -34,7 +34,7 @@ Press Ctrl-D to exit.
 
 You should start by using the `load` command to load different files:
 
-```
+```bash
 > load help
 Usage:  load [-hV] [COMMAND]
 Load a file to extract information.
@@ -49,7 +49,7 @@ Commands:
 ```
 We can load java logs of our app generated with `-Xlog:class+load,aot*=warning:file=aot.
               log:tags` :
-```
+```bash
 > load log /home/delawen/git/infinispan-server-15.2.5.Final/aot.log /home/delawen/git/infinispan-server-15.2.5.Final/aot.log.0
 Adding /home/delawen/git/infinispan-server-15.2.5.Final/aot.log to our analysis.
 Now the AOTCache contains 15084 elements and 35 errors.
@@ -58,16 +58,18 @@ Now the AOTCache contains 15084 elements and 35 errors.
 ```
 And we can add an AOT map file generated with `-Xlog:aot+map=trace:file=aot.
 map:none:filesize=0`
-```
-> load aotCache /home/delawen/git/infinispan-server-15.2.5.Final/aot.map
-Now the AOTCache contains 15704 elements and 35 errors.
+```bash
+> load aotCache /home/delawen/git/infinispan-server-15.2.5.Final/aot.map.
+Adding /home/delawen/git/infinispan-server-15.2.5.Final/aot.map to our analysis.
+.. the AOT Cache contains now 5000 elements ...
+Now the AOTCache contains 6718 elements and 0 errors.
 ```
 Now we can start the analysis.
 
 ### Listing elements (and errors!) detected
 
 We have the `ls` command to list errors and what we know is on the cache.
-```
+```bash
 > ls help
 Usage:  ls [-hV] [-pn=<packageName>] [<type>...] [COMMAND]
 List what is on the cache. By default, it lists everything on the cache.
@@ -81,7 +83,7 @@ Commands:
   run   Lists everything on the cache.
 ```
 
-```
+```bash
 > ls 
 [....]
   > Annotations -> [random generated key] 1758018320071
@@ -110,7 +112,7 @@ Commands:
   Found 15704 elements.
 ```
 We can also explore the errors:
-```
+```bash
 > ls error
 [...]
   > Element 'org.apache.logging.log4j.core.async.AsyncLoggerContext' of type 'Class' couldn't be added to the cache because: 'Failed verification'
@@ -123,16 +125,30 @@ We can also explore the errors:
   > Element 'org.slf4j.event.LoggingEvent' of type 'Class' couldn't be added to the cache because: 'Unlinked class not supported by AOTConfiguration'
 Found 35 errors.
 ```
-TODO: Add suggestions on how to solve these errors/warnings.
+TODO: Add suggestions on how to solve these errors/warnings. Maybe on the `describe` command?
+
 TODO: Detect more errors, these were just the low hanging fruits with `ERROR` label.
 
 ### Looking for details
 
 To explore a bit more about what is on stored on the cache, we can use the command `describe`.
 
+```bash
+> describe help
+Usage:  describe [-hV] [-t=<type>] <name> [COMMAND]
+Describe an object, showing all related info.
+      <name>          The object name/identifier. If it is a class, use the
+                        full qualified name.
+  -h, --help          Show this help message and exit.
+  -t, --type=<type>   Restrict the listing to this type of element
+  -V, --version       Print version information and exit.
+Commands:
+  help  Display help information about the specified command.
+```
+
 Depending if it was loaded from one type of file or another, the details may vary:
 
-```
+```bash
 > describe jdk.internal.vm.vector.VectorSupport.libraryBinaryOp
 -----
 |  Method jdk.internal.vm.vector.VectorSupport.libraryBinaryOp on address 0x0000000802bc8da0 with size 208.
@@ -145,7 +161,7 @@ Depending if it was loaded from one type of file or another, the details may var
 -----
 ```
 
-```
+```bash
 > describe org.infinispan.commons.util.ArrayMap
 -----
 |  Class org.infinispan.commons.util.ArrayMap with size null.
@@ -154,7 +170,7 @@ Depending if it was loaded from one type of file or another, the details may var
 -----
 ```
 
-```
+```bash
 > describe java.lang.ref.WeakReference
 -----
 |  Class java.lang.ref.WeakReference on address 0x00000008007abc00 with size 600.
@@ -263,9 +279,31 @@ Depending if it was loaded from one type of file or another, the details may var
 |  This element refers to Class -> java.lang.ref.WeakReference
 -----
 ```
+Or we can filter by type of element we want to explore:
+
+```bash
+> describe java.lang.ref.WeakReference --type=constantpool
+-----
+|  ConstantPool java.lang.ref.WeakReference on address 0x0000000802bcd470 with size 344.
+|  This information comes from:
+|    > AOT Map
+|  This element refers to Class -> java.lang.ref.WeakReference
+-----
+```
 
 TODO: How can we make this more understandable, showing maybe a graph?
 
+### Cleanup
+
+We can clean the loaded files and start from scratch
+
+```bash
+> clean
+Cleaned the elements. Load again files to start a new analysis.
+> ls
+Found 0 elements.
+```
+
 ### Exiting
 
-Just `> exit`.
+Just `exit`.
