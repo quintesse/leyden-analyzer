@@ -29,8 +29,8 @@ public class AOTMapParser implements Consumer<String> {
 	public void accept(String content) {
 		if (content.indexOf(": @@") == 18) {
 			if (!this.aotCache.getAll().isEmpty() && this.aotCache.getAll().size() % 5000 == 0) {
-				this.loadFile.getParent().getOut().println("Already processed " + this.aotCache.getAll().size() + " " +
-						"elements.");
+				this.loadFile.getParent().getOut().println("... the AOT Cache contains now " + this.aotCache.getAll().size() + " " +
+						"elements ...");
 				this.loadFile.getParent().getOut().flush();
 			}
 			try {
