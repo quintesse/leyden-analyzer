@@ -12,7 +12,7 @@ It's using picocli and JLine to run.
 
 ## How to use it
 
-There is a helpful help command:
+There is a `help` command:
 ```
 > help
 Usage:  [COMMAND]
@@ -32,7 +32,7 @@ Press Ctrl-D to exit.
 
 ### Load some information
 
-You should start by using the load command to load different files:
+You should start by using the `load` command to load different files:
 
 ```
 > load help
@@ -46,43 +46,72 @@ Commands:
               map:none:filesize=0
   log       Load a log generated with -Xlog:class+load,aot*=warning:file=aot.
               log:tags
-> load log /home/delawen/git/infinispan-server-15.2.5.Final/aot.log
+```
+We can load java logs of our app generated with `-Xlog:class+load,aot*=warning:file=aot.
+              log:tags` :
+```
+> load log /home/delawen/git/infinispan-server-15.2.5.Final/aot.log /home/delawen/git/infinispan-server-15.2.5.Final/aot.log.0
 Adding /home/delawen/git/infinispan-server-15.2.5.Final/aot.log to our analysis.
-Now the AOTCache contains 8780 elements.
+Now the AOTCache contains 15084 elements and 35 errors.
+Adding /home/delawen/git/infinispan-server-15.2.5.Final/aot.log.1 to our analysis.
+Now the AOTCache contains 15084 elements and 35 errors.
+```
+And we can add an AOT map file generated with `-Xlog:aot+map=trace:file=aot.
+map:none:filesize=0`
+```
 > load aotCache /home/delawen/git/infinispan-server-15.2.5.Final/aot.map
->>> here comes many parsing errors I haven't debugged yet
-Now the AOTCache contains 40771 elements.
+Now the AOTCache contains 15704 elements and 35 errors.
 ```
 Now we can start the analysis.
 
 ### Listing elements (and errors!) detected
 
+We have the `ls` command to list errors and what we know is on the cache.
 ```
 > ls help
-Usage:  ls [-hV] [COMMAND]
+Usage:  ls [-hV] [-pn=<packageName>] [<type>...] [COMMAND]
 List what is on the cache. By default, it lists everything on the cache.
-  -h, --help      Show this help message and exit.
-  -V, --version   Print version information and exit.
+      [<type>...]   Restrict the listing to this type of element
+  -h, --help        Show this help message and exit.
+      -pn, --packageName=<packageName>
+                    Restrict the listing to this package.
+  -V, --version     Print version information and exit.
 Commands:
-  help     Display help information about the specified command.
-  all      Lists everything on the cache.
-  classes  Lists classes on the cache.
-  errors   Lists errors on creating or loading the AOTCache.
-  methods  Lists methods on the cache.
-> ls all 
+  help  Display help information about the specified command.
+  run   Lists everything on the cache.
+```
+
+```
+> ls 
 [....]
-  > Method -> sun.security.x509.AlgorithmId.<init>
-  > Method -> java.lang.invoke.VarHandleLongs$FieldInstanceReadWrite.getAndBitwiseXorRelease
-  > Method -> java.lang.classfile.ClassReader.readU2
-  > Class -> com.fasterxml.jackson.databind.ser.PropertyFilter
-  > Class -> org.infinispan.counter.logging.Log
-  > Class -> org.infinispan.security.SecureCache
-  > Method -> sun.security.util.Debug.of
-  > Class -> org.infinispan.expiration.impl.CorePackageImpl$2
-  > Class -> org.infinispan.expiration.impl.CorePackageImpl$1
-  > Method -> java.lang.classfile.ClassReader.readU1
-Found 40771 elements.
-> ls errors
+  > Annotations -> [random generated key] 1758018320071
+  > Method -> java.net.URL.getUserInfo
+  > Symbol -> Method javax/sql/DataSource.getParentLogger()Ljava/util/logging/Logger; is abstract
+  > Method -> java.lang.AbstractStringBuilder.length
+  > TypeArrayU4 -> [random generated key] 1758018319895
+  > TypeArrayU2 -> [random generated key] 1758018319895
+  > TypeArrayU1 -> [random generated key] 1758018319895
+  > Class -> java.lang.management.ManagementFactory$$Lambda/0x8000000b0
+  > Class -> org.jgroups.util.IntHashMap
+  > Class -> java.lang.annotation.RetentionPolicy
+  > Method -> jdk.internal.vm.vector.VectorSupport.libraryBinaryOp
+  > Symbol -> java/lang/invoke/LambdaForm$DMH+0x80000001d
+  > TypeArrayU4 -> [random generated key] 1758018319894
+  > Method -> java.util.concurrent.atomic.AtomicReferenceFieldUpdater$AtomicReferenceFieldUpdaterImpl.isSamePackage
+  > Class -> org.infinispan.xsite.spi.XSiteEntryMergePolicy
+  > Method -> java.lang.VirtualThread.unblockVirtualThreads
+  > Class -> org.infinispan.commons.util.ArrayMap
+  > TypeArrayU2 -> [random generated key] 1758018319894
+  > Class -> com.fasterxml.jackson.databind.cfg.MapperConfigBase
+  > TypeArrayU1 -> [random generated key] 1758018319894
+  > Symbol -> java/lang/ProcessHandleImpl$$Lambda+0x8000000a6
+  > Class -> org.apache.logging.log4j.core.layout.PatternLayout$SerializerBuilder
+  > AdapterHandlerEntry -> [random generated key] 1758017931833
+  Found 15704 elements.
+```
+We can also explore the errors:
+```
+> ls error
 [...]
   > Element 'org.apache.logging.log4j.core.async.AsyncLoggerContext' of type 'Class' couldn't be added to the cache because: 'Failed verification'
   > Element 'jdk.proxy1.$Proxy36' of type 'Class' couldn't be added to the cache because: 'Unsupported location'
@@ -94,34 +123,149 @@ Found 40771 elements.
   > Element 'org.slf4j.event.LoggingEvent' of type 'Class' couldn't be added to the cache because: 'Unlinked class not supported by AOTConfiguration'
 Found 35 errors.
 ```
+TODO: Add suggestions on how to solve these errors/warnings.
+TODO: Detect more errors, these were just the low hanging fruits with `ERROR` label.
 
 ### Looking for details
 
-And explore a bit more about what is on stored on the cache (depending if it was read from one file or another, the details may vary):
+To explore a bit more about what is on stored on the cache, we can use the command `describe`.
+
+Depending if it was loaded from one type of file or another, the details may vary:
 
 ```
-> describe org.infinispan.counter.logging.Log
-org.infinispan.counter.logging.Log on address null with 0 methods.
-> describe java.util.AbstractMap
-java.util.AbstractMap on address 0x00000008007cfdb8 with 18 methods.
- [method] eq
- [method] keySet
- [method] clear
- [method] put
- [method] containsValue
- [method] containsKey
- [method] get
- [method] toString
- [method] isEmpty
- [method] putAll
- [method] entrySet
- [method] equals
- [method] hashCode
- [method] clone
- [method] <init>
- [method] size
- [method] remove
- [method] values
-> describe java.util.AbstractMap.putAll
-Method putAll [compilation level: unknown] on class java.util.AbstractMap returning void.
+> describe jdk.internal.vm.vector.VectorSupport.libraryBinaryOp
+-----
+|  Method jdk.internal.vm.vector.VectorSupport.libraryBinaryOp on address 0x0000000802bc8da0 with size 208.
+|  This information comes from: 
+|    > AOT Map
+|  This is a ConstMethod.
+|  Compilation level unknown.
+|  Belongs to the class jdk.internal.vm.vector.VectorSupport
+|  Returns jdk.internal.vm.vector.VectorSupport$VectorPayload.
+-----
 ```
+
+```
+> describe org.infinispan.commons.util.ArrayMap
+-----
+|  Class org.infinispan.commons.util.ArrayMap with size null.
+|  This information comes from: 
+|    > Java Log
+-----
+```
+
+```
+> describe java.lang.ref.WeakReference
+-----
+|  Class java.lang.ref.WeakReference on address 0x00000008007abc00 with size 600.
+|  This information comes from: 
+|    > AOT Map
+|  This class has the following methods:
+|     ______
+|     | 
+|     | Method java.lang.ref.WeakReference.<init> on address 0x00000008007ac0b0 with size 88.
+|     | This information comes from: 
+|     |   > AOT Map
+|     | Compilation level unknown.
+|     | Belongs to the class java.lang.ref.WeakReference
+|     | Returns void.
+|     | 
+|     | ______
+|     | 
+|     | Method java.lang.ref.WeakReference.<init> on address 0x00000008007ac148 with size 88.
+|     | This information comes from: 
+|     |   > AOT Map
+|     | Compilation level unknown.
+|     | Belongs to the class java.lang.ref.WeakReference
+|     | Returns void.
+|     | 
+|     | ______
+|     | 
+|     | Method java.lang.ref.WeakReference.<init> on address 0x0000000802bcd5e0 with size 104.
+|     | This information comes from: 
+|     |   > AOT Map
+|     | This is a ConstMethod.
+|     | Compilation level unknown.
+|     | Belongs to the class java.lang.ref.WeakReference
+|     | Returns void.
+|     | 
+|     | ______
+|     | 
+|     | Method java.lang.ref.WeakReference.<init> on address 0x0000000802bcd648 with size 120.
+|     | This information comes from: 
+|     |   > AOT Map
+|     | This is a ConstMethod.
+|     | Compilation level unknown.
+|     | Belongs to the class java.lang.ref.WeakReference
+|     | Returns void.
+|     | 
+|     | ______
+|     | 
+|     | Method java.lang.ref.WeakReference.<init> on address 0x00000008007ac0b0 with size 88.
+|     | This information comes from: 
+|     |   > AOT Map
+|     | Compilation level unknown.
+|     | Belongs to the class java.lang.ref.WeakReference
+|     | Returns void.
+|     | 
+|     | ______
+|     | 
+|     | Method java.lang.ref.WeakReference.<init> on address 0x00000008007ac148 with size 88.
+|     | This information comes from: 
+|     |   > AOT Map
+|     | Compilation level unknown.
+|     | Belongs to the class java.lang.ref.WeakReference
+|     | Returns void.
+|     | 
+|     | ______
+|     | 
+|     | Method java.lang.ref.WeakReference.<init> on address 0x0000000802bcd5e0 with size 104.
+|     | This information comes from: 
+|     |   > AOT Map
+|     | This is a ConstMethod.
+|     | Compilation level unknown.
+|     | Belongs to the class java.lang.ref.WeakReference
+|     | Returns void.
+|     | 
+|     | ______
+|     | 
+|     | Method java.lang.ref.WeakReference.<init> on address 0x0000000802bcd648 with size 120.
+|     | This information comes from: 
+|     |   > AOT Map
+|     | This is a ConstMethod.
+|     | Compilation level unknown.
+|     | Belongs to the class java.lang.ref.WeakReference
+|     | Returns void.
+|     | 
+|     | ______
+|  There are other elements of the cache that link to this element: 
+|    _____
+|    | ConstantPoolCache java.lang.ref.WeakReference on address 0x00000008007ac058 with size 64.
+|    | This information comes from: 
+|    |   > AOT Map
+|    | This element refers to Class -> java.lang.ref.WeakReference
+|    | ConstantPool java.lang.ref.WeakReference on address 0x0000000802bcd470 with size 344.
+|    | This information comes from: 
+|    |   > AOT Map
+|    | This element refers to Class -> java.lang.ref.WeakReference
+|    _____
+-----
+-----
+|  ConstantPoolCache java.lang.ref.WeakReference on address 0x00000008007ac058 with size 64.
+|  This information comes from: 
+|    > AOT Map
+|  This element refers to Class -> java.lang.ref.WeakReference
+-----
+-----
+|  ConstantPool java.lang.ref.WeakReference on address 0x0000000802bcd470 with size 344.
+|  This information comes from: 
+|    > AOT Map
+|  This element refers to Class -> java.lang.ref.WeakReference
+-----
+```
+
+TODO: How can we make this more understandable, showing maybe a graph?
+
+### Exiting
+
+Just `> exit`.
