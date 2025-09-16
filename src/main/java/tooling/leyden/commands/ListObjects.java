@@ -3,16 +3,9 @@ package tooling.leyden.commands;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import tooling.leyden.aotcache.Element;
-import tooling.leyden.aotcache.Error;
 
-import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Spliterator;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 @Command(name = "ls", mixinStandardHelpOptions = true,
@@ -20,17 +13,6 @@ import java.util.stream.Stream;
 		description = { "List what is on the cache. By default, it lists everything on the cache." },
 		subcommands = { CommandLine.HelpCommand.class })
 class ListObjects implements Runnable {
-
-	static class Types implements Iterable<String> {
-		@Override
-		public Iterator<String> iterator() {
-			return Arrays.asList(
-					"class", "method", "symbol", "constantPool",
-					"adapterFingerPrint", "adapterHandlerEntry", "annotations",
-					"error"
-			).iterator();
-		}
-	}
 
 	@CommandLine.ParentCommand
 	DefaultCommand parent;

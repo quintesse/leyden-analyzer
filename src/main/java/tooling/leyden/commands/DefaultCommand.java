@@ -15,7 +15,7 @@ import java.io.PrintWriter;
 		= {"", "Press Ctrl-D to exit."},
 		subcommands = {
 				CleanAOTCache.class,
-				DescribeObject.class,
+				Describe.class,
 				ListObjects.class,
 				LoadFile.class,
 				PicocliCommands.ClearScreen.class,
