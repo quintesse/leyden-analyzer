@@ -55,10 +55,17 @@ public class QuarkusPicocliLineApp implements Runnable, QuarkusApplication {
 				systemRegistry.setCommandRegistries(builtins, picocliCommands);
 				systemRegistry.register("help", picocliCommands);
 
+				final var historyFileName = ".leyden-analyzer.history";
 				LineReader reader = LineReaderBuilder.builder()
 						.terminal(terminal)
 						.completer(systemRegistry.completer())
 						.history(new DefaultHistory())
+						.variable(LineReader.HISTORY_FILE,
+								Paths.get(workDir.get().resolve(
+												historyFileName).toAbsolutePath().toString(),
+											historyFileName))
+						.variable(LineReader.HISTORY_SIZE, 500) // Maximum entries in memory
+						.variable(LineReader.HISTORY_FILE_SIZE, 1000) // Maximum entries in file
 						.parser(parser)
 						.variable(LineReader.LIST_MAX, 50) // max tab completion candidates
 						.build();
