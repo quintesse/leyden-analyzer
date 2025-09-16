@@ -1,5 +1,6 @@
 package tooling.leyden.aotcache;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,23 +26,23 @@ public class AOTCache {
 		elements.clear();
 	}
 
-	public List<Element> getByPackage(String packageName, String type) {
+	public List<Element> getByPackage(String packageName, String... type) {
 		var result = elements.entrySet().parallelStream();
 
 		if (packageName != null && !packageName.isBlank()) {
 				result =
 						result.filter(keyElementEntry -> keyElementEntry.getKey().identifier().startsWith(packageName));
 		}
-		if (type != null && !type.isBlank()) {
+		if (type != null && type.length > 0) {
 			result = result.filter(keyElementEntry ->
-				keyElementEntry.getKey().type().equalsIgnoreCase(type)
+					Arrays.stream(type).anyMatch(t -> t.equalsIgnoreCase(keyElementEntry.getKey().type()))
 			);
 		}
 
 		return result.map(keyElementEntry -> keyElementEntry.getValue()).toList();
 	}
 
-	public List<Element> getObjects(String objectName, String type) {
+	public List<Element> getObjects(String objectName, String... type) {
 		if (objectName == null || objectName.isBlank()) {
 			return Collections.emptyList();
 		}
@@ -49,8 +50,10 @@ public class AOTCache {
 		var result = elements.entrySet().parallelStream()
 				.filter(keyElementEntry -> keyElementEntry.getKey().identifier().equalsIgnoreCase(objectName));
 
-		if (type != null && !type.isBlank()) {
-			result = result.filter(keyElementEntry -> keyElementEntry.getKey().type().equalsIgnoreCase(type));
+		if (type != null && type.length > 0) {
+			result = result.filter(keyElementEntry ->
+					Arrays.stream(type).anyMatch(t -> t.equalsIgnoreCase(keyElementEntry.getKey().type()))
+			);
 		}
 
 		return result.map(keyElementEntry -> keyElementEntry.getValue()).toList();
@@ -58,12 +61,6 @@ public class AOTCache {
 
 	public Set<Error> getErrors() {
 		return errors;
-	}
-
-	public Error getError(String identifier) {
-		var error =
-				errors.stream().filter(e -> identifier.equalsIgnoreCase(e.getIdentifier())).findFirst();
-		return error.orElse(null);
 	}
 
 	public Collection<Element> getAll() {
