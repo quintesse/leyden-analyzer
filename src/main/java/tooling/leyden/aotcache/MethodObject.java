@@ -65,19 +65,19 @@ public class MethodObject extends Element {
 		return getType() + " -> " + getKey();
 	}
 
-	public String getDescription() {
-		StringBuilder sb = new StringBuilder("Method " + getName());
+	@Override
+	public String getDescription(String leftPadding) {
+		StringBuilder sb = new StringBuilder(super.getDescription(leftPadding));
 		if(isConstMethod()) {
-			sb.append(" [CONST]");
+			sb.append('\n' + leftPadding + "This is a ConstMethod.");
 		}
-		sb.append(" [compilation level: " + compilationLevel + "]");
+		sb.append('\n' + leftPadding + "Compilation level " + compilationLevel + ".");
 		if (classObject != null) {
-			sb.append(" on class " +  getClassObject().getKey());
+			sb.append('\n' + leftPadding + "Belongs to the class " +  getClassObject().getKey());
 		};
-		sb.append(" returning " + getReturnType() + ".");
-		sb.append('\n');
-		sb.append("This element comes from: \n");
-		getSources().forEach( s -> sb.append("  > " + s + '\n'));
+		if (getReturnType() != null) {
+			sb.append('\n' + leftPadding + "Returns " + getReturnType() + ".");
+		}
 		return sb.toString();
 	}
 }

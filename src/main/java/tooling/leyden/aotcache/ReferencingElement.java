@@ -29,4 +29,14 @@ public class ReferencingElement extends Element {
 	public void setReference(Element reference) {
 		this.reference = reference;
 	}
+
+	@Override
+	public String getDescription(String leftPadding) {
+		StringBuilder sb =
+				new StringBuilder(super.getDescription(leftPadding));
+
+		sb.append('\n' + leftPadding + "This element refers to " + this.getReference());
+
+		return sb.toString();
+	}
 }

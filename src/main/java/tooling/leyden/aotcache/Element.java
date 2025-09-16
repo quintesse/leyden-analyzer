@@ -25,17 +25,15 @@ public abstract class Element {
 	 *
 	 * @return A complete description of this element.
 	 */
-	public String getDescription() {
+	public String getDescription(String leftPadding) {
 		StringBuilder sb =
-				new StringBuilder(getType() + " " + getKey());
+				new StringBuilder(leftPadding + getType() + " " + getKey());
 		if (getAddress() != null) {
 			sb.append(" on address " + address);
 		}
-		sb.append(" with size " + getSize());
-		sb.append(".");
-		sb.append('\n');
-		sb.append("This element comes from: \n");
-		getSources().forEach( s -> sb.append("  > " + s + '\n'));
+		sb.append(" with size " + getSize() + ".");
+		sb.append('\n' + leftPadding + "This information comes from: ");
+		getSources().forEach( s -> sb.append('\n' + leftPadding + "  > " + s));
 		return sb.toString();
 	}
 
@@ -43,7 +41,7 @@ public abstract class Element {
 	 * Size that is written on the description of the object. On the following example, 600:
 	 * 0x0000000800001d80: @@ TypeArrayU1       600
 	 */
-	private Integer size;
+	private Integer size = null;
 
 	public Integer getSize() {
 		return size;
@@ -94,5 +92,20 @@ public abstract class Element {
 	@Override
 	public String toString() {
 		return getType() + " -> " + getKey();
+	}
+
+	@Override
+	public final boolean equals(Object o) {
+		if (this == o)
+			return true;
+		if (!(o instanceof Element element))
+			return false;
+
+		return getType().equals(element.getType()) && getKey().equals(element.getKey());
+	}
+
+	@Override
+	public int hashCode() {
+		return getType().hashCode();
 	}
 }

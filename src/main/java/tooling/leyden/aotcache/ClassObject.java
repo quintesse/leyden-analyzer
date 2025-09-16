@@ -45,20 +45,19 @@ public class ClassObject extends Element {
 		method.setClassObject(this);
 	}
 
-	public String getDescription() {
+	@Override
+	public String getDescription(String leftPadding) {
 		StringBuilder sb =
-				new StringBuilder(getType() + " " + getKey());
-		if (getAddress() != null) {
-			sb.append(" on address " + getAddress());
-		}
-		sb.append(" with " + methods.size() + " methods.");
-		sb.append('\n');
-		sb.append("This element comes from: \n");
-		getSources().forEach( s -> sb.append("  > " + s + '\n'));
-		sb.append("Methods:");
-		for (MethodObject method : this.methods) {
-			sb.append('\n');
-			sb.append(" [method] " + method.getName());
+				new StringBuilder(super.getDescription(leftPadding));
+		if (!this.getMethods().isEmpty()) {
+			sb.append('\n' + leftPadding + "This class has the following methods:");
+			sb.append('\n' + leftPadding + "   ______");
+			var methodPadding = leftPadding + "   | ";
+			for (MethodObject method : this.getMethods()) {
+				sb.append('\n' + methodPadding);
+				sb.append('\n' + method.getDescription(methodPadding));
+				sb.append('\n' + methodPadding + "______");
+			}
 		}
 		return sb.toString();
 	}
