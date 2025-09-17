@@ -10,6 +10,10 @@ public class ConstantPoolObject extends ReferencingElement {
 		this.cache = cache;
 	}
 
+	public Boolean getCache() {
+		return cache;
+	}
+
 	public String getType() {
 		return "ConstantPool" + (this.cache ? "Cache" : "");
 	}

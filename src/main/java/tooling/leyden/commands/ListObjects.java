@@ -28,9 +28,6 @@ class ListObjects implements Runnable {
 			completionCandidates = Types.class)
 	private String[] types;
 
-	@Command(mixinStandardHelpOptions = true,
-			subcommands = { CommandLine.HelpCommand.class },
-			description = "Lists everything on the cache.")
 	public void run() {
 		Stream<Element> elements;
 		elements = parent.getAotCache().getByPackage(packageName, types).stream();
