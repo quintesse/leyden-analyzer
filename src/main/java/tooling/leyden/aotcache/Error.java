@@ -36,15 +36,23 @@ public class Error {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 
-		sb.append("Element '");
-		sb.append(element.getKey());
-		sb.append("' of type '");
-		sb.append(this.element.getType());
-		sb.append("' couldn't be ");
-		sb.append(this.load? "loaded from" : "stored into");
-		sb.append(" the AOTcache because: '");
-		sb.append(this.reason);
-		sb.append("'");
+		if (element != null) {
+			sb.append("Element '");
+			sb.append(element.getKey());
+			sb.append("' of type '");
+			sb.append(this.element.getType());
+			sb.append("' couldn't be ");
+			sb.append(this.load ? "loaded from" : "stored into");
+			sb.append(" the AOTcache because: '");
+			sb.append(this.reason);
+			sb.append("'");
+		} else {
+			sb.append("During ");
+			sb.append(this.load ? "cache load" : "cache save");
+			sb.append(": '");
+			sb.append(this.reason);
+			sb.append("'");
+		}
 
 		return sb.toString();
 	}

@@ -68,7 +68,7 @@ public class LoadFile implements Runnable {
 
 	@Command(mixinStandardHelpOptions = true, version = "1.0", subcommands = {
 			CommandLine.HelpCommand.class }, description = "Load a log generated with " +
-			"-Xlog:class+load,aot*=warning:file=aot.log:tags")
+			"-Xlog:class+load,aot*=warning:file=aot.log:level,tags")
 	public void log(
 			@CommandLine.Parameters(arity = "1..*", paramLabel = "<file>",
 					description = "file to load") Path[] files) {
