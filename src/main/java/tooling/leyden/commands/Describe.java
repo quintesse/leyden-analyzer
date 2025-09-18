@@ -4,10 +4,9 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import tooling.leyden.aotcache.Element;
 import tooling.leyden.aotcache.ReferencingElement;
+import tooling.leyden.commands.autocomplete.Types;
 
 import java.util.List;
-import java.util.function.Function;
-import java.util.stream.Stream;
 
 @Command(name = "describe", mixinStandardHelpOptions = true,
 		version = "1.0",

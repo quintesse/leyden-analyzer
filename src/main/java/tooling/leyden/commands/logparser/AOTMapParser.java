@@ -25,85 +25,88 @@ public class AOTMapParser implements Consumer<String> {
 		this.aotCache = loadFile.getParent().getAotCache();
 	}
 
+
 	@Override
 	public void accept(String content) {
-		if (content.indexOf(": @@") == 18) {
-			if (!this.aotCache.getAll().isEmpty() && this.aotCache.getAll().size() % 5000 == 0) {
-				this.loadFile.getParent().getOut().println("... the AOT Cache contains now " + this.aotCache.getAll().size() + " " +
-						"elements ...");
-				this.loadFile.getParent().getOut().flush();
-			}
-			try {
-				final var thisSource = "AOT Map";
-				String[] contentParts = content.split(" +");
+		if (content.indexOf(": @@") != 18)
+			return;
 
-				final var address = contentParts[0].substring(0, contentParts[0].length() - 1);
-				final var type = contentParts[2];
-				final var size = Integer.valueOf(contentParts[3]);
-				final var identifier =
-						content.substring(content.indexOf(" " + contentParts[3]) + 1 + contentParts[3].length()).trim();
+		if (!this.aotCache.getAll().isEmpty() && this.aotCache.getAll().size() % 10000 == 0) {
+			this.loadFile.getParent().getOut().println("... the AOT Cache contains now " + this.aotCache.getAll().size() + " " +
+					"elements ...");
+			this.loadFile.getParent().getOut().flush();
+		}
 
-				Element element = null;
-				
-				if (type.equalsIgnoreCase("Class")) {
+		try {
+			final var thisSource = "AOT Map";
+			String[] contentParts = content.split(" +");
+
+			final var address = contentParts[0].substring(0, contentParts[0].length() - 1);
+			final var type = contentParts[2];
+			final var size = Integer.valueOf(contentParts[3]);
+			final var identifier =
+					content.substring(content.indexOf(" " + contentParts[3]) + 1 + contentParts[3].length()).trim();
+
+			Element element = null;
+
+			if (type.equalsIgnoreCase("Class")) {
 //					0x0000000800868d58: @@ Class             520 java.lang.constant.ClassDesc
 //					0x0000000800869078: @@ Class             512 [Ljava.lang.constant.ClassDesc;
-					element = processClass(identifier);
-				} else if (type.equalsIgnoreCase("Method")) {
+				element = processClass(identifier);
+			} else if (type.equalsIgnoreCase("Method")) {
 //					0x0000000800831250: @@ Method            88 void java.lang.management.MemoryUsage.<init>(javax.management.openmbean.CompositeData)
 //					0x0000000800831250:   0000000800001710 0000000802c9dc38 0000000000000000 0000000000000000   ........8.................
-					element = processMethod(identifier, thisSource);
-				}  else if (type.equalsIgnoreCase("ConstMethod")) {
+				element = processMethod(identifier, thisSource);
+			} else if (type.equalsIgnoreCase("ConstMethod")) {
 //					 0x0000000804990600: @@ ConstMethod       88 void jdk.internal.access.SharedSecrets.setJavaNetHttpCookieAccess(jdk.internal.access.JavaNetHttpCookieAccess)
-					element = processMethod(identifier, thisSource);
-					((MethodObject) element).setConstMethod(true);
-				}  else if (type.equalsIgnoreCase("Symbol")) {
+				element = processMethod(identifier, thisSource);
+				((MethodObject) element).setConstMethod(true);
+			} else if (type.equalsIgnoreCase("Symbol")) {
 //					0x0000000801e3c000: @@ Symbol            40 [Ljdk/internal/vm/FillerElement;
 //					0x0000000801e3c028: @@ Symbol            32 jdk/internal/event/Event
 //					0x0000000801e3c048: @@ Symbol            24 jdk/jfr/Event
 //					0x0000000801e3c060: @@ Symbol            8 [Z
-					element = processReferencingElement(new ReferencingElement(), identifier);
-				} else if (type.equalsIgnoreCase("ConstantPoolCache")) {
+				element = processReferencingElement(new ReferencingElement(), identifier);
+			} else if (type.equalsIgnoreCase("ConstantPoolCache")) {
 //					0x0000000800ec7408: @@ ConstantPoolCache 64 javax.naming.spi.ObjectFactory
-					element = processReferencingElement(new ConstantPoolObject(), identifier);
-					((ConstantPoolObject) element).setCache(true);
-				} else if (type.equalsIgnoreCase("ConstantPool")) {
-					element = processReferencingElement(new ConstantPoolObject(), identifier);
-				}else if (type.startsWith("TypeArray")
+				element = processReferencingElement(new ConstantPoolObject(), identifier);
+				((ConstantPoolObject) element).setCache(true);
+			} else if (type.equalsIgnoreCase("ConstantPool")) {
+				element = processReferencingElement(new ConstantPoolObject(), identifier);
+			} else if (type.startsWith("TypeArray")
 //					0x0000000800001d80: @@ TypeArrayU1       600
 //					0x000000080074cc50: @@ TypeArrayOther    800
-						|| type.equalsIgnoreCase("AdapterFingerPrint")
+					|| type.equalsIgnoreCase("AdapterFingerPrint")
 //					0x000000080074cc20: @@ AdapterFingerPrint 8
 //					0x000000080074cc20:   bbbeaaaa00000001                                                      ........
 //					0x000000080074cc28: @@ AdapterFingerPrint 16
 //					0x000000080074cc28:   bbbeaaaa00000002 000000000000aaaa
-						|| type.equalsIgnoreCase("AdapterHandlerEntry")
+					|| type.equalsIgnoreCase("AdapterHandlerEntry")
 //					0x00000008008431b0: @@ AdapterHandlerEntry 48
 //					0x00000008008431b0:   0000000800019868 00007f276e002e60 00007f276e002ee5 00007f276e002ec4   h.......`..n'......n'......n'...
 //					0x00000008008431d0:   00007f276e002f20 0000000000000001
-						|| type.equals("RecordComponent")
+					|| type.equals("RecordComponent")
 //					 0x00000008029329e8: @@ RecordComponent   24
-						|| type.equalsIgnoreCase("Annotations")
+					|| type.equalsIgnoreCase("Annotations")
 //					0x0000000802bf50f0: @@ Annotations       32
 //					0x0000000802bf50f0:   0000000802b719a0 0000000000000000 0000000000000000 0000000000000000   ................................
 
-				) {
-					element = new BasicObject();
-				} else {
-					loadFile.getParent().getOut().println("Unidentified: " + type);
-					loadFile.getParent().getOut().println(identifier);
-					loadFile.getParent().getOut().println(content);
-				}
-				if (element != null) {
-					element.setAddress(address);
-					element.setType(type);
-					element.setSize(size);
-					this.aotCache.addElement(element, thisSource);
-				}
-			} catch (Exception e) {
-				loadFile.getParent().getOut().println("ERROR: " + e.getMessage());
-				loadFile.getParent().getOut().println("ERROR: " + content);
+			) {
+				element = new BasicObject();
+			} else {
+				loadFile.getParent().getOut().println("Unidentified: " + type);
+				loadFile.getParent().getOut().println(identifier);
+				loadFile.getParent().getOut().println(content);
 			}
+			if (element != null) {
+				element.setAddress(address);
+				element.setType(type);
+				element.setSize(size);
+				this.aotCache.addElement(element, thisSource);
+			}
+		} catch (Exception e) {
+			loadFile.getParent().getOut().println("ERROR: " + e.getMessage());
+			loadFile.getParent().getOut().println("ERROR: " + content);
 		}
 	}
 

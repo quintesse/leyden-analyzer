@@ -3,6 +3,7 @@ package tooling.leyden.commands;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import tooling.leyden.aotcache.Element;
+import tooling.leyden.commands.autocomplete.Types;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;

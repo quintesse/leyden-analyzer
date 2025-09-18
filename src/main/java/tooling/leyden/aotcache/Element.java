@@ -9,6 +9,21 @@ public abstract class Element {
 
 	private String type;
 
+	private String whereDoesItComeFrom;
+
+	/**
+	 * Do we know why this element was stored in the cache?
+	 *
+	 * @return reason why it was stored
+	 */
+	public String getWhereDoesItComeFrom() {
+		return whereDoesItComeFrom;
+	}
+
+	public void setWhereDoesItComeFrom(String whereDoesItComeFrom) {
+		this.whereDoesItComeFrom = whereDoesItComeFrom;
+	}
+
 	/**
 	 * Is this a class, a method,...?
 	 *

@@ -19,7 +19,7 @@ import java.io.PrintWriter;
 				ListObjects.class,
 				LoadFile.class,
 				PicocliCommands.ClearScreen.class,
-				Statistics.class,
+				InfoCommand.class,
 				CommandLine.HelpCommand.class})
 public class DefaultCommand implements Runnable {
 	private PrintWriter out;

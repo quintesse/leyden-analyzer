@@ -12,6 +12,9 @@ import java.util.Set;
 public class AOTCache {
 	private Map<Key, Element> elements = new HashMap<>();
 	private Set<Error> errors = new HashSet<>();
+	private Configuration configuration = new Configuration();
+	private Configuration statistics = new Configuration();
+	private Configuration allocation = new Configuration();
 
 	public void addElement(Element e, String source) {
 		e.addSource(source);
@@ -24,6 +27,10 @@ public class AOTCache {
 
 	public void clear() {
 		elements.clear();
+		errors.clear();
+		statistics.clear();
+		allocation.clear();
+		configuration.clear();
 	}
 
 	public List<Element> getByPackage(String packageName, String... type) {
@@ -65,6 +72,18 @@ public class AOTCache {
 
 	public Collection<Element> getAll() {
 		return elements.values();
+	}
+
+	public Configuration getConfiguration() {
+		return configuration;
+	}
+
+	public Configuration getStatistics() {
+		return statistics;
+	}
+
+	public Configuration getAllocation() {
+		return allocation;
 	}
 
 	record Key(String identifier, String type) {

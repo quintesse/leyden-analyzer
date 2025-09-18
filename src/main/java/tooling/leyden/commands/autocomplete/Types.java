@@ -1,12 +1,10 @@
-package tooling.leyden.commands;
+package tooling.leyden.commands.autocomplete;
 
 import java.util.Arrays;
 import java.util.Iterator;
 
-/**
- * 🐱class Types
- */
-class Types implements Iterable<String> {
+
+public class Types implements Iterable<String> {
 	@Override
 	public Iterator<String> iterator() {
 		return Arrays.asList(
