@@ -102,7 +102,7 @@ public class LogParser implements Consumer<String> {
 		} else if (trimmedMessage.startsWith("Reserved") && trimmedMessage.contains("bytes")) {
 			if (trimmedMessage.contains("at 0x")) {
 //[info][aot       ] Reserved output buffer space at 0x00007f5702e00000 [1084227584 bytes]
-				storeConfigurationSplitByCharacter(aotCache.getAllocation(), trimmedMessage, "[", true);
+				storeConfigurationSplitByCharacter(aotCache.getAllocation(), trimmedMessage, "at", false);
 			} else {
 //[info][aot] Reserved archive_space_rs [0x0000000057000000 - 0x000000005c000000] (83886080) bytes (includes protection zone)
 //[info][aot] Reserved class_space_rs   [0x000000005c000000 - 0x000000009c000000] (1073741824) bytes
@@ -132,9 +132,12 @@ public class LogParser implements Consumer<String> {
 //[info][aot       ] JVM_StartThread() ignored: java.lang.ref.Reference$ReferenceHandler
 			this.aotCache.addError(null, trimmedMessage, loadingLog);
 		} else if (trimmedMessage.startsWith("Heap range = ")
-				|| trimmedMessage.startsWith("string table array (single level) length")) {
+				|| trimmedMessage.startsWith("heap range")) {
 //[info][aot       ] Heap range = [0x00000000e0000000 - 0x0000000100000000]
 			storeConfigurationSplitByCharacter(aotCache.getAllocation(), trimmedMessage, "=", false);
+		} else if (trimmedMessage.startsWith("string table array (single level) length")) {
+//[info][aot       ] Heap range = [0x00000000e0000000 - 0x0000000100000000]
+			storeConfigurationSplitByCharacter(aotCache.getStatistics(), trimmedMessage, "=", false);
 		} else if (trimmedMessage.startsWith("Archived")) {
 //[info][aot       ] Archived 4797 interned strings
 //[info][aot       ] Archived 97 method handle intrinsics (26392 bytes)
@@ -208,9 +211,6 @@ public class LogParser implements Consumer<String> {
 					storeConfigurationSplitByCharacter(aotCache.getStatistics(), s, " = ", false);
 				}
 			}
-
-			aotCache.getStatistics().addValue(trimmedMessage.substring(0, trimmedMessage.lastIndexOf(" ")),
-					trimmedMessage.substring(trimmedMessage.lastIndexOf(" ") + 1));
 		}
 		//TODO Difficult to process because it doesn't come in one line:
 //[info][aot       ] Allocating RW objects ...
