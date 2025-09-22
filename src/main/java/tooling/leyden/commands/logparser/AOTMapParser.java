@@ -7,7 +7,7 @@ import tooling.leyden.aotcache.Element;
 import tooling.leyden.aotcache.MethodObject;
 import tooling.leyden.aotcache.BasicObject;
 import tooling.leyden.aotcache.ReferencingElement;
-import tooling.leyden.commands.LoadFile;
+import tooling.leyden.commands.LoadFileCommand;
 
 import java.util.List;
 import java.util.function.Consumer;
@@ -17,10 +17,10 @@ import java.util.function.Consumer;
  */
 public class AOTMapParser implements Consumer<String> {
 
-	private final LoadFile loadFile;
+	private final LoadFileCommand loadFile;
 	private final AOTCache aotCache;
 
-	public AOTMapParser(LoadFile loadFile) {
+	public AOTMapParser(LoadFileCommand loadFile) {
 		this.loadFile = loadFile;
 		this.aotCache = loadFile.getParent().getAotCache();
 	}

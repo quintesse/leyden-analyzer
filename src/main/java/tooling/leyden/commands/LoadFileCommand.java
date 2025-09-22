@@ -5,7 +5,6 @@ import picocli.CommandLine.Command;
 import tooling.leyden.commands.logparser.AOTMapParser;
 import tooling.leyden.commands.logparser.LogParser;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,7 +18,7 @@ import java.util.function.Consumer;
 		version = "1.0",
 		description = { "Load a file to extract information." },
 		subcommands = { CommandLine.HelpCommand.class })
-public class LoadFile implements Runnable {
+public class LoadFileCommand implements Runnable {
 
 	@CommandLine.ParentCommand
 	DefaultCommand parent;

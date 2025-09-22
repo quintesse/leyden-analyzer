@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 		version = "1.0",
 		description = { "List what is on the cache. By default, it lists everything on the cache." },
 		subcommands = { CommandLine.HelpCommand.class })
-class ListObjects implements Runnable {
+class ListCommand implements Runnable {
 
 	@CommandLine.ParentCommand
 	DefaultCommand parent;
@@ -23,7 +23,9 @@ class ListObjects implements Runnable {
 			defaultValue = "")
 	private String packageName;
 
-	@CommandLine.Parameters(arity = "0..*",
+	@CommandLine.Option(
+			names = {"-t", "--type"},
+			arity = "0..*",
 			paramLabel = "<type>",
 			description = "Restrict the listing to this type of element",
 			completionCandidates = Types.class)

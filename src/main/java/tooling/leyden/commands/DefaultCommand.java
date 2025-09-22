@@ -14,10 +14,10 @@ import java.io.PrintWriter;
 		"Interactive shell to explore the contents of the AOT cache. Start by loading an AOT map file."}, footer
 		= {"", "Press Ctrl-D to exit."},
 		subcommands = {
-				CleanAOTCache.class,
-				Describe.class,
-				ListObjects.class,
-				LoadFile.class,
+				CleanCommand.class,
+				DescribeCommand.class,
+				ListCommand.class,
+				LoadFileCommand.class,
 				PicocliCommands.ClearScreen.class,
 				InfoCommand.class,
 				CommandLine.HelpCommand.class})

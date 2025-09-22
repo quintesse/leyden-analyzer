@@ -12,7 +12,7 @@ import java.util.List;
 		version = "1.0",
 		description = {"Describe an object, showing all related info."},
 		subcommands = {CommandLine.HelpCommand.class})
-class Describe implements Runnable {
+class DescribeCommand implements Runnable {
 
 	@CommandLine.ParentCommand
 	DefaultCommand parent;

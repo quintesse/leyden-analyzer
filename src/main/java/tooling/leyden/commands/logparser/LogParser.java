@@ -4,7 +4,7 @@ import tooling.leyden.aotcache.AOTCache;
 import tooling.leyden.aotcache.ClassObject;
 import tooling.leyden.aotcache.Configuration;
 import tooling.leyden.aotcache.MethodObject;
-import tooling.leyden.commands.LoadFile;
+import tooling.leyden.commands.LoadFileCommand;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
@@ -17,7 +17,7 @@ public class LogParser implements Consumer<String> {
 	private final AOTCache aotCache;
 	private Boolean loadingLog = false;
 
-	public LogParser(LoadFile loadFile) {
+	public LogParser(LoadFileCommand loadFile) {
 		this.aotCache = loadFile.getParent().getAotCache();
 	}
 

@@ -7,7 +7,7 @@ import picocli.CommandLine.Command;
 		version = "1.0",
 		description = { "Empties the information loaded." },
 		subcommands = { CommandLine.HelpCommand.class })
-class CleanAOTCache implements Runnable {
+class CleanCommand implements Runnable {
 
 	@CommandLine.ParentCommand
 	DefaultCommand parent;
