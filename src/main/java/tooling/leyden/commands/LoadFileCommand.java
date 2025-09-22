@@ -74,4 +74,7 @@ public class LoadFileCommand implements Runnable {
 		return parent;
 	}
 
+	public void setParent(DefaultCommand parent) {
+		this.parent = parent;
+	}
 }

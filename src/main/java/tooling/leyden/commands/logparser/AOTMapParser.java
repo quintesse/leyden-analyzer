@@ -115,6 +115,18 @@ public class AOTMapParser implements Consumer<String> {
 				type = "Misc-data";
 				size = Integer.valueOf(contentParts[4]);
 				element = new BasicObject();
+			}  else if (type.equalsIgnoreCase("Object")) {
+//				0x00000000fff69c68: @@ Object (0xfff69c68) [B length: 45
+//				0x00000000fff69c68:   00000001 00000000 0076df98 0000002d 2e6e7573 616e616d 656d6567 4d2e746e   ..........v.-...sun.management.M
+//				0x00000000fff69c88:   65707061 42584d64 546e6165 24657079 4d70614d 61654258 7079546e 00000065   appedMXBeanType$MapMXBeanType...
+//				0x00000000fff63458: @@ Object (0xfff63458) java.lang.String$CaseInsensitiveComparator
+//				0x00000000fff63458:   00000001 00000000 0085d718 00000000                                       ................
+				// TODO Should we manually calculate the size??
+				var id = "";
+				for (int i = 4; i < contentParts.length; i++) {
+					id = id + " " + contentParts[i];
+				}
+				element = processReferencingElement(new ReferencingElement(), id.trim());
 			} else {
 				loadFile.getParent().getOut().println("Unidentified: " + type);
 				loadFile.getParent().getOut().println(content);
@@ -186,8 +198,24 @@ public class AOTMapParser implements Consumer<String> {
 
 	private void fillReferencedElement(String identifier, ReferencingElement element) {
 		//In case we are referencing some class already loaded
-		// Replace / for . because some elements use /
-		List<Element> elements = this.aotCache.getObjects(identifier.replaceAll("/", "."), "Class");
+		// Replace / for . because some elements use / to point to a class
+		var objectName = identifier.replaceAll("/", ".");
+
+		//if it is an array of objects, we are interested in the class of the objects, not that it is an array:
+		if (objectName.startsWith("[L")) {
+			objectName = objectName.substring(2);
+			if (objectName.indexOf(";") > 0) {
+				objectName = objectName.substring(0, objectName.indexOf(";"));
+			}
+		}
+
+		//if it refers to an inner class or a method, let's focus on the class itself
+		if (objectName.indexOf("$") > 0) {
+			objectName = objectName.substring(0, objectName.indexOf("$"));
+		}
+
+		//Now try to locate the class itself
+		List<Element> elements = this.aotCache.getObjects(objectName, "Class");
 		if (!elements.isEmpty()) {
 			element.setReference(elements.get(0));
 		}
