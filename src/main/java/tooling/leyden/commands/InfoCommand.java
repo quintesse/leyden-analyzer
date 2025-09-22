@@ -2,16 +2,13 @@ package tooling.leyden.commands;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
-import tooling.leyden.aotcache.BasicObject;
 import tooling.leyden.aotcache.ClassObject;
 import tooling.leyden.aotcache.Configuration;
-import tooling.leyden.aotcache.ConstantPoolObject;
 import tooling.leyden.aotcache.Element;
-import tooling.leyden.aotcache.ReferencingElement;
 import tooling.leyden.commands.autocomplete.InfoCommandTypes;
-import tooling.leyden.commands.autocomplete.Types;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -63,60 +60,26 @@ class InfoCommand implements Runnable {
 		Stream<Element> elements;
 		elements = parent.getAotCache().getAll().parallelStream();
 
-		final var constantPool = new AtomicInteger();
-		final var constantPoolCache = new AtomicInteger();
-		final var classes = new AtomicInteger();
-		final var symbols = new AtomicInteger();
-		final var adapterFingerPrint = new AtomicInteger();
-		final var adapterHandlerEntry = new AtomicInteger();
-		final var annotations = new AtomicInteger();
+		final var counts = new HashMap<String, AtomicInteger>();
 
 		Map<String, Integer> packages = new ConcurrentHashMap<>();
 
 		elements.forEach(item -> {
-			try {
-				if (item instanceof ReferencingElement re) {
-					if (item instanceof ConstantPoolObject cp) {
-						constantPool.incrementAndGet();
-						if (cp.getCache()) {
-							constantPoolCache.incrementAndGet();
-						}
-					} else if (re.getType().equalsIgnoreCase("Symbol")) {
-						symbols.incrementAndGet();
-					}
-				} else if (item instanceof BasicObject bo) {
-					if (bo.getType().equalsIgnoreCase("AdapterFingerPrint")) {
-						adapterFingerPrint.incrementAndGet();
-					} else if (bo.getType().equalsIgnoreCase("AdapterHandlerEntry")) {
-						adapterHandlerEntry.incrementAndGet();
-					} else if (bo.getType().equalsIgnoreCase("Annotations")) {
-						annotations.incrementAndGet();
-					}
-				} else if (item instanceof ClassObject classObject) {
-					classes.incrementAndGet();
-					var pn = classObject.getPackageName();
-					if (!packages.containsKey(pn)) {
-						packages.put(pn, 0);
-					}
-					packages.computeIfPresent(pn, (key, value) -> value + 1);
+			counts.putIfAbsent(item.getType(), new AtomicInteger());
+			var count = counts.get(item.getType());
+			count.incrementAndGet();
+			if (item instanceof ClassObject classObject) {
+				var pn = classObject.getPackageName();
+				if (!packages.containsKey(pn)) {
+					packages.put(pn, 0);
 				}
-			} catch (Exception e) {
-				e.printStackTrace();
+				packages.computeIfPresent(pn, (key, value) -> value + 1);
 			}
 		});
 
-		parent.getOut().println("There are " + constantPool.get()
-				+ " elements in the ConstantPool. Of those, "
-				+ constantPoolCache.get() + " are in the ConstantPoolCache.");
-		parent.getOut().println("There are " + symbols.get()
-				+ " symbols.");
-		parent.getOut().println("There are " + adapterFingerPrint.get()
-				+ " AdapterFingerPrints.");
-		parent.getOut().println("There are " + adapterHandlerEntry.get()
-				+ " AdapterHandlerEntry.");
-		parent.getOut().println("There are " + annotations.get()
-				+ " Annotations.");
-		parent.getOut().println("There are " + classes.get() + " Classes.");
+		counts.forEach((type, count) ->
+				parent.getOut().println("There are " + count.get() + " elements of type " + type + "."));
+f f
 		parent.getOut().println("These are the top packages with more classes:");
 		packages.entrySet().stream()
 				.sorted((o1, o2) -> o2.getValue() - o1.getValue())
