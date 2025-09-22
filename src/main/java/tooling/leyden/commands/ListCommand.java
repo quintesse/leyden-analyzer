@@ -32,19 +32,12 @@ class ListCommand implements Runnable {
 	private String[] types;
 
 	public void run() {
-		Stream<Element> elements;
-		elements = parent.getAotCache().getByPackage(packageName, types).stream();
+		var elements = parent.getAotCache().getByPackage(packageName, types).stream();
 
 		final var counter = new AtomicInteger();
 		elements = elements.peek(item -> counter.incrementAndGet());
 
 		elements.forEach(element -> parent.getOut().println("  > " + element.toString()));
 		parent.getOut().println("Found " + counter.get() + " elements.");
-
-		if (types != null && Arrays.stream(types).anyMatch(t -> t.equalsIgnoreCase("error"))) {
-			var errors = parent.getAotCache().getErrors();
-			errors.forEach(element -> parent.getOut().println("  > " + element.toString()));
-			parent.getOut().println("Found " + errors.size() + " errors.");
-		}
 	}
 }

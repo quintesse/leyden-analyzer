@@ -16,6 +16,7 @@ import java.io.PrintWriter;
 		subcommands = {
 				CleanCommand.class,
 				DescribeCommand.class,
+				ErrorCommand.class,
 				ListCommand.class,
 				LoadFileCommand.class,
 				PicocliCommands.ClearScreen.class,
