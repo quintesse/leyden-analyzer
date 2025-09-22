@@ -15,6 +15,15 @@ public class AOTCache {
 	private Configuration configuration = new Configuration();
 	private Configuration statistics = new Configuration();
 	private Configuration allocation = new Configuration();
+	private static AOTCache myself;
+
+	public static AOTCache getMyself() {
+		return myself;
+	}
+
+	public AOTCache() {
+		myself = this;
+	}
 
 	public void addElement(Element e, String source) {
 		e.addSource(source);
@@ -84,6 +93,10 @@ public class AOTCache {
 
 	public Configuration getAllocation() {
 		return allocation;
+	}
+
+	public List<String> getAllTypes() {
+		return this.elements.keySet().parallelStream().map(key -> key.type).distinct().toList();
 	}
 
 	record Key(String identifier, String type) {
