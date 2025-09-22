@@ -229,7 +229,7 @@ public class AOTMapParser implements Consumer<String> {
 			aotCache.addElement(classObject, "Referenced by some other element");
 		} else if (objectName.endsWith(".java")) {
 			//Some Symbols use have the .java filename of a class:
-			objectName.substring(0, objectName.length() - 5);
+			objectName = objectName.substring(0, objectName.length() - 5);
 
 			//We need to find the class without package:
 			elements = this.aotCache.getByPackage("", "Class");
