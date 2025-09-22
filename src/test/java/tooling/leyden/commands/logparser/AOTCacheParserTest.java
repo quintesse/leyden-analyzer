@@ -38,7 +38,7 @@ class AOTCacheParserTest extends DefaultTest {
 		});
 
 		assertEquals(655, aotCache.getByPackage(null, "Symbol").size());
-		assertEquals(494 + 5, aotCache.getByPackage(null, "Class").size());
+		assertEquals(638, aotCache.getByPackage(null, "Class").size());
 		assertEquals(114, aotCache.getByPackage(null, "ConstantPool").size());
 		assertEquals(192, aotCache.getByPackage(null, "ConstantPoolCache").size());
 	}
@@ -58,11 +58,6 @@ class AOTCacheParserTest extends DefaultTest {
 
 		classObject = new ClassObject();
 		classObject.setName("String");
-		classObject.setPackageName("java.lang");
-		aotCache.addElement(classObject, "test");
-
-		classObject = new ClassObject();
-		classObject.setName("Float");
 		classObject.setPackageName("java.lang");
 		aotCache.addElement(classObject, "test");
 

@@ -115,7 +115,7 @@ public class AOTMapParser implements Consumer<String> {
 				type = "Misc-data";
 				size = Integer.valueOf(contentParts[4]);
 				element = new BasicObject();
-			}  else if (type.equalsIgnoreCase("Object")) {
+			} else if (type.equalsIgnoreCase("Object")) {
 //				0x00000000fff69c68: @@ Object (0xfff69c68) [B length: 45
 //				0x00000000fff69c68:   00000001 00000000 0076df98 0000002d 2e6e7573 616e616d 656d6567 4d2e746e   ..........v.-...sun.management.M
 //				0x00000000fff69c88:   65707061 42584d64 546e6165 24657079 4d70614d 61654258 7079546e 00000065   appedMXBeanType$MapMXBeanType...
@@ -163,7 +163,7 @@ public class AOTMapParser implements Consumer<String> {
 			ClassObject classObject = new ClassObject();
 			classObject.setName(className.substring(className.lastIndexOf(".") + 1));
 			classObject.setPackageName(className.substring(0, className.lastIndexOf(".")));
-			this.aotCache.addElement(classObject, thisSource);
+			this.aotCache.addElement(classObject, "Referenced from a Method element");
 		} else {
 			Element element = objects.get(0);
 			if (element instanceof ClassObject classObject) {
@@ -202,7 +202,7 @@ public class AOTMapParser implements Consumer<String> {
 		var objectName = identifier.replaceAll("/", ".");
 
 		//if it is an array of objects, we are interested in the class of the objects, not that it is an array:
-		if (objectName.startsWith("[L")) {
+		if (objectName.startsWith("[L") || objectName.startsWith("(L")) {
 			objectName = objectName.substring(2);
 			if (objectName.indexOf(";") > 0) {
 				objectName = objectName.substring(0, objectName.indexOf(";"));
@@ -217,15 +217,26 @@ public class AOTMapParser implements Consumer<String> {
 		//Now try to locate the class itself
 		List<Element> elements = this.aotCache.getObjects(objectName, "Class");
 		if (!elements.isEmpty()) {
-			element.setReference(elements.get(0));
-		}
+			element.setReference(elements.getFirst());
+		} else if (objectName.indexOf(".") > 0 && objectName.indexOf(" ") < 0) {
+			//No class found, create one with empty data
+			var classObject = new ClassObject();
+			element.setReference(classObject);
+			classObject.setName(objectName.substring(objectName.lastIndexOf(".") + 1));
+			if (objectName.indexOf(".") > 0) {
+				classObject.setPackageName(objectName.substring(0, objectName.lastIndexOf(".")));
+			}
+			aotCache.addElement(classObject, "Referenced by some other element");
+		} else if (objectName.endsWith(".java")) {
+			//Some Symbols use have the .java filename of a class:
+			objectName.substring(0, objectName.length() - 5);
 
-		if (elements.size() > 1) {
-			loadFile.getParent().getOut().println("ERROR: Review the code to assign referenced elements. " +
-					"We have more than one possible match.");
-			loadFile.getParent().getOut().println(element);
-			for (Element e : elements) {
-				loadFile.getParent().getOut().println(" > Potential match: " + e);
+			//We need to find the class without package:
+			elements = this.aotCache.getByPackage("", "Class");
+			String finalObjectName = objectName;
+			elements.parallelStream().filter(e -> ((ClassObject)e).getName().equalsIgnoreCase(finalObjectName));
+			if (!elements.isEmpty()) {
+				element.setReference(elements.getFirst());
 			}
 		}
 	}
