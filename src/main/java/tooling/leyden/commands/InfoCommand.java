@@ -79,7 +79,7 @@ class InfoCommand implements Runnable {
 
 		counts.forEach((type, count) ->
 				parent.getOut().println("There are " + count.get() + " elements of type " + type + "."));
-f f
+
 		parent.getOut().println("These are the top packages with more classes:");
 		packages.entrySet().stream()
 				.sorted((o1, o2) -> o2.getValue() - o1.getValue())

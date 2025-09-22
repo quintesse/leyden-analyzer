@@ -32,8 +32,8 @@ public class AOTMapParser implements Consumer<String> {
 			return;
 
 		if (!this.aotCache.getAll().isEmpty() && this.aotCache.getAll().size() % 10000 == 0) {
-			this.loadFile.getParent().getOut().println("... the AOT Cache contains now " + this.aotCache.getAll().size() + " " +
-					"elements ...");
+			this.loadFile.getParent().getOut().println("... processed " + this.aotCache.getAll().size() + " " +
+					"elements from the AOT cache ...");
 			this.loadFile.getParent().getOut().flush();
 		}
 
@@ -42,8 +42,13 @@ public class AOTMapParser implements Consumer<String> {
 			String[] contentParts = content.split(" +");
 
 			final var address = contentParts[0].substring(0, contentParts[0].length() - 1);
-			final var type = contentParts[2];
-			final var size = Integer.valueOf(contentParts[3]);
+			var type = contentParts[2];
+			Integer size;
+			try {
+				size = Integer.valueOf(contentParts[3]);
+			} catch (NumberFormatException e) {
+				size = -1;
+			}
 			final var identifier =
 					content.substring(content.indexOf(" " + contentParts[3]) + 1 + contentParts[3].length()).trim();
 
@@ -90,13 +95,30 @@ public class AOTMapParser implements Consumer<String> {
 					|| type.equalsIgnoreCase("Annotations")
 //					0x0000000802bf50f0: @@ Annotations       32
 //					0x0000000802bf50f0:   0000000802b719a0 0000000000000000 0000000000000000 0000000000000000   ................................
-
+					|| type.equalsIgnoreCase("MethodCounters")
+//					0x0000000801e4c280: @@ MethodCounters    64
+//					0x0000000801e4c280:   0000000800001800 0000000000000002 0000000801e4c228 0000000801e4c280   ................(...............
+//					0x0000000801e4c2a0:   0000000000000000 000000fe00000000 00000000000007fe 0000000000000000   ................................
+					|| type.equalsIgnoreCase("MethodData")
+//					0x0000000801e44448: @@ MethodData        584
+//					0x0000000801e44448:   0000000800001788 0000000800773428 000000b800000248 0000000000000000   ........(4w.....H...............
+					|| type.endsWith("TrainingData")
+//					0x0000000801d5e050: @@ MethodTrainingData 96
+//					0x0000000801d5e050:   0000000800001bd0 0000000000000000 0000000801d5e028 0000000000000000   ................(...............
+//					0x0000000800a45f58: @@ CompileTrainingData 80
 			) {
+				element = new BasicObject();
+			} else if (type.equalsIgnoreCase("Misc")) {
+//					0x00000008049a8410: @@ Misc data 1985520 bytes
+//					0x00000008049a8410:   0000000000000005 0000000801e563d0 0000000801e56600 0000000801e56420   .........c.......f...... d......
+//					0x00000008049a8430:   0000000801e543a8 0000000801e548a8 0000000000000005 0000000801e58dc0   .C.......H................
+				type = "Misc-data";
+				size = Integer.valueOf(contentParts[4]);
 				element = new BasicObject();
 			} else {
 				loadFile.getParent().getOut().println("Unidentified: " + type);
-				loadFile.getParent().getOut().println(identifier);
 				loadFile.getParent().getOut().println(content);
+				element = new BasicObject();
 			}
 			if (element != null) {
 				element.setAddress(address);
