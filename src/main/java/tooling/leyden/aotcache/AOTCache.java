@@ -99,6 +99,14 @@ public class AOTCache {
 		return this.elements.keySet().parallelStream().map(key -> key.type).distinct().toList();
 	}
 
+	public List<String> getAllPackages() {
+		return this.elements.entrySet().parallelStream()
+				.filter((entry) -> entry.getValue() instanceof ClassObject)
+				.map(entry -> ((ClassObject)entry.getValue()).getPackageName())
+				.distinct()
+				.toList();
+	}
+
 	record Key(String identifier, String type) {
 	}
 }

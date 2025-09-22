@@ -3,6 +3,7 @@ package tooling.leyden.commands;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import tooling.leyden.aotcache.Element;
+import tooling.leyden.commands.autocomplete.Packages;
 import tooling.leyden.commands.autocomplete.Types;
 
 import java.util.Arrays;
@@ -11,8 +12,8 @@ import java.util.stream.Stream;
 
 @Command(name = "ls", mixinStandardHelpOptions = true,
 		version = "1.0",
-		description = { "List what is on the cache. By default, it lists everything on the cache." },
-		subcommands = { CommandLine.HelpCommand.class })
+		description = {"List what is on the cache. By default, it lists everything on the cache."},
+		subcommands = {CommandLine.HelpCommand.class})
 class ListCommand implements Runnable {
 
 	@CommandLine.ParentCommand
@@ -20,7 +21,10 @@ class ListCommand implements Runnable {
 
 	@CommandLine.Option(names = {"-pn", "--packageName"},
 			description = "Restrict the listing to this package.",
-			defaultValue = "")
+			defaultValue = "",
+			arity = "1..1",
+			paramLabel = "<packageName>",
+			completionCandidates = Packages.class)
 	private String packageName;
 
 	@CommandLine.Option(
