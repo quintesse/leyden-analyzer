@@ -78,6 +78,14 @@ This may take a while, be patient.
 Now the AOTCache contains 14837 elements and 42 errors.
 ```
 
+Loading the AOT Map gives a better overview on what the cache contains. Loading log files gives a better overview of why things are (or are not) in the cache and detect potential errors.
+
+> **Do not mix logs and caches from different runs.**
+> 
+> That will lead to inconsistent and wrong analysis.
+
+You may mix logs and aot map files from the same training or production run. Then, the information will complement each other. It is recommended to load first the AOT cache map so when processing the log we already have the details about the elements inside the cache.
+
 Now we can start the analysis.
 
 ### Listing elements (and errors!) detected
@@ -278,6 +286,22 @@ Or we can filter by type of element we want to explore:
 |    > AOT Map
 |  This element refers to Class -> java.lang.ref.WeakReference
 -----
+```
+
+```bash
+> describe sun.util.locale.BaseLocale -t=Class
+-----
+|  Class sun.util.locale.BaseLocale on address 0x0000000800a8efe8 with size 536.
+|  This information comes from: 
+|    > Java Log
+|    > AOT Map
+|  This class has the following methods:
+|     ______
+|     | 
+|     | Method sun.util.locale.BaseLocale.getLanguage on address 0x0000000800a8f750 with size 88.
+|     | This information comes from: 
+|     |   > AOT Map
+[...]
 ```
 
 #### Tree information
