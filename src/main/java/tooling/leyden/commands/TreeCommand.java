@@ -39,8 +39,8 @@ class TreeCommand implements Runnable {
 
 		if (!elements.isEmpty()) {
 			elements.forEach(e -> {
-				parent.getOut().println("+-- [" + e.getType() + "] " + e.getKey());
-				printReferrals(e, "|   ");
+				parent.getOut().println("+── [" + e.getType() + "] " + e.getKey());
+				printReferrals(e, "  ");
 			});
 		} else {
 			parent.getOut().println("ERROR: Element not found. Try looking for it with ls.");
@@ -52,11 +52,12 @@ class TreeCommand implements Runnable {
 		boolean isFirst = true;
 		for (Element refer : referring) {
 			if (isFirst) {
-				parent.getOut().println(leftPadding + "+-- " + " [" + refer.getType() + "] " + refer.getKey());
+				parent.getOut().println(leftPadding.substring(0, leftPadding.length() - 1) + '\\');
+				parent.getOut().println(leftPadding + "+── " + " [" + refer.getType() + "] " + refer.getKey());
 			} else {
 				parent.getOut().println(leftPadding + "├── " + " [" + refer.getType() + "] " + refer.getKey());
 			}
-			printReferrals(refer, leftPadding + "|   ");
+			printReferrals(refer, leftPadding + "  ");
 			isFirst = false;
 		}
 	}
