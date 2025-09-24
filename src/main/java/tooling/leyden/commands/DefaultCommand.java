@@ -17,10 +17,11 @@ import java.io.PrintWriter;
 				CleanCommand.class,
 				DescribeCommand.class,
 				ErrorCommand.class,
+				InfoCommand.class,
 				ListCommand.class,
 				LoadFileCommand.class,
 				PicocliCommands.ClearScreen.class,
-				InfoCommand.class,
+				TreeCommand.class,
 				CommandLine.HelpCommand.class})
 public class DefaultCommand implements Runnable {
 	private PrintWriter out;
