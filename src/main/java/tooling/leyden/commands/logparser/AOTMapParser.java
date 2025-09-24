@@ -260,7 +260,7 @@ public class AOTMapParser implements Consumer<String> {
 		if (objectName.trim().startsWith("java.lang.String ")) {
 			//Coming from an Object, we are looking to reference a Symbol
 			for (Element e : this.aotCache.getObjects(
-					objectName.substring(18, objectName.length() - 1)
+					objectName.substring(16, objectName.length() - 1)
 							.replaceAll("\\.", "/"),
 					"Symbol")) {
 				element.addReference(e);
