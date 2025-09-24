@@ -24,7 +24,6 @@ class LogParserTest extends DefaultTest {
 		File f = new File(getClass().getResource(file).getPath());
 		getSystemRegistry().execute("load log " + f.getAbsolutePath());
 		final var aotCache = getDefaultCommand().getAotCache();
-		assertTrue(aotCache.getAll().size() > 0);
 
 		//Now check individual values
 		for (Element e : aotCache.getAll()) {

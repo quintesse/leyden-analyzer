@@ -3,6 +3,7 @@ package tooling.leyden.commands.logparser;
 import tooling.leyden.aotcache.AOTCache;
 import tooling.leyden.aotcache.ClassObject;
 import tooling.leyden.aotcache.Configuration;
+import tooling.leyden.aotcache.Element;
 import tooling.leyden.aotcache.MethodObject;
 import tooling.leyden.commands.LoadFileCommand;
 
@@ -49,6 +50,8 @@ public class LogParser implements Consumer<String> {
 			if (indexSourceShared > 0) {
 				String className = message.substring(0, indexSourceShared).trim();
 				if (aotCache.getObjects(className, "Class").isEmpty()) {
+					//WARNING: this should be covered by the aot map file
+					//we are assuming no aot map file was loaded at this point
 					ClassObject classObject = new ClassObject();
 					classObject.setName(className.substring(className.lastIndexOf(".") + 1));
 					classObject.setPackageName(className.substring(0, className.lastIndexOf(".")));
@@ -61,7 +64,7 @@ public class LogParser implements Consumer<String> {
 		} else if (containsTags(tags, "aot")) {
 			final var trimmedMessage = message.trim();
 			if (trimmedMessage.startsWith("Skipping ")) {
-				processSkipping(message, thisSource);
+				processSkipping(message);
 			} else if (level.equals("error")
 					|| level.equals("warning")) {
 				//Very generic, but at least catch things
@@ -235,24 +238,31 @@ public class LogParser implements Consumer<String> {
 	//[1055.929s][warning][aot] Skipping jdk/internal/event/SecurityProviderServiceEvent: JFR event class
 	//[1055.929s][warning][aot] Skipping com/thoughtworks/xstream/security/ForbiddenClassException: Unlinked class not supported by AOTConfiguration
 	//[warning][aot] Skipping java/lang/invoke/BoundMethodHandle$Species_LI because it is dynamically generated
-	private void processSkipping(String message, String thisSource) {
+	private void processSkipping(String message) {
 		String[] msg = message.trim().split("\\s+");
 		String className = msg[1].replace("/", ".").replace(":", "").trim();
 		msg[0] = "";
 		msg[1] = "";
 		String reason = String.join(" ", msg).trim();
+		Element element = null;
 		if (className.contains("$$")) {
-			MethodObject method = new MethodObject();
-			method.setName(className);
-			method.addSource(thisSource);
-			aotCache.addError(method, reason, false);
+
+			var elements = aotCache.getObjects(className.replace("$$", "."), "Method");
+			if (!elements.isEmpty()) {
+				element = elements.getFirst();
+			} else {
+				elements = aotCache.getObjects(className.substring(0, className.indexOf("$$")), "Class");
+				if (!elements.isEmpty()) {
+					element = elements.getFirst();
+				}
+			}
 		} else {
-			ClassObject classObject = new ClassObject();
-			classObject.setName(className.substring(className.lastIndexOf(".") + 1));
-			classObject.setPackageName(className.substring(0, className.lastIndexOf(".")));
-			classObject.addSource(thisSource);
-			aotCache.addError(classObject, reason, false);
+			var elements = aotCache.getObjects(className, "Class");
+			if (!elements.isEmpty()) {
+				element = elements.getFirst();
+			}
 		}
+		aotCache.addError(element, reason, false);
 	}
 
 	private boolean containsTags(String[] tags, String... wantedTags) {
