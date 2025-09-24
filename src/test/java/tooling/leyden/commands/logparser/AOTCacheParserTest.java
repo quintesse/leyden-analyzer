@@ -111,6 +111,12 @@ class AOTCacheParserTest extends DefaultTest {
 		aotCache.clear();
 		AOTMapParser aotCacheParser = new AOTMapParser(loadFile);
 
+		var classObject = new ClassObject();
+		classObject.setName("String");
+		classObject.setPackageName("java.lang");
+		aotCache.addElement(classObject, "test");
+
+
 		aotCacheParser.accept("0x0000000800a8efe8: @@ Class             536 sun.util.locale.BaseLocale");
 		aotCacheParser.accept("0x0000000800a8f258: @@ ConstantPoolCache 64 sun.util.locale.BaseLocale");
 
@@ -162,9 +168,9 @@ class AOTCacheParserTest extends DefaultTest {
 			assertNotEquals(0, re.getReferences().size(), e + " should have a reference");
 		}
 
-		assertEquals(3, aotCache.getByPackage("", "Class").size());
+		assertEquals(3 + 1, aotCache.getByPackage("", "Class").size());
 
-		assertEquals(1 + 2 + 19 + 8 + 3, aotCache.getAll().size());
+		assertEquals(1 + 2 + 19 + 8 + 3 + 1, aotCache.getAll().size());
 
 	}
 

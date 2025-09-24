@@ -258,10 +258,13 @@ public class AOTMapParser implements Consumer<String> {
 
 	private boolean literalString(ReferencingElement element, String objectName) {
 		if (objectName.trim().startsWith("java.lang.String ")) {
+			for (Element e : this.aotCache.getObjects("java.lang.String",
+					"Class")) {
+				element.addReference(e);
+			}
 			//Coming from an Object, we are looking to reference a Symbol
 			for (Element e : this.aotCache.getObjects(
-					objectName.substring(16, objectName.length() - 1)
-							.replaceAll("\\.", "/"),
+					objectName.substring(16, objectName.length() - 1),
 					"Symbol")) {
 				element.addReference(e);
 			}
