@@ -228,7 +228,7 @@ public class AOTMapParser implements Consumer<String> {
 
 		if (literalString(element, objectName)) {
 			return;
-			}
+		}
 
 		if (objectName.trim().startsWith("java.lang.Class ")) {
 			//Coming from an Object, we are looking to reference the java.lang.Class
@@ -263,10 +263,13 @@ public class AOTMapParser implements Consumer<String> {
 				element.addReference(e);
 			}
 			//Coming from an Object, we are looking to reference a Symbol
-			for (Element e : this.aotCache.getObjects(
-					objectName.substring(16, objectName.length() - 1),
-					"Symbol")) {
-				element.addReference(e);
+			if (objectName.length() > 18) {
+				//avoid empty strings
+				for (Element e : this.aotCache.getObjects(
+						objectName.substring(18, objectName.length() - 1),
+						"Symbol")) {
+					element.addReference(e);
+				}
 			}
 			return true;
 		}
@@ -294,7 +297,7 @@ public class AOTMapParser implements Consumer<String> {
 		//if it refers to a method, let's search for it
 		if (objectName.indexOf("$$") > 0) {
 			objectName = objectName.replace("$$", ".");
-			for (Element e :  this.aotCache.getObjects(objectName, "Method", "ConstMethod")) {
+			for (Element e : this.aotCache.getObjects(objectName, "Method", "ConstMethod")) {
 				element.addReference(e);
 			}
 			return true;
@@ -309,7 +312,7 @@ public class AOTMapParser implements Consumer<String> {
 				//Sometimes it is a lonely class which we don't process on this code block:
 				// Lsun/util/locale/BaseLocale$1;
 				&& (objectName.indexOf(";") != objectName.lastIndexOf(";")
-					|| !objectName.endsWith(";"))) {
+				|| !objectName.endsWith(";"))) {
 
 			if (objectName.contains("<")) {
 				//Get generics out
