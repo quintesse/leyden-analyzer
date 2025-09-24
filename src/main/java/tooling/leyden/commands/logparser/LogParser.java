@@ -254,12 +254,19 @@ public class LogParser implements Consumer<String> {
 				elements = aotCache.getObjects(className.substring(0, className.indexOf("$$")), "Class");
 				if (!elements.isEmpty()) {
 					element = elements.getFirst();
+				} else {
+					element = new MethodObject();
+					((MethodObject) element).setName(className);
 				}
 			}
 		} else {
 			var elements = aotCache.getObjects(className, "Class");
 			if (!elements.isEmpty()) {
 				element = elements.getFirst();
+			} else {
+				element = new ClassObject();
+				((ClassObject) element).setName(className.substring(className.lastIndexOf(".") + 1));
+				((ClassObject) element).setPackageName(className.substring(0, className.lastIndexOf(".")));
 			}
 		}
 		aotCache.addError(element, reason, false);
