@@ -70,10 +70,12 @@ class InfoCommand implements Runnable {
 			count.incrementAndGet();
 			if (item instanceof ClassObject classObject) {
 				var pn = classObject.getPackageName();
-				if (!packages.containsKey(pn)) {
-					packages.put(pn, 0);
+				if (pn != null) {
+					if (!packages.containsKey(pn)) {
+						packages.put(pn, 0);
+					}
+					packages.computeIfPresent(pn, (key, value) -> value + 1);
 				}
-				packages.computeIfPresent(pn, (key, value) -> value + 1);
 			}
 		});
 
