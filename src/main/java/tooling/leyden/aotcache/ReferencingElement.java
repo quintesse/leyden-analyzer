@@ -1,12 +1,15 @@
 package tooling.leyden.aotcache;
 
 
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  * Elements that refer to other types of elements. For example: An element in the ConstantPool may be of certain
  * class, which is defined and loaded on the AOTCache independently.
  **/
 public class ReferencingElement extends Element {
-	private Element reference = null;
+	private List<Element> references = new LinkedList<>();
 	private String name;
 
 	public String getName() {
@@ -22,12 +25,14 @@ public class ReferencingElement extends Element {
 		return name;
 	}
 
-	public Element getReference() {
-		return this.reference;
+	public List<Element> getReferences() {
+		return this.references;
 	}
 
-	public void setReference(Element reference) {
-		this.reference = reference;
+	public void addReference(Element reference) {
+		if (!this.references.contains(reference)) {
+			this.references.add(reference);
+		}
 	}
 
 	@Override
@@ -35,7 +40,14 @@ public class ReferencingElement extends Element {
 		StringBuilder sb =
 				new StringBuilder(super.getDescription(leftPadding));
 
-		sb.append('\n' + leftPadding + "This element refers to " + this.getReference());
+		if (!this.getReferences().isEmpty()) {
+			sb.append('\n' + leftPadding + "This element refers to :");
+			for (Element e : getReferences()) {
+				sb.append('\n' + leftPadding + " > " + e);
+			}
+		} else {
+			sb.append('\n' + leftPadding + "Couldn't determine which elements does this link/refer to.");
+		}
 
 		return sb.toString();
 	}

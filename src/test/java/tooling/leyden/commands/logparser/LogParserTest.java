@@ -43,8 +43,5 @@ class LogParserTest extends DefaultTest {
 		getSystemRegistry().execute("load log " + f.getAbsolutePath() + " " + f2.getAbsolutePath());
 		final var aotCache = getDefaultCommand().getAotCache();
 		assertTrue(aotCache.getErrors().size() > 0);
-		for (Error e : aotCache.getErrors()) {
-			System.out.println(e);
-		}
 	}
 }

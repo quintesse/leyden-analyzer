@@ -2,7 +2,6 @@ package tooling.leyden.commands.logparser;
 
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
-import tooling.leyden.aotcache.AOTCache;
 import tooling.leyden.aotcache.ClassObject;
 import tooling.leyden.aotcache.Element;
 import tooling.leyden.aotcache.ReferencingElement;
@@ -10,9 +9,9 @@ import tooling.leyden.commands.DefaultTest;
 import tooling.leyden.commands.LoadFileCommand;
 
 import java.io.File;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -22,8 +21,9 @@ class AOTCacheParserTest extends DefaultTest {
 	@Test
 	void accept() throws Exception {
 		File file = new File(getClass().getResource("aot.map").getPath());
-		getSystemRegistry().execute("load aotCache " + file.getAbsolutePath());
 		final var aotCache = getDefaultCommand().getAotCache();
+		aotCache.clear();
+		getSystemRegistry().execute("load aotCache " + file.getAbsolutePath());
 		assertTrue(aotCache.getAll().size() > 0);
 		assertEquals(0, aotCache.getErrors().size());
 
@@ -38,13 +38,12 @@ class AOTCacheParserTest extends DefaultTest {
 		});
 
 		assertEquals(655, aotCache.getByPackage(null, "Symbol").size());
-		assertEquals(638, aotCache.getByPackage(null, "Class").size());
 		assertEquals(114, aotCache.getByPackage(null, "ConstantPool").size());
 		assertEquals(192, aotCache.getByPackage(null, "ConstantPoolCache").size());
 	}
 
 	@Test
-	void acceptObjects() throws Exception {
+	void acceptObjectsWithReferences() throws Exception {
 		final var loadFile = new LoadFileCommand();
 		loadFile.setParent(getDefaultCommand());
 		final var aotCache = loadFile.getParent().getAotCache();
@@ -52,31 +51,122 @@ class AOTCacheParserTest extends DefaultTest {
 		AOTMapParser aotCacheParser = new AOTMapParser(loadFile);
 
 		var classObject = new ClassObject();
-		classObject.setName("Object");
+		classObject.setName("Float");
 		classObject.setPackageName("java.lang");
 		aotCache.addElement(classObject, "test");
 
 		classObject = new ClassObject();
-		classObject.setName("String");
+		classObject.setName("String$CaseInsensitiveComparator");
 		classObject.setPackageName("java.lang");
 		aotCache.addElement(classObject, "test");
 
-		aotCacheParser.accept("0x00000000fff601f0: @@ Object (0xfff601f0) [Ljava.lang.Object; length: 21");
 		aotCacheParser.accept("0x00000000fff63458: @@ Object (0xfff63458) java.lang.String$CaseInsensitiveComparator");
 		aotCacheParser.accept("0x00000000fff632f0: @@ Object (0xfff632f0) [I length: 0");
 		aotCacheParser.accept("0x00000000fff62900: @@ Object (0xfff62900) java.lang.Float");
 
-		assertEquals(7, aotCache.getAll().size());
+		assertEquals(5, aotCache.getAll().size());
 		final var objects = aotCache.getByPackage("", "Object");
-		assertEquals(4, objects.size());
+		assertEquals(3, objects.size());
 		for (Element e : objects) {
 			assertTrue(e instanceof ReferencingElement);
 			ReferencingElement re = (ReferencingElement) e;
-			if (!re.getKey().equals("[I length: 0")) {
-				assertNotNull(re.getReference());
-				assertTrue(re.getKey().contains(re.getReference().getKey()));
+			if (!re.getKey().equals("(0xfff632f0) [I length: 0")) {
+				assertTrue(!re.getReferences().isEmpty());
+				assertTrue(re.getKey().contains(re.getReferences().getFirst().getKey()));
 			}
 		}
+
+	}
+
+	@Test
+	void acceptSymbol() throws Exception {
+		final var loadFile = new LoadFileCommand();
+		loadFile.setParent(getDefaultCommand());
+		final var aotCache = loadFile.getParent().getAotCache();
+		aotCache.clear();
+		AOTMapParser aotCacheParser = new AOTMapParser(loadFile);
+
+		var classObject = new ClassObject();
+		classObject.setName("InvalidAlgorithmParameterException");
+		classObject.setPackageName("java.security");
+		aotCache.addElement(classObject, "test");
+
+		aotCacheParser.accept("0x00000008028dbaf0: @@ Symbol            48 InvalidAlgorithmParameterException.java");
+
+		assertEquals(2, aotCache.getAll().size());
+		assertEquals(1, aotCache.getByPackage("", "Symbol").size());
+		assertEquals(1, aotCache.getByPackage("", "Class").size());
+		for (Element e : aotCache.getByPackage("", "Symbol")) {
+			assertTrue(e instanceof ReferencingElement);
+			ReferencingElement re = (ReferencingElement) e;
+			assertNotEquals(0, re.getReferences().size());
+		}
+
+	}
+
+
+	@Test
+	void acceptObjectsWithExplicitReference() throws Exception {
+		final var loadFile = new LoadFileCommand();
+		loadFile.setParent(getDefaultCommand());
+		final var aotCache = loadFile.getParent().getAotCache();
+		aotCache.clear();
+		AOTMapParser aotCacheParser = new AOTMapParser(loadFile);
+
+		aotCacheParser.accept("0x0000000800a8efe8: @@ Class             536 sun.util.locale.BaseLocale");
+		aotCacheParser.accept("0x0000000800a8f258: @@ ConstantPoolCache 64 sun.util.locale.BaseLocale");
+
+		aotCacheParser.accept("0x0000000800a8f3c8: @@ Class             512 [Lsun.util.locale.BaseLocale;");
+		aotCacheParser.accept("0x0000000800a98270: @@ Class             568 sun.util.locale.BaseLocale$1");
+
+		aotCacheParser.accept("0x0000000800a98500: @@ ConstantPoolCache 64 sun.util.locale.BaseLocale$1");
+
+		aotCacheParser.accept("0x0000000801f74b70: @@ Symbol            32 sun/util/locale/BaseLocale");
+		aotCacheParser.accept("0x0000000801f74bb0: @@ Symbol            40 [Lsun/util/locale/BaseLocale;");
+		aotCacheParser.accept("0x0000000801f74bd8: @@ Symbol            72 (Lsun/util/locale/BaseLocale;Lsun/util/locale/LocaleExtensions;)V");
+		aotCacheParser.accept("0x0000000801f74c78: @@ Symbol            40 Lsun/util/locale/BaseLocale;");
+		aotCacheParser.accept("0x0000000801f74cf8: @@ Symbol            112 (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lsun/util/locale/BaseLocale;");
+		aotCacheParser.accept("0x0000000801f74e88: @@ Symbol            88 (Lsun/util/locale/BaseLocale;Lsun/util/locale/LocaleExtensions;)Ljava/util/Locale;");
+		aotCacheParser.accept("0x0000000801f754d0: @@ Symbol            104 (Lsun/util/locale/BaseLocale;Lsun/util/locale/LocaleExtensions;)Lsun/util/locale/LanguageTag;");
+		aotCacheParser.accept("0x0000000801f75708: @@ Symbol            40 ()Lsun/util/locale/BaseLocale;");
+		aotCacheParser.accept("0x0000000801f76418: @@ Symbol            72 Ljava/util/Map<Lsun/util/locale/BaseLocale;Ljava/util/Locale;>;");
+		aotCacheParser.accept("0x0000000801f77410: @@ Symbol            72 (Ljava/lang/String;Ljava/lang/String;)Lsun/util/locale/BaseLocale;");
+		aotCacheParser.accept("0x0000000801f774b0: @@ Symbol            40 sun/util/locale/BaseLocale$1");
+		aotCacheParser.accept("0x0000000801f77580: @@ Symbol            104 Ljava/util/function/Supplier<Ljdk/internal/util/ReferencedKeySet<Lsun/util/locale/BaseLocale;>;>;");
+		aotCacheParser.accept("0x0000000801f77658: @@ Symbol            40 Lsun/util/locale/BaseLocale$1;");
+		aotCacheParser.accept("0x0000000801f77680: @@ Symbol            80 ()Ljdk/internal/util/ReferencedKeySet<Lsun/util/locale/BaseLocale;>;");
+		aotCacheParser.accept("0x0000000801f776d0: @@ Symbol            128 Ljava/lang/Object;Ljava/util/function/Supplier<Ljdk/internal/util/ReferencedKeySet<Lsun/util/locale/BaseLocale;>;>;");
+		aotCacheParser.accept("0x000000080208db10: @@ Symbol            112 (Lsun/util/locale/BaseLocale;Lsun/util/locale/LocaleExtensions;)Lsun/util/locale/InternalLocaleBuilder;");
+		aotCacheParser.accept("0x0000000802093c48: @@ Symbol            112 Ljdk/internal/util/ReferencedKeyMap<Lsun/util/locale/BaseLocale;Ljava/util/List<Ljava/util/Locale;>;>;");
+		aotCacheParser.accept("0x0000000802093d78: @@ Symbol            56 (Lsun/util/locale/BaseLocale;)Ljava/util/List;");
+		aotCacheParser.accept("0x0000000802093e38: @@ Symbol            72 (Lsun/util/locale/BaseLocale;)Ljava/util/List<Ljava/util/Locale;>;");
+
+		aotCacheParser.accept("0x0000000802ff83e8: @@ ConstantPool      2456 sun.util.locale.BaseLocale");
+
+		aotCacheParser.accept("0x00000000ffe06dc0: @@ Object (0xffe06dc0) [Lsun.util.locale.BaseLocale; length: 19");
+		aotCacheParser.accept("0x00000000ffe06e20: @@ Object (0xffe06e20) sun.util.locale.BaseLocale");
+		aotCacheParser.accept("0x00000000ffe06e58: @@ Object (0xffe06e58) sun.util.locale.BaseLocale");
+		aotCacheParser.accept("0x00000000ffe06e90: @@ Object (0xffe06e90) sun.util.locale.BaseLocale");
+		aotCacheParser.accept("0x00000000ffe94558: @@ Object (0xffe94558) java.lang.String \"sun.util.locale.BaseLocale\"");
+		aotCacheParser.accept("0x00000000ffef4720: @@ Object (0xffef4720) java.lang.Class Lsun/util/locale/BaseLocale$1;");
+		aotCacheParser.accept("0x00000000ffefd1e8: @@ Object (0xffefd1e8) java.lang.Class Lsun/util/locale/BaseLocale;");
+		aotCacheParser.accept("0x00000000ffefd288: @@ Object (0xffefd288) java.lang.Class [Lsun/util/locale/BaseLocale;");
+
+		assertEquals(1, aotCache.getByPackage("", "ConstantPool").size());
+		assertEquals(2, aotCache.getByPackage("", "ConstantPoolCache").size());
+		assertEquals(19, aotCache.getByPackage("", "Symbol").size());
+		assertEquals(8, aotCache.getByPackage("", "Object").size());
+
+		for (Element e : aotCache.getByPackage("",
+				"Object", "ConstantPoolCache", "ConstantPool")) {
+			assertTrue(e instanceof ReferencingElement);
+			ReferencingElement re = (ReferencingElement) e;
+			assertNotEquals(0, re.getReferences().size(), e + " should have a reference");
+		}
+
+		assertEquals(3, aotCache.getByPackage("", "Class").size());
+
+		assertEquals(1 + 2 + 19 + 8 + 3, aotCache.getAll().size());
 
 	}
 

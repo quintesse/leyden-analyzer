@@ -6,7 +6,7 @@ package tooling.leyden.aotcache;
 public class ConstantPoolObject extends ReferencingElement {
 	private Boolean cache = false;
 
-	public void setCache(Boolean cache) {
+	public ConstantPoolObject(Boolean cache) {
 		this.cache = cache;
 	}
 

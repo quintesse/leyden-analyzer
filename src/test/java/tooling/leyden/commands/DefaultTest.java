@@ -12,6 +12,7 @@ import org.jline.reader.impl.DefaultParser;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import picocli.CommandLine;
 import picocli.shell.jline3.PicocliCommands;
 
@@ -34,6 +35,11 @@ public class DefaultTest {
 
 	public static SystemRegistry getSystemRegistry() {
 		return systemRegistry;
+	}
+
+	@BeforeEach
+	void clearAot() {
+		getDefaultCommand().getAotCache().clear();
 	}
 
 	@BeforeAll

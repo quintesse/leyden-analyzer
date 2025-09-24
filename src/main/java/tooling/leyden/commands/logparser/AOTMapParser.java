@@ -11,6 +11,9 @@ import tooling.leyden.commands.LoadFileCommand;
 
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.regex.MatchResult;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * This class is capable of parsing the AOT logs that generate the AOT cache map.
@@ -55,10 +58,12 @@ public class AOTMapParser implements Consumer<String> {
 			Element element = null;
 
 			if (type.equalsIgnoreCase("Class")) {
+				// Metadata Klass
 //					0x0000000800868d58: @@ Class             520 java.lang.constant.ClassDesc
 //					0x0000000800869078: @@ Class             512 [Ljava.lang.constant.ClassDesc;
 				element = processClass(identifier);
 			} else if (type.equalsIgnoreCase("Method")) {
+				//Metadata Method
 //					0x0000000800831250: @@ Method            88 void java.lang.management.MemoryUsage.<init>(javax.management.openmbean.CompositeData)
 //					0x0000000800831250:   0000000800001710 0000000802c9dc38 0000000000000000 0000000000000000   ........8.................
 				element = processMethod(identifier, thisSource);
@@ -71,13 +76,12 @@ public class AOTMapParser implements Consumer<String> {
 //					0x0000000801e3c028: @@ Symbol            32 jdk/internal/event/Event
 //					0x0000000801e3c048: @@ Symbol            24 jdk/jfr/Event
 //					0x0000000801e3c060: @@ Symbol            8 [Z
-				element = processReferencingElement(new ReferencingElement(), identifier);
+				element = processReferencingElement(new ReferencingElement(), identifier, content);
 			} else if (type.equalsIgnoreCase("ConstantPoolCache")) {
 //					0x0000000800ec7408: @@ ConstantPoolCache 64 javax.naming.spi.ObjectFactory
-				element = processReferencingElement(new ConstantPoolObject(), identifier);
-				((ConstantPoolObject) element).setCache(true);
+				element = processReferencingElement(new ConstantPoolObject(true), identifier, content);
 			} else if (type.equalsIgnoreCase("ConstantPool")) {
-				element = processReferencingElement(new ConstantPoolObject(), identifier);
+				element = processReferencingElement(new ConstantPoolObject(false), identifier, content);
 			} else if (type.startsWith("TypeArray")
 //					0x0000000800001d80: @@ TypeArrayU1       600
 //					0x000000080074cc50: @@ TypeArrayOther    800
@@ -116,17 +120,21 @@ public class AOTMapParser implements Consumer<String> {
 				size = Integer.valueOf(contentParts[4]);
 				element = new BasicObject();
 			} else if (type.equalsIgnoreCase("Object")) {
+				//Instances of classes:
 //				0x00000000fff69c68: @@ Object (0xfff69c68) [B length: 45
-//				0x00000000fff69c68:   00000001 00000000 0076df98 0000002d 2e6e7573 616e616d 656d6567 4d2e746e   ..........v.-...sun.management.M
-//				0x00000000fff69c88:   65707061 42584d64 546e6165 24657079 4d70614d 61654258 7079546e 00000065   appedMXBeanType$MapMXBeanType...
 //				0x00000000fff63458: @@ Object (0xfff63458) java.lang.String$CaseInsensitiveComparator
-//				0x00000000fff63458:   00000001 00000000 0085d718 00000000                                       ................
-				// TODO Should we manually calculate the size??
+				//2 Special cases: they a literal representation (String and Class instances)
+				// and therefore they can be named in the code of some class
+				// and be linked into the heap via a constant pool cache.
+//				0x00000000ffe94558: @@ Object (0xffe94558) java.lang.String "sun.util.locale.BaseLocale"
+				//java.lang.Class instances (they have been pre-created by <clinit> method:
+//				0x00000000ffef4720: @@ Object (0xffef4720) java.lang.Class Lsun/util/locale/BaseLocale$1;
 				var id = "";
 				for (int i = 4; i < contentParts.length; i++) {
 					id = id + " " + contentParts[i];
 				}
-				element = processReferencingElement(new ReferencingElement(), id.trim());
+				element = processReferencingElement(new ReferencingElement(), id.trim(), content);
+				((ReferencingElement) element).setName(contentParts[3] + " " + id.trim());
 			} else {
 				loadFile.getParent().getOut().println("Unidentified: " + type);
 				loadFile.getParent().getOut().println(content);
@@ -144,9 +152,9 @@ public class AOTMapParser implements Consumer<String> {
 		}
 	}
 
-	private Element processReferencingElement(ReferencingElement e, String identifier) {
+	private Element processReferencingElement(ReferencingElement e, String identifier, String content) {
 		e.setName(identifier);
-		fillReferencedElement(identifier, e);
+		fillReferencedElement(identifier, e, content);
 		return e;
 	}
 
@@ -196,48 +204,171 @@ public class AOTMapParser implements Consumer<String> {
 		return classObject;
 	}
 
-	private void fillReferencedElement(String identifier, ReferencingElement element) {
+	private void fillReferencedElement(final String identifier, final ReferencingElement element,
+									   final String content) {
 		//In case we are referencing some class already loaded
 		// Replace / for . because some elements use / to point to a class
 		var objectName = identifier.replaceAll("/", ".");
 
-		//if it is an array of objects, we are interested in the class of the objects, not that it is an array:
-		if (objectName.startsWith("[L") || objectName.startsWith("(L")) {
-			objectName = objectName.substring(2);
-			if (objectName.indexOf(";") > 0) {
-				objectName = objectName.substring(0, objectName.indexOf(";"));
-			}
+		if (methodSignature(element, content, objectName)) {
+			return;
 		}
 
-		//if it refers to an inner class or a method, let's focus on the class itself
-		if (objectName.indexOf("$") > 0) {
-			objectName = objectName.substring(0, objectName.indexOf("$"));
+		if (listOfElements(element, content, objectName)) {
+			return;
+		}
+
+		if (isMethod(element, objectName)) {
+			return;
+		}
+
+		if (javaFileName(element, objectName)) {
+			return;
+		}
+
+		if (literalString(element, objectName)) {
+			return;
+			}
+
+		if (objectName.trim().startsWith("java.lang.Class ")) {
+			//Coming from an Object, we are looking to reference the java.lang.Class
+			//and the class that that java.lang.Class refers itself
+			for (Element e : this.aotCache.getObjects("java.lang.Class",
+					"Class")) {
+				element.addReference(e);
+			}
+
+			//Now look for the class itself
+			objectName = objectName.substring(16).trim();
 		}
 
 		//Now try to locate the class itself
 		List<Element> elements = this.aotCache.getObjects(objectName, "Class");
 		if (!elements.isEmpty()) {
-			element.setReference(elements.getFirst());
-		} else if (objectName.indexOf(".") > 0 && objectName.indexOf(" ") < 0) {
-			//No class found, create one with empty data
-			var classObject = new ClassObject();
-			element.setReference(classObject);
-			classObject.setName(objectName.substring(objectName.lastIndexOf(".") + 1));
-			if (objectName.indexOf(".") > 0) {
-				classObject.setPackageName(objectName.substring(0, objectName.lastIndexOf(".")));
+			elements.forEach(e -> element.addReference(e));
+		} else {
+			//Maybe we are looking for a Symbol
+			for (Element e : this.aotCache.getObjects(
+					objectName.replaceAll("\\.", "/"),
+					"Symbol")) {
+				element.addReference(e);
 			}
-			aotCache.addElement(classObject, "Referenced by some other element");
-		} else if (objectName.endsWith(".java")) {
+		}
+	}
+
+	private boolean literalString(ReferencingElement element, String objectName) {
+		if (objectName.trim().startsWith("java.lang.String ")) {
+			//Coming from an Object, we are looking to reference a Symbol
+			for (Element e : this.aotCache.getObjects(
+					objectName.substring(18, objectName.length() - 1)
+							.replaceAll("\\.", "/"),
+					"Symbol")) {
+				element.addReference(e);
+			}
+			return true;
+		}
+		return false;
+	}
+
+	private boolean javaFileName(ReferencingElement element, String objectName) {
+		if (objectName.trim().endsWith(".java")) {
 			//Some Symbols use have the .java filename of a class:
 			objectName = objectName.substring(0, objectName.length() - 5);
 
 			//We need to find the class without package:
-			elements = this.aotCache.getByPackage("", "Class");
-			String finalObjectName = objectName;
-			elements.parallelStream().filter(e -> ((ClassObject)e).getName().equalsIgnoreCase(finalObjectName));
-			if (!elements.isEmpty()) {
-				element.setReference(elements.getFirst());
+			var elements = this.aotCache.getByPackage("", "Class");
+			for (Element el : elements) {
+				if (((ClassObject) el).getName().equalsIgnoreCase(objectName)) {
+					element.addReference(el);
+				}
 			}
+			return true;
 		}
+		return false;
+	}
+
+	private boolean isMethod(ReferencingElement element, String objectName) {
+		//if it refers to a method, let's search for it
+		if (objectName.indexOf("$$") > 0) {
+			objectName = objectName.replace("$$", ".");
+			for (Element e :  this.aotCache.getObjects(objectName, "Method", "ConstMethod")) {
+				element.addReference(e);
+			}
+			return true;
+		}
+		return false;
+	}
+
+	private boolean listOfElements(ReferencingElement element, String content, String objectName) {
+		//Sometimes they are a list of concatenated classes/elements
+		// Ljava/lang/Object;Ljava/util/function/Supplier<Ljdk/internal/util/ReferencedKeySet<Lsun/util/locale/BaseLocale;>;>;
+		if (objectName.contains(";")
+				//Sometimes it is a lonely class which we don't process on this code block:
+				// Lsun/util/locale/BaseLocale$1;
+				&& (objectName.indexOf(";") != objectName.lastIndexOf(";")
+					|| !objectName.endsWith(";"))) {
+
+			if (objectName.contains("<")) {
+				//Get generics out
+				fillReferencedElement(objectName.substring(0, objectName.indexOf("<")), element, content);
+
+				//Now process the generics inside the first <>
+				//FIXME: This should be done with regexp probably.
+				// But the damn nested <> are breaking my attempts.
+				String generics = "";
+				String tmp = objectName.substring(objectName.indexOf("<") + 1);
+				int nested = 1;
+				while (nested > 0) {
+					if (tmp.indexOf("<") > 0
+							&& tmp.indexOf("<") < tmp.indexOf(">")) {
+						generics = generics + tmp.substring(0, tmp.indexOf("<") + 1);
+						tmp = tmp.substring(tmp.indexOf("<") + 1);
+						nested++;
+					} else if (tmp.indexOf(">") > 0) {
+						generics = generics + tmp.substring(0, tmp.indexOf(">") + (nested > 1 ? 1 : 0));
+						tmp = tmp.substring(tmp.indexOf(">") + 1);
+						nested--;
+					} else {
+						generics = generics + tmp;
+						tmp = "";
+						nested = 0;
+					}
+				}
+
+				fillReferencedElement(generics, element, content);
+				if (!(tmp.isBlank() || tmp.equals(";"))) {
+					fillReferencedElement(tmp, element, content);
+				}
+			} else {
+				for (String className : objectName.split(";")) {
+					fillReferencedElement(className + ";", element, content);
+				}
+			}
+			return true;
+		}
+		return false;
+	}
+
+	private boolean methodSignature(ReferencingElement element, String content, String objectName) {
+		if (objectName.startsWith("(")
+				&& objectName.indexOf(")") > 0
+				&& (objectName.endsWith(";") || objectName.endsWith("V"))) {
+			//We are probably looking at some method signature
+			//(Ljava.lang.String;Ljava.lang.String;)Lsun.util.locale.BaseLocale;
+			//()Lsun.util.locale.BaseLocale;
+			//(Lsun.util.locale.BaseLocale;)V
+			//Let's try to separate each class and process them independently
+			String[] parameters = objectName.substring(1, objectName.indexOf(")")).split(";");
+			for (String parameter : parameters) {
+				fillReferencedElement(parameter, element, content);
+			}
+			String returns = objectName.substring(objectName.indexOf(")") + 1);
+			if (!returns.equals("V")) {
+				fillReferencedElement(returns.substring(0, returns.length() - 1), element, content);
+			}
+			//And stop processing this
+			return true;
+		}
+		return false;
 	}
 }

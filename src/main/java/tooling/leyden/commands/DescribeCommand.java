@@ -55,8 +55,7 @@ class DescribeCommand implements Runnable {
 	public List<Element> getElementsReferencingThisOne(Element element) {
 		return parent.getAotCache().getAll().parallelStream()
 				.filter(e -> (e instanceof ReferencingElement))
-				.filter(e -> ((ReferencingElement) e).getReference() != null)
-				.filter(e -> ((ReferencingElement) e).getReference().equals(element))
+				.filter(e -> ((ReferencingElement) e).getReferences().contains(element))
 				.toList();
 	}
 
