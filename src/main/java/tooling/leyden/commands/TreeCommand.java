@@ -12,7 +12,7 @@ import java.util.List;
 
 @Command(name = "tree", mixinStandardHelpOptions = true,
 		version = "1.0",
-		description = {"Shows all dependencies of an object."},
+		description = {"Shows a tree with elements that are linked to the root. This means, elements that refer to/use the root element. "},
 		subcommands = {CommandLine.HelpCommand.class})
 class TreeCommand implements Runnable {
 
@@ -28,6 +28,12 @@ class TreeCommand implements Runnable {
 			defaultValue = "Class",
 			completionCandidates = Types.class)
 	private String type;
+
+	@CommandLine.Option(names = {"--reversed", "-rev"},
+			description = "Build the reversed tree: see which elements are linked from the root.",
+			defaultValue = "false",
+			completionCandidates = Types.class)
+	private Boolean reversed;
 
 	public void run() {
 		List<Element> elements;
@@ -47,8 +53,8 @@ class TreeCommand implements Runnable {
 		}
 	}
 
-	private void printReferrals(Element up, String leftPadding) {
-		var referring = getElementsReferencingThisOne(up);
+	private void printReferrals(Element root, String leftPadding) {
+		var referring = getElementsReferencingThisOne(root);
 		boolean isFirst = true;
 		for (Element refer : referring) {
 			if (isFirst) {
@@ -65,15 +71,21 @@ class TreeCommand implements Runnable {
 	public List<Element> getElementsReferencingThisOne(Element element) {
 		var referenced = new ArrayList<Element>();
 
-		referenced.addAll(parent.getAotCache().getAll().parallelStream()
-				.filter(e -> (e instanceof ReferencingElement))
-				.filter(e -> ((ReferencingElement) e).getReferences().contains(element))
-				.toList());
+		if (reversed) {
+			if (element instanceof ReferencingElement re) {
+				referenced.addAll(re.getReferences());
+			}
+		}
+		else {
+			referenced.addAll(parent.getAotCache().getAll().parallelStream()
+					.filter(e -> (e instanceof ReferencingElement))
+					.filter(e -> ((ReferencingElement) e).getReferences().contains(element))
+					.toList());
 
-		referenced.addAll(parent.getAotCache().getByPackage("", "Method")
-				.parallelStream().filter(
-						e -> element.equals(((MethodObject) e).getClassObject())).toList());
-
+			referenced.addAll(parent.getAotCache().getByPackage("", "Method")
+					.parallelStream().filter(
+							e -> element.equals(((MethodObject) e).getClassObject())).toList());
+		}
 		return referenced;
 	}
 
