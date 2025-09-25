@@ -3,7 +3,7 @@ package tooling.leyden.aotcache;
 /**
  * This class represents a method inside the AOT Cache.
  */
-public class MethodObject extends Element {
+public class MethodObject extends ReferencingElement {
 
 	private ClassObject classObject;
 	private String compilationLevel = "unknown";
@@ -21,6 +21,7 @@ public class MethodObject extends Element {
 
 	public void setClassObject(ClassObject classObject) {
 		this.classObject = classObject;
+		addReference(classObject);
 	}
 
 	public String getCompilationLevel() {
@@ -58,11 +59,6 @@ public class MethodObject extends Element {
 	@Override
 	public String getKey() {
 		return (getClassObject() != null) ? getClassObject().getKey() + "." + getName() : getName();
-	}
-
-	@Override
-	public String toString() {
-		return getType() + " -> " + getKey();
 	}
 
 	@Override

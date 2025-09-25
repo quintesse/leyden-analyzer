@@ -164,7 +164,12 @@ public class AOTMapParser implements Consumer<String> {
 		MethodObject methodObject = new MethodObject();
 		String qualifiedName = identifier.substring(identifier.indexOf(" ") + 1, identifier.indexOf("("));
 		methodObject.setName(qualifiedName.substring(qualifiedName.lastIndexOf(".") + 1));
+
 		methodObject.setReturnType(identifier.substring(0, identifier.indexOf(" ")));
+		this.aotCache
+				.getObjects(methodObject.getReturnType(), "Class")
+				.forEach(e -> methodObject.addReference(e));
+
 		String className = qualifiedName.substring(0, qualifiedName.lastIndexOf("."));
 		List<Element> objects = this.aotCache.getObjects(className, "Class");
 		if (objects.isEmpty()) {
