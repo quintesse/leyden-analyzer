@@ -26,6 +26,10 @@ import java.util.random.RandomGenerator;
 		key = String.valueOf(random.nextInt());
 	}
 
+	public BasicObject(String key) {
+		this.key = key;
+	}
+
 	@Override
 	public String toString() {
 		return getType() + " -> [random generated key] " + getKey();

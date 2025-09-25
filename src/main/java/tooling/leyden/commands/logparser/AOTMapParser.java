@@ -106,14 +106,14 @@ public class AOTMapParser implements Consumer<String> {
 //					0x0000000801d5e050:   0000000800001bd0 0000000000000000 0000000801d5e028 0000000000000000   ................(...............
 //					0x0000000800a45f58: @@ CompileTrainingData 80
 			) {
-				element = new BasicObject();
+				element = new BasicObject(address);
 			} else if (type.equalsIgnoreCase("Misc")) {
 //					0x00000008049a8410: @@ Misc data 1985520 bytes
 //					0x00000008049a8410:   0000000000000005 0000000801e563d0 0000000801e56600 0000000801e56420   .........c.......f...... d......
 //					0x00000008049a8430:   0000000801e543a8 0000000801e548a8 0000000000000005 0000000801e58dc0   .C.......H................
 				type = "Misc-data";
 				size = Integer.valueOf(contentParts[4]);
-				element = new BasicObject();
+				element = new BasicObject(address);
 			} else if (type.equalsIgnoreCase("Object")) {
 				//Instances of classes:
 //				0x00000000fff69c68: @@ Object (0xfff69c68) [B length: 45
@@ -133,7 +133,7 @@ public class AOTMapParser implements Consumer<String> {
 			} else {
 				loadFile.getParent().getOut().println("Unidentified: " + type);
 				loadFile.getParent().getOut().println(content);
-				element = new BasicObject();
+				element = new BasicObject(address);
 			}
 			if (element != null) {
 				element.setAddress(address);
