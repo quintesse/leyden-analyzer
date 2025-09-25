@@ -30,6 +30,7 @@ import tooling.leyden.commands.DefaultCommand;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.concurrent.Semaphore;
 import java.util.function.Supplier;
 
 @QuarkusMain
@@ -41,9 +42,10 @@ public class QuarkusPicocliLineApp implements Runnable, QuarkusApplication {
 
 	private static Status status;
 	private static AOTCache aotCache;
+	private static Semaphore statusLock = new Semaphore(1);
 
 	public static void updateStatus() {
-		if (status != null && aotCache != null) {
+		if (statusLock.tryAcquire() && status != null && aotCache != null) {
 			AttributedStringBuilder asb = new AttributedStringBuilder();
 			// Update the status line
 			asb.append("Our Playground contains: ");
@@ -61,6 +63,7 @@ public class QuarkusPicocliLineApp implements Runnable, QuarkusApplication {
 					.toAttributedString();
 
 			status.update(Collections.singletonList(asb.toAttributedString()));
+			statusLock.release();
 		}
 	}
 
