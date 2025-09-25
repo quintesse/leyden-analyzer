@@ -42,7 +42,7 @@ class DescribeCommand implements Runnable {
 					parent.getOut().println(leftPadding + "There are other elements of the cache that link " +
 							"to this element: ");
 					parent.getOut().println(leftPadding + "  _____");
-					referring.forEach(refer -> parent.getOut().println(refer.getDescription(leftPadding + "  | ")));
+					referring.forEach(refer -> parent.getOut().println(leftPadding + "  | " + refer.toString()));
 					parent.getOut().println(leftPadding + "  _____");
 				}
 				parent.getOut().println("-----");

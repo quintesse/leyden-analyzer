@@ -54,10 +54,9 @@ public class ClassObject extends Element {
 			sb.append('\n' + leftPadding + "   ______");
 			var methodPadding = leftPadding + "   | ";
 			for (MethodObject method : this.getMethods()) {
-				sb.append('\n' + methodPadding);
-				sb.append('\n' + method.getDescription(methodPadding));
-				sb.append('\n' + methodPadding + "______");
+				sb.append('\n' + methodPadding + method.getKey());
 			}
+			sb.append('\n' + methodPadding + "______");
 		}
 		return sb.toString();
 	}
