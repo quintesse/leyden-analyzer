@@ -158,7 +158,7 @@ public class AOTMapParser implements Consumer<String> {
 		return e;
 	}
 
-	private Element processMethod(String identifier, String thisSource) {
+	private Element processMethod(final String identifier, final String thisSource) {
 		// 0x000000080082ac80: @@ Method            88 char example.Class.example(long)
 		// 0x0000000800773ea0: @@ Method            88 boolean java.lang.Object.equals(java.lang.Object)
 		MethodObject methodObject = new MethodObject();
@@ -176,7 +176,7 @@ public class AOTMapParser implements Consumer<String> {
 			ClassObject classObject = new ClassObject();
 			classObject.setName(className.substring(className.lastIndexOf(".") + 1));
 			classObject.setPackageName(className.substring(0, className.lastIndexOf(".")));
-			this.aotCache.addElement(classObject, "Referenced from a Method element");
+			this.aotCache.addElement(classObject, "Referenced from a Method element in " + thisSource);
 		} else {
 			Element element = objects.get(0);
 			if (element instanceof ClassObject classObject) {
@@ -184,6 +184,27 @@ public class AOTMapParser implements Consumer<String> {
 				classObject.addMethod(methodObject);
 			}
 		}
+
+		//Get parameter classes to add as references
+//88 void java.util.Hashtable.reconstitutionPut(java.util.Hashtable$Entry[], java.lang.Object, java.lang.Object)
+		String parameters[] = identifier.substring(identifier.indexOf("(") + 1, identifier.indexOf(")"))
+				.split(", ");
+		for (String parameter : parameters) {
+			if (!parameter.isBlank()) {
+				var classes = this.aotCache.getObjects(parameter, "Class").stream().toList();
+				classes.forEach(e -> methodObject.addParameter(e));
+				if (classes.isEmpty()) {
+					methodObject.addParameter(parameter);
+					//Maybe it was an array:
+					if (parameter.endsWith("[]")) {
+						parameter = parameter.substring(0, parameter.length() - 2);
+						classes = this.aotCache.getObjects(parameter, "Class").stream().toList();
+						classes.forEach(e -> methodObject.addParameter(e));
+					}
+				}
+			}
+		}
+
 		return methodObject;
 	}
 

@@ -1,5 +1,8 @@
 package tooling.leyden.aotcache;
 
+import java.util.Random;
+import java.util.random.RandomGenerator;
+
 /**
  * This element represents a basic object like a record, annotation,... inside the AOT Cache.
  * They don't offer much information on the AOT map file.
@@ -13,13 +16,14 @@ package tooling.leyden.aotcache;
  */
  public class BasicObject extends Element {
 	private String key;
+	private Random random = new Random();
 
 	public String getKey() {
 		return key;
 	}
 
 	public BasicObject() {
-		key = String.valueOf(System.currentTimeMillis());
+		key = String.valueOf(random.nextInt());
 	}
 
 	@Override

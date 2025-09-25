@@ -39,6 +39,9 @@ class AOTCacheParserTest extends DefaultTest {
 		assertEquals(655, aotCache.getByPackage(null, "Symbol").size());
 		assertEquals(114, aotCache.getByPackage(null, "ConstantPool").size());
 		assertEquals(192, aotCache.getByPackage(null, "ConstantPoolCache").size());
+		assertEquals(494 + 5, aotCache.getByPackage(null, "Class").size());
+		assertEquals(5927, aotCache.getByPackage(null, "Method").size());
+		assertEquals(1385, aotCache.getByPackage(null, "ConstMethod").size());
 	}
 
 	@Test
