@@ -18,21 +18,51 @@ import org.jline.reader.impl.DefaultParser;
 import org.jline.reader.impl.history.DefaultHistory;
 import org.jline.terminal.Terminal;
 import org.jline.terminal.TerminalBuilder;
+import org.jline.utils.AttributedStringBuilder;
+import org.jline.utils.AttributedStyle;
+import org.jline.utils.Status;
 import picocli.CommandLine;
 import picocli.shell.jline3.PicocliCommands;
 import picocli.shell.jline3.PicocliCommands.PicocliCommandsFactory;
+import tooling.leyden.aotcache.AOTCache;
 import tooling.leyden.commands.DefaultCommand;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.function.Supplier;
 
 @QuarkusMain
 @CommandLine.Command(name = "leyden-analyzer", mixinStandardHelpOptions = true)
 public class QuarkusPicocliLineApp implements Runnable, QuarkusApplication {
-	
+
 	@Inject
 	CommandLine.IFactory factory;
+
+	private static Status status;
+	private static AOTCache aotCache;
+
+	public static void updateStatus() {
+		if (status != null && aotCache != null) {
+			AttributedStringBuilder asb = new AttributedStringBuilder();
+			// Update the status line
+			asb.append("Our Playground contains: ");
+
+			asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN))
+					.append(aotCache.getAll().size() + " elements | "
+							+ aotCache.getAllPackages().size() + " packages | "
+							+ aotCache.getAllTypes().size() + " element types");
+
+			asb.style(AttributedStyle.DEFAULT).append(" | ");
+
+
+			asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.RED))
+					.append(aotCache.getErrors().size() + " errors")
+					.toAttributedString();
+
+			status.update(Collections.singletonList(asb.toAttributedString()));
+		}
+	}
 
 	@Override
 	public void run() {
@@ -44,6 +74,7 @@ public class QuarkusPicocliLineApp implements Runnable, QuarkusApplication {
 			builtins.rename(Builtins.Command.TTOP, "top");
 
 			DefaultCommand commands = new DefaultCommand();
+			aotCache = commands.getAotCache();
 			PicocliCommandsFactory factory = new PicocliCommandsFactory();
 
 			CommandLine cmd = new CommandLine(commands, factory);
@@ -55,6 +86,9 @@ public class QuarkusPicocliLineApp implements Runnable, QuarkusApplication {
 				systemRegistry.setCommandRegistries(builtins, picocliCommands);
 				systemRegistry.register("help", picocliCommands);
 
+
+				status = Status.getStatus(terminal);
+
 				final var historyFileName = ".leyden-analyzer.history";
 				LineReader reader = LineReaderBuilder.builder()
 						.terminal(terminal)
@@ -63,7 +97,7 @@ public class QuarkusPicocliLineApp implements Runnable, QuarkusApplication {
 						.variable(LineReader.HISTORY_FILE,
 								Paths.get(workDir.get().resolve(
 												historyFileName).toAbsolutePath().toString(),
-											historyFileName))
+										historyFileName))
 						.variable(LineReader.HISTORY_SIZE, 500) // Maximum entries in memory
 						.variable(LineReader.HISTORY_FILE_SIZE, 1000) // Maximum entries in file
 						.parser(parser)
@@ -81,6 +115,7 @@ public class QuarkusPicocliLineApp implements Runnable, QuarkusApplication {
 				factory.setTerminal(terminal);
 
 				String prompt = "> ";
+				updateStatus();
 
 				// start the shell and process input until the user quits with Ctrl-D
 				String line;

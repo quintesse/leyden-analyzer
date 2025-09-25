@@ -2,6 +2,7 @@ package tooling.leyden.commands;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
+import tooling.leyden.QuarkusPicocliLineApp;
 import tooling.leyden.commands.logparser.AOTMapParser;
 import tooling.leyden.commands.logparser.LogParser;
 
@@ -31,25 +32,26 @@ public class LoadFileCommand implements Runnable {
 			for (Path file : files) {
 				load(file, consumer);
 			}
+			parent.getOut().println("Our playground contains " + parent.getAotCache().getAll().size() + " elements and "
+					+ parent.getAotCache().getErrors().size() + " errors.");
 		}
 	}
 
 	private void load(Path path, Consumer<String> consumer) {
-		parent.getOut().println("Adding " + path.toAbsolutePath() + " to our analysis.");
-		parent.getOut().println("This may take a while, be patient.");
+		parent.getOut().println("Adding " + path.toAbsolutePath().getFileName()
+				+ " to our analysis... this may take a while...");
 		parent.getOut().flush();
 
 		try (Scanner scanner = new Scanner(Files.newInputStream(path),StandardCharsets.UTF_8)) {
 			while (scanner.hasNextLine()) {
 				consumer.accept(scanner.nextLine());
+				QuarkusPicocliLineApp.updateStatus();
 			}
 		} catch (Exception e) {
 			parent.getOut().println("ERROR: Loading " + path.getFileName());
 			parent.getOut().println("ERROR: " + e.getMessage());
 			parent.getOut().flush();
 		}
-		parent.getOut().println("Now the AOTCache contains " + parent.getAotCache().getAll().size() + " elements and "
-				+ parent.getAotCache().getErrors().size() + " errors.");
 	}
 
 	@Command(mixinStandardHelpOptions = true, version = "1.0", subcommands = {

@@ -1,5 +1,6 @@
 package tooling.leyden.commands.logparser;
 
+import tooling.leyden.QuarkusPicocliLineApp;
 import tooling.leyden.aotcache.AOTCache;
 import tooling.leyden.aotcache.ClassObject;
 import tooling.leyden.aotcache.ConstantPoolObject;
@@ -33,12 +34,6 @@ public class AOTMapParser implements Consumer<String> {
 	public void accept(String content) {
 		if (content.indexOf(": @@") != 18)
 			return;
-
-		if (!this.aotCache.getAll().isEmpty() && this.aotCache.getAll().size() % 10000 == 0) {
-			this.loadFile.getParent().getOut().println("... processed " + this.aotCache.getAll().size() + " " +
-					"elements from the AOT cache ...");
-			this.loadFile.getParent().getOut().flush();
-		}
 
 		try {
 			final var thisSource = "AOT Map";
