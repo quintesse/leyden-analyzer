@@ -68,7 +68,7 @@ class TreeCommand implements Runnable {
 		}
 	}
 
-	public List<Element> getElementsReferencingThisOne(Element element) {
+	private List<Element> getElementsReferencingThisOne(Element element) {
 		var referenced = new ArrayList<Element>();
 
 		if (reversed) {
@@ -81,10 +81,6 @@ class TreeCommand implements Runnable {
 					.filter(e -> (e instanceof ReferencingElement))
 					.filter(e -> ((ReferencingElement) e).getReferences().contains(element))
 					.toList());
-
-			referenced.addAll(parent.getAotCache().getByPackage("", "Method")
-					.parallelStream().filter(
-							e -> element.equals(((MethodObject) e).getClassObject())).toList());
 		}
 		return referenced;
 	}
