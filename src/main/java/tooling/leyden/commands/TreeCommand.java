@@ -1,17 +1,20 @@
 package tooling.leyden.commands;
 
+import org.jline.utils.AttributedString;
+import org.jline.utils.AttributedStyle;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import tooling.leyden.aotcache.Element;
 import tooling.leyden.aotcache.ReferencingElement;
-import tooling.leyden.commands.autocomplete.Types;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Command(name = "tree", mixinStandardHelpOptions = true,
 		version = "1.0",
-		description = {"Shows a tree with elements that are linked to the root. This means, elements that refer to/use the root element. "},
+		description = {"Shows a tree with elements that are linked to the root.",
+				"This means, elements that refer to/use the root element., ",
+				"Blue italic elements have already been shown and will not be expanded."},
 		subcommands = {CommandLine.HelpCommand.class})
 class TreeCommand implements Runnable {
 
@@ -21,11 +24,13 @@ class TreeCommand implements Runnable {
 	@CommandLine.Mixin
 	private CommonParameters parameters;
 
-	@CommandLine.Option(names = {"--reversed", "-rev"},
-			description = "Build the reversed tree: see which elements are linked from the root.",
-			defaultValue = "false",
-			completionCandidates = Types.class)
-	private Boolean reversed;
+
+	@CommandLine.Option(names = {"-l", "--level"},
+			description = {"Maximum number of tree levels to display."},
+			defaultValue = "3",
+			arity = "0..*",
+			paramLabel = "<N>")
+	protected Integer level;
 
 	public void run() {
 		List<Element> elements = parent.getAotCache().getElements(parameters.name, parameters.packageName,
@@ -34,42 +39,60 @@ class TreeCommand implements Runnable {
 		if (!elements.isEmpty()) {
 			elements.forEach(e -> {
 				parent.getOut().println("+── [" + e.getType() + "] " + e.getKey());
-				printReferrals(e, "  ");
+				printReferrals(e, "  ", new ArrayList<>(List.of(e.getKey())), 0);
 			});
 		} else {
 			parent.getOut().println("ERROR: Element not found. Try looking for it with ls.");
 		}
 	}
 
-	private void printReferrals(Element root, String leftPadding) {
+	private void printReferrals(Element root, String leftPadding, List<String> travelled, Integer level) {
+		if (level > this.level)
+			return;
+		level++;
 		var referring = getElementsReferencingThisOne(root);
 		boolean isFirst = true;
 		for (Element refer : referring) {
+			var style = AttributedStyle.DEFAULT.bold();
+			if (travelled.contains(refer.getKey())) {
+				style = AttributedStyle.DEFAULT.italic().foreground(AttributedStyle.BLUE);
+			}
+
 			if (isFirst) {
 				parent.getOut().println(leftPadding.substring(0, leftPadding.length() - 1) + '\\');
-				parent.getOut().println(leftPadding + "+── " + " [" + refer.getType() + "] " + refer.getKey());
+				AttributedString attributedString = new AttributedString(
+						leftPadding + "+── " + " [" + refer.getType() + "] " + refer.getKey(),
+						style);
+				attributedString.println(parent.getTerminal());
+				parent.getTerminal().flush();
 			} else {
-				parent.getOut().println(leftPadding + "├── " + " [" + refer.getType() + "] " + refer.getKey());
+				AttributedString attributedString = new AttributedString(
+						leftPadding + "├── " + " [" + refer.getType() + "] " + refer.getKey(),
+						style);
+				attributedString.println(parent.getTerminal());
+				parent.getTerminal().flush();
 			}
-			printReferrals(refer, leftPadding + "  ");
+
+			if (!travelled.contains(refer.getKey())) {
+				printReferrals(refer, leftPadding + "  ", travelled, level);
+			}
 			isFirst = false;
+
+			travelled.add(refer.getKey());
 		}
 	}
 
 	private List<Element> getElementsReferencingThisOne(Element element) {
 		var referenced = new ArrayList<Element>();
 
-		if (reversed) {
-			if (element instanceof ReferencingElement re) {
-				referenced.addAll(re.getReferences());
-			}
+		if (element instanceof ReferencingElement re) {
+			referenced.addAll(re.getReferences());
 		}
-		else {
-			referenced.addAll(parent.getAotCache().getAll().parallelStream()
-					.filter(e -> (e instanceof ReferencingElement))
-					.filter(e -> ((ReferencingElement) e).getReferences().contains(element))
-					.toList());
-		}
+		referenced.addAll(parent.getAotCache().getAll().parallelStream()
+				.filter(e -> (e instanceof ReferencingElement))
+				.filter(e -> ((ReferencingElement) e).getReferences().contains(element))
+				.toList());
+
 		return referenced;
 	}
 
