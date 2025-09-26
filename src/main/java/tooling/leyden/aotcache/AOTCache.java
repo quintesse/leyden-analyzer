@@ -56,13 +56,16 @@ public class AOTCache {
 					return classObject.getPackageName().startsWith(packageName);
 				}
 				if (keyElementEntry.getValue() instanceof MethodObject methodObject) {
-					return methodObject.getClassObject().getPackageName().startsWith(packageName);
+					if (methodObject.getClassObject() != null) {
+						return methodObject.getClassObject().getPackageName().startsWith(packageName);
+					}
+					return methodObject.getName().startsWith(packageName);
 				}
 				if (keyElementEntry.getValue().getType().equals("Object")
 						|| keyElementEntry.getValue().getType().startsWith("ConstantPool")) {
 					return keyElementEntry.getValue().getKey().substring(0).startsWith(packageName);
 				}
-				return true;
+				return false;
 			});
 		}
 
