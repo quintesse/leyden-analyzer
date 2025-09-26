@@ -8,7 +8,7 @@ public class InfoCommandTypes implements Iterable<String> {
 	@Override
 	public Iterator<String> iterator() {
 		return Arrays.asList(
-				"count", "configuration", "statistics", "allocation"
+				"configuration", "statistics", "allocation"
 		).iterator();
 	}
 }

@@ -12,12 +12,13 @@ public class ClassObject extends Element {
 	private String name;
 	private String packageName;
 	private Set<MethodObject> methods = new HashSet<>();
+	private String arrayPrefix = "";
 
 	public String getType() {
 		return "Class";
 	}
 	public String getKey() {
-		return packageName + "." + name;
+		return getPackageName() + "." + getName();
 	}
 
 	public String getName() {
@@ -25,7 +26,7 @@ public class ClassObject extends Element {
 	}
 
 	public String getPackageName() {
-		return packageName;
+		return arrayPrefix + packageName;
 	}
 
 	public Set<MethodObject> getMethods() {
@@ -37,12 +38,25 @@ public class ClassObject extends Element {
 	}
 
 	public void setPackageName(String packageName) {
+		while (packageName.startsWith("[")) {
+			if (packageName.startsWith("[L")) {
+				arrayPrefix += "[L";
+				packageName = packageName.substring(2);
+			} else {
+				arrayPrefix += "[";
+				packageName = packageName.substring(1);
+			}
+		}
 		this.packageName = packageName;
 	}
 
 	public void addMethod(MethodObject method) {
 		this.methods.add(method);
 		method.setClassObject(this);
+	}
+
+	public Boolean isArray() {
+		return !this.arrayPrefix.isBlank();
 	}
 
 	@Override
