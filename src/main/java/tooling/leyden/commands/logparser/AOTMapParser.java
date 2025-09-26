@@ -383,7 +383,9 @@ public class AOTMapParser implements Consumer<String> {
 			//Let's try to separate each class and process them independently
 			String[] parameters = objectName.substring(1, objectName.indexOf(")")).split(";");
 			for (String parameter : parameters) {
-				fillReferencedElement(parameter, element, content);
+				if(parameter != null && !parameter.isBlank()) {
+					fillReferencedElement(parameter, element, content);
+				}
 			}
 			String returns = objectName.substring(objectName.indexOf(")") + 1);
 			if (!returns.equals("V")) {
