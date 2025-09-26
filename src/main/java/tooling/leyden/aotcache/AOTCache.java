@@ -42,34 +42,43 @@ public class AOTCache {
 		configuration.clear();
 	}
 
-	public List<Element> getByPackage(String packageName, String... type) {
+	public List<Element> getElements(String key, String packageName, Boolean addArrays, String... type) {
+
 		var result = elements.entrySet().parallelStream();
 
+		if (key != null && !key.isBlank()) {
+			result = result.filter(keyElementEntry -> keyElementEntry.getKey().identifier().equalsIgnoreCase(key));
+		}
+
 		if (packageName != null && !packageName.isBlank()) {
-				result =
-						result.filter(keyElementEntry -> keyElementEntry.getKey().identifier().startsWith(packageName));
+			result = result.filter(keyElementEntry -> {
+				if (keyElementEntry.getValue() instanceof ClassObject classObject) {
+					return classObject.getPackageName().startsWith(packageName);
+				}
+				if (keyElementEntry.getValue() instanceof MethodObject methodObject) {
+					return methodObject.getClassObject().getPackageName().startsWith(packageName);
+				}
+				if (keyElementEntry.getValue().getType().equals("Object")
+						|| keyElementEntry.getValue().getType().startsWith("ConstantPool")) {
+					return keyElementEntry.getValue().getKey().substring(0).startsWith(packageName);
+				}
+				return true;
+			});
 		}
+
 		if (type != null && type.length > 0) {
 			result = result.filter(keyElementEntry ->
 					Arrays.stream(type).anyMatch(t -> t.equalsIgnoreCase(keyElementEntry.getKey().type()))
 			);
 		}
 
-		return result.map(keyElementEntry -> keyElementEntry.getValue()).toList();
-	}
-
-	public List<Element> getObjects(String objectName, String... type) {
-		if (objectName == null || objectName.isBlank()) {
-			return Collections.emptyList();
-		}
-
-		var result = elements.entrySet().parallelStream()
-				.filter(keyElementEntry -> keyElementEntry.getKey().identifier().equalsIgnoreCase(objectName));
-
-		if (type != null && type.length > 0) {
-			result = result.filter(keyElementEntry ->
-					Arrays.stream(type).anyMatch(t -> t.equalsIgnoreCase(keyElementEntry.getKey().type()))
-			);
+		if (!addArrays) {
+			result = result.filter(keyElementEntry -> {
+				if (keyElementEntry.getValue() instanceof ClassObject classObject) {
+					return !classObject.isArray();
+				}
+				return true;
+			});
 		}
 
 		return result.map(keyElementEntry -> keyElementEntry.getValue()).toList();
@@ -104,7 +113,7 @@ public class AOTCache {
 		return this.elements.entrySet()
 				.parallelStream()
 				.filter((entry) -> entry.getValue() instanceof ClassObject)
-				.map(entry -> ((ClassObject)entry.getValue()).getPackageName())
+				.map(entry -> ((ClassObject) entry.getValue()).getPackageName())
 				.distinct()
 				.toList();
 	}

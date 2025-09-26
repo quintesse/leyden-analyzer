@@ -4,7 +4,6 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import tooling.leyden.aotcache.Element;
 import tooling.leyden.aotcache.ReferencingElement;
-import tooling.leyden.commands.autocomplete.Types;
 
 import java.util.List;
 
@@ -17,21 +16,13 @@ class DescribeCommand implements Runnable {
 	@CommandLine.ParentCommand
 	DefaultCommand parent;
 
-	@CommandLine.Parameters(description = {"The object name/identifier. If it is a class, use the full qualified name" +
-			"."})
-	private String name;
-
-	@CommandLine.Option(names = {"--type", "-t"}, description = "Restrict the listing to this " +
-			"type of element", defaultValue = "", completionCandidates = Types.class)
-	private String type;
+	@CommandLine.Mixin
+	private CommonParameters parameters;
 
 	public void run() {
-		List<Element> elements;
-		if (type == null || type.isBlank()) {
-			elements = parent.getAotCache().getObjects(name);
-		} else {
-			elements = parent.getAotCache().getObjects(name, type);
-		}
+		List<Element> elements = parent.getAotCache().getElements(parameters.name, parameters.packageName,
+				parameters.showArrays, parameters.types);
+
 		if (!elements.isEmpty()) {
 			elements.forEach(e -> {
 				var leftPadding = "|  ";
