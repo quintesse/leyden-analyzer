@@ -10,7 +10,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Scanner;
+import java.util.concurrent.Executors;
 import java.util.function.Consumer;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Commands to load information about the AOT Cache into memory. This can be for example in the form of logs.
@@ -28,16 +31,17 @@ public class LoadFileCommand implements Runnable {
 	}
 
 	private void load(Consumer<String> consumer, Path... files) {
+
 		if (files != null) {
 			for (Path file : files) {
 				load(file, consumer);
 			}
-			parent.getOut().println("Our playground contains " + parent.getAotCache().getAll().size() + " elements and "
-					+ parent.getAotCache().getErrors().size() + " errors.");
+			QuarkusPicocliLineApp.updateStatus();
 		}
 	}
 
 	private void load(Path path, Consumer<String> consumer) {
+		long time = System.currentTimeMillis();
 		parent.getOut().println("Adding " + path.toAbsolutePath().getFileName()
 				+ " to our analysis... this may take a while...");
 		parent.getOut().flush();
@@ -45,13 +49,15 @@ public class LoadFileCommand implements Runnable {
 		try (Scanner scanner = new Scanner(Files.newInputStream(path),StandardCharsets.UTF_8)) {
 			while (scanner.hasNextLine()) {
 				consumer.accept(scanner.nextLine());
-				QuarkusPicocliLineApp.updateStatus();
 			}
 		} catch (Exception e) {
 			parent.getOut().println("ERROR: Loading " + path.getFileName());
 			parent.getOut().println("ERROR: " + e.getMessage());
-			parent.getOut().flush();
 		}
+
+		parent.getOut().println("File " + path.toAbsolutePath().getFileName()
+				+ " added in " + (System.currentTimeMillis() - time) + "ms.");
+
 	}
 
 	@Command(mixinStandardHelpOptions = true, version = "1.0", subcommands = {

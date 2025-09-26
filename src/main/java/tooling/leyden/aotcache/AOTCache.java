@@ -3,14 +3,14 @@ package tooling.leyden.aotcache;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class AOTCache {
-	private Map<Key, Element> elements = new HashMap<>();
+	private Map<Key, Element> elements = new ConcurrentHashMap<>();
 	private Set<Error> errors = new HashSet<>();
 	private Configuration configuration = new Configuration();
 	private Configuration statistics = new Configuration();
@@ -96,11 +96,13 @@ public class AOTCache {
 	}
 
 	public List<String> getAllTypes() {
-		return this.elements.keySet().parallelStream().map(key -> key.type).distinct().toList();
+		return this.elements.keySet()
+				.parallelStream().map(key -> key.type).distinct().toList();
 	}
 
 	public List<String> getAllPackages() {
-		return this.elements.entrySet().parallelStream()
+		return this.elements.entrySet()
+				.parallelStream()
 				.filter((entry) -> entry.getValue() instanceof ClassObject)
 				.map(entry -> ((ClassObject)entry.getValue()).getPackageName())
 				.distinct()

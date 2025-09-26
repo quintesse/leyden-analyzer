@@ -30,8 +30,11 @@ import tooling.leyden.commands.DefaultCommand;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Supplier;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 @QuarkusMain
 @CommandLine.Command(name = "leyden-analyzer", mixinStandardHelpOptions = true)
@@ -42,28 +45,30 @@ public class QuarkusPicocliLineApp implements Runnable, QuarkusApplication {
 
 	private static Status status;
 	private static AOTCache aotCache;
-	private static Semaphore statusLock = new Semaphore(1);
 
 	public static void updateStatus() {
-		if (statusLock.tryAcquire() && status != null && aotCache != null) {
-			AttributedStringBuilder asb = new AttributedStringBuilder();
-			// Update the status line
-			asb.append("Our Playground contains: ");
+		if (status != null && aotCache != null) {
+			try {
+				AttributedStringBuilder asb = new AttributedStringBuilder();
+				// Update the status line
+				asb.append("Our Playground contains: ");
 
-			asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN))
-					.append(aotCache.getAll().size() + " elements | "
-							+ aotCache.getAllPackages().size() + " packages | "
-							+ aotCache.getAllTypes().size() + " element types");
+				asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN))
+						.append(aotCache.getAll().size() + " elements | "
+								+ aotCache.getAllPackages().size() + " packages | "
+								+ aotCache.getAllTypes().size() + " element types");
 
-			asb.style(AttributedStyle.DEFAULT).append(" | ");
+				asb.style(AttributedStyle.DEFAULT).append(" | ");
 
 
-			asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.RED))
-					.append(aotCache.getErrors().size() + " errors")
-					.toAttributedString();
+				asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.RED))
+						.append(aotCache.getErrors().size() + " errors")
+						.toAttributedString();
 
-			status.update(Collections.singletonList(asb.toAttributedString()));
-			statusLock.release();
+				status.update(Collections.singletonList(asb.toAttributedString()));
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
@@ -89,8 +94,10 @@ public class QuarkusPicocliLineApp implements Runnable, QuarkusApplication {
 				systemRegistry.setCommandRegistries(builtins, picocliCommands);
 				systemRegistry.register("help", picocliCommands);
 
-
 				status = Status.getStatus(terminal);
+				new Thread(() ->
+						Executors.newScheduledThreadPool(1)
+							.scheduleAtFixedRate(() -> updateStatus(), 0, 1, SECONDS)).start();
 
 				final var historyFileName = ".leyden-analyzer.history";
 				LineReader reader = LineReaderBuilder.builder()
@@ -118,7 +125,6 @@ public class QuarkusPicocliLineApp implements Runnable, QuarkusApplication {
 				factory.setTerminal(terminal);
 
 				String prompt = "> ";
-				updateStatus();
 
 				// start the shell and process input until the user quits with Ctrl-D
 				String line;
