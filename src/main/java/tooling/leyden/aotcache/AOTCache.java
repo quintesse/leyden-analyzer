@@ -1,5 +1,6 @@
 package tooling.leyden.aotcache;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -45,6 +46,18 @@ public class AOTCache {
 
 	public List<Element> getElements(String key, String[] packageName, String[] excludePackageName,
 									 Boolean addArrays, String... type) {
+
+		if (key != null && !key.isBlank() && type != null && type.length > 0) {
+			//This is trivial, don't search through all elements
+			var result = new ArrayList<Element>();
+			for (String t : type) {
+				Element e = elements.get(new Key(key, t));
+				if (e != null) {
+					result.add(e);
+				}
+			}
+			return result;
+		}
 
 		var result = elements.entrySet().parallelStream();
 
