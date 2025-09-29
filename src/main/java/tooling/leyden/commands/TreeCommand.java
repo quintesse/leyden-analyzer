@@ -4,10 +4,13 @@ import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStyle;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
+import tooling.leyden.aotcache.ClassObject;
 import tooling.leyden.aotcache.Element;
+import tooling.leyden.aotcache.MethodObject;
 import tooling.leyden.aotcache.ReferencingElement;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Command(name = "tree", mixinStandardHelpOptions = true,
@@ -86,15 +89,59 @@ class TreeCommand implements Runnable {
 		var referenced = new ArrayList<Element>();
 
 		if (element instanceof ReferencingElement re) {
-			referenced.addAll(re.getReferences());
+			referenced.addAll(filter(re.getReferences()));
 		}
-		referenced.addAll(parent.getAotCache().getAll().parallelStream()
+		referenced.addAll(filter(parent.getAotCache().getAll().parallelStream()
 				.filter(e -> (e instanceof ReferencingElement))
 				.filter(e -> ((ReferencingElement) e).getReferences().contains(element))
-				.toList());
+				.toList()));
 
 		return referenced;
 	}
 
+	private List<Element> filter(List<Element> elements) {
+		List<Element> result = new ArrayList<>();
+
+		for (Element e : elements) {
+			boolean add = true;
+
+			//Filter by packagename
+			if (parameters.packageName != null && parameters.packageName.length > 0) {
+				if (e instanceof ClassObject classObject) {
+					if (Arrays.stream(parameters.packageName).noneMatch(p -> classObject.getPackageName().startsWith(p))) {
+						add = false;
+					}
+
+				} else if (e instanceof MethodObject methodObject) {
+					if (methodObject.getClassObject() != null) {
+						if (Arrays.stream(parameters.packageName).noneMatch(p ->
+								methodObject.getClassObject().getPackageName().startsWith(p))) {
+							add = false;
+						}
+					} else if (Arrays.stream(parameters.packageName).noneMatch(p -> methodObject.getName().startsWith(p))) {
+						add = false;
+					}
+				} else if ((e.getType().equals("Object") || e.getType().startsWith("ConstantPool"))
+						&& Arrays.stream(parameters.packageName).noneMatch(p -> e.getKey().startsWith(p))) {
+					add = false;
+				}
+			}
+			//Filter by type
+			if (add && parameters.types != null && parameters.types.length > 0) {
+				add = Arrays.stream(parameters.types).anyMatch(t -> t.equalsIgnoreCase(e.getType()));
+			}
+
+			//Filter by array
+			if (add && !parameters.showArrays && e instanceof ClassObject classObject) {
+				add = !classObject.isArray();
+			}
+
+			if (add) {
+				result.add(e);
+			}
+		}
+
+		return result;
+	}
 
 }

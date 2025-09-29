@@ -66,7 +66,7 @@ public class AOTCache {
 						|| keyElementEntry.getValue().getType().startsWith("ConstantPool")) {
 
 					return Arrays.stream(packageName)
-							.anyMatch(p -> keyElementEntry.getValue().getKey().substring(0).startsWith(p));
+							.anyMatch(p -> keyElementEntry.getValue().getKey().startsWith(p));
 				}
 				return false;
 			});
