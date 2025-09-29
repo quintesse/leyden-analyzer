@@ -1,12 +1,12 @@
 package tooling.leyden.aotcache;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Configuration {
 
-	private Map<String, String> configuration = new HashMap<>();
+	private Map<String, String> configuration = new ConcurrentHashMap<>();
 
 	public void addValue(String key, String value) {
 		if (configuration.containsKey(key) && !configuration.get(key).equals(value)) {
