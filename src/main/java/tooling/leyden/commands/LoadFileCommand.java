@@ -31,7 +31,7 @@ public class LoadFileCommand implements Runnable {
 			defaultValue = "false",
 			arity = "0..1",
 			scope = CommandLine.ScopeType.INHERIT)
-	protected Boolean background;
+	protected Boolean background= false;
 
 	public void run() {
 	}

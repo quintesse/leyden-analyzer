@@ -284,10 +284,13 @@ public class AOTMapParser implements Consumer<String> {
 			//Coming from an Object, we are looking to reference a Symbol
 			if (objectName.length() > 18) {
 				//avoid empty strings
-				for (Element e : this.aotCache.getElements(
-						objectName.substring(18, objectName.length() - 1), null, null, true,
-						"Symbol")) {
-					element.addReference(e);
+				final var name = objectName.substring(18, objectName.length() - 1);
+				if (!name.isBlank()) {
+					for (Element e : this.aotCache.getElements(
+							name, null, null, true,
+							"Symbol")) {
+						element.addReference(e);
+					}
 				}
 			}
 			return true;
