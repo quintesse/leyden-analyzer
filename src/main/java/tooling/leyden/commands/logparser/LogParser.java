@@ -49,7 +49,7 @@ public class LogParser implements Consumer<String> {
 			Integer indexSourceShared = message.indexOf("source: shared objects file");
 			if (indexSourceShared > 0) {
 				String className = message.substring(0, indexSourceShared).trim();
-				if (aotCache.getElements(className, null, true, "Class").isEmpty()) {
+				if (aotCache.getElements(className, null, null, true, "Class").isEmpty()) {
 					//WARNING: this should be covered by the aot map file
 					//we are assuming no aot map file was loaded at this point
 					ClassObject classObject = new ClassObject();
@@ -247,11 +247,11 @@ public class LogParser implements Consumer<String> {
 		Element element = null;
 		if (className.contains("$$")) {
 
-			var elements = aotCache.getElements(className.replace("$$", "."), null, true, "Method");
+			var elements = aotCache.getElements(className.replace("$$", "."), null, null, true, "Method");
 			if (!elements.isEmpty()) {
 				element = elements.getFirst();
 			} else {
-				elements = aotCache.getElements(className.substring(0, className.indexOf("$$")), null, true, "Class");
+				elements = aotCache.getElements(className.substring(0, className.indexOf("$$")), null, null, true, "Class");
 				if (!elements.isEmpty()) {
 					element = elements.getFirst();
 				} else {
@@ -260,7 +260,7 @@ public class LogParser implements Consumer<String> {
 				}
 			}
 		} else {
-			var elements = aotCache.getElements(className, null, true, "Class");
+			var elements = aotCache.getElements(className, null, null, true, "Class");
 			if (!elements.isEmpty()) {
 				element = elements.getFirst();
 			} else {

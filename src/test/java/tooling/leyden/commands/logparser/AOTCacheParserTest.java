@@ -36,12 +36,12 @@ class AOTCacheParserTest extends DefaultTest {
 			assertEquals(1, e.getSources().size(), "We shouldn't have more than one source here " + e.getSources().stream().reduce((s, s2) -> s + ", " + s2));
 		});
 
-		assertEquals(655, aotCache.getElements(null, null, true, "Symbol").size());
-		assertEquals(114, aotCache.getElements(null, null, true, "ConstantPool").size());
-		assertEquals(192, aotCache.getElements(null, null, true, "ConstantPoolCache").size());
-		assertEquals(494 + 5, aotCache.getElements(null, null, true, "Class").size());
-		assertEquals(5927, aotCache.getElements(null, null, true, "Method").size());
-		assertEquals(1385, aotCache.getElements(null, null, true, "ConstMethod").size());
+		assertEquals(655, aotCache.getElements(null, null, null, true, "Symbol").size());
+		assertEquals(114, aotCache.getElements(null, null, null, true, "ConstantPool").size());
+		assertEquals(192, aotCache.getElements(null, null, null, true, "ConstantPoolCache").size());
+		assertEquals(494 + 5, aotCache.getElements(null, null, null, true, "Class").size());
+		assertEquals(5927, aotCache.getElements(null, null, null, true, "Method").size());
+		assertEquals(1385, aotCache.getElements(null, null, null, true, "ConstMethod").size());
 	}
 
 	@Test
@@ -66,7 +66,7 @@ class AOTCacheParserTest extends DefaultTest {
 		aotCacheParser.accept("0x00000000fff62900: @@ Object (0xfff62900) java.lang.Float");
 
 		assertEquals(5, aotCache.getAll().size());
-		final var objects = aotCache.getElements(null, null, true, "Object");
+		final var objects = aotCache.getElements(null, null, null, true, "Object");
 		assertEquals(3, objects.size());
 		for (Element e : objects) {
 			assertTrue(e instanceof ReferencingElement);
@@ -95,9 +95,9 @@ class AOTCacheParserTest extends DefaultTest {
 		aotCacheParser.accept("0x00000008028dbaf0: @@ Symbol            48 InvalidAlgorithmParameterException.java");
 
 		assertEquals(2, aotCache.getAll().size());
-		assertEquals(1, aotCache.getElements(null, null, true, "Symbol").size());
-		assertEquals(1, aotCache.getElements(null, null, true, "Class").size());
-		for (Element e : aotCache.getElements(null, null, true, "Symbol")) {
+		assertEquals(1, aotCache.getElements(null, null, null, true, "Symbol").size());
+		assertEquals(1, aotCache.getElements(null, null, null, true, "Class").size());
+		for (Element e : aotCache.getElements(null, null, null, true, "Symbol")) {
 			assertTrue(e instanceof ReferencingElement);
 			ReferencingElement re = (ReferencingElement) e;
 			assertNotEquals(0, re.getReferences().size());
@@ -159,19 +159,19 @@ class AOTCacheParserTest extends DefaultTest {
 		aotCacheParser.accept("0x00000000ffefd1e8: @@ Object (0xffefd1e8) java.lang.Class Lsun/util/locale/BaseLocale;");
 		aotCacheParser.accept("0x00000000ffefd288: @@ Object (0xffefd288) java.lang.Class [Lsun/util/locale/BaseLocale;");
 
-		assertEquals(1, aotCache.getElements(null, null, true, "ConstantPool").size());
-		assertEquals(2, aotCache.getElements(null, null, true, "ConstantPoolCache").size());
-		assertEquals(19, aotCache.getElements(null, null, true, "Symbol").size());
-		assertEquals(8, aotCache.getElements(null, null, true, "Object").size());
+		assertEquals(1, aotCache.getElements(null, null, null, true, "ConstantPool").size());
+		assertEquals(2, aotCache.getElements(null, null, null, true, "ConstantPoolCache").size());
+		assertEquals(19, aotCache.getElements(null, null, null, true, "Symbol").size());
+		assertEquals(8, aotCache.getElements(null, null, null, true, "Object").size());
 
-		for (Element e : aotCache.getElements(null, null, true,
+		for (Element e : aotCache.getElements(null, null, null, true,
 				"Object", "ConstantPoolCache", "ConstantPool")) {
 			assertTrue(e instanceof ReferencingElement);
 			ReferencingElement re = (ReferencingElement) e;
 			assertNotEquals(0, re.getReferences().size(), e + " should have a reference");
 		}
 
-		assertEquals(3 + 1, aotCache.getElements(null, null, true, "Class").size());
+		assertEquals(3 + 1, aotCache.getElements(null, null, null, true, "Class").size());
 
 		assertEquals(1 + 2 + 19 + 8 + 3 + 1, aotCache.getAll().size());
 

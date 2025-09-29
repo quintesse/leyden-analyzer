@@ -19,7 +19,8 @@ class ListCommand implements Runnable {
 
 	public void run() {
 		var elements =
-				parent.getAotCache().getElements(parameters.name, parameters.packageName, parameters.showArrays,
+				parent.getAotCache().getElements(parameters.name, parameters.packageName,
+						parameters.excludePackageName, parameters.showArrays,
 						parameters.types).stream();
 
 		final var counter = new AtomicInteger();

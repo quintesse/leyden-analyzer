@@ -21,7 +21,7 @@ class DescribeCommand implements Runnable {
 
 	public void run() {
 		List<Element> elements = parent.getAotCache().getElements(parameters.name, parameters.packageName,
-				parameters.showArrays, parameters.types);
+				parameters.excludePackageName, parameters.showArrays, parameters.types);
 
 		if (!elements.isEmpty()) {
 			elements.forEach(e -> {

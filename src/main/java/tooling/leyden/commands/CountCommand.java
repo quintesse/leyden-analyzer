@@ -30,8 +30,8 @@ class CountCommand implements Runnable {
 	private CommonParameters parameters;
 
 	public void run() {
-		Stream<Element> elements = parent.getAotCache().getElements(parameters.name, parameters.packageName, parameters.showArrays,
-				parameters.types).stream();
+		Stream<Element> elements = parent.getAotCache().getElements(parameters.name, parameters.packageName,
+				parameters.excludePackageName, parameters.showArrays, parameters.types).stream();
 		final var counts = new HashMap<String, AtomicInteger>();
 
 		elements.forEach(item -> {

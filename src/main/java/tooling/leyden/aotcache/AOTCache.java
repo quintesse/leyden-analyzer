@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 public class AOTCache {
 	private Map<Key, Element> elements = new ConcurrentHashMap<>();
@@ -42,7 +43,8 @@ public class AOTCache {
 		configuration.clear();
 	}
 
-	public List<Element> getElements(String key, String[] packageName, Boolean addArrays, String... type) {
+	public List<Element> getElements(String key, String[] packageName, String[] excludePackageName,
+									 Boolean addArrays, String... type) {
 
 		var result = elements.entrySet().parallelStream();
 
@@ -50,44 +52,71 @@ public class AOTCache {
 			result = result.filter(keyElementEntry -> keyElementEntry.getKey().identifier().equalsIgnoreCase(key));
 		}
 
+		return filterByParams(packageName, excludePackageName, addArrays, type,
+				result.map(keyElementEntry -> keyElementEntry.getValue()));
+	}
+
+	public static List<Element> filterByParams(String[] packageName,
+																 String[] excludePackageName,
+																 Boolean addArrays,
+																 String[] type,
+																 Stream<Element> result) {
 		if (packageName != null && packageName.length > 0) {
-			result = result.filter(keyElementEntry -> {
-				if (keyElementEntry.getValue() instanceof ClassObject classObject) {
+			result = result.filter(e -> {
+				if (e instanceof ClassObject classObject) {
 					return Arrays.stream(packageName).anyMatch(p -> classObject.getPackageName().startsWith(p));
 				}
-				if (keyElementEntry.getValue() instanceof MethodObject methodObject) {
+				if (e instanceof MethodObject methodObject) {
 					if (methodObject.getClassObject() != null) {
 						return Arrays.stream(packageName).anyMatch(p ->
 								methodObject.getClassObject().getPackageName().startsWith(p));
 					}
 					return Arrays.stream(packageName).anyMatch(p -> methodObject.getName().startsWith(p));
 				}
-				if (keyElementEntry.getValue().getType().equals("Object")
-						|| keyElementEntry.getValue().getType().startsWith("ConstantPool")) {
+				if (e.getType().equals("Object")
+						|| e.getType().startsWith("ConstantPool")) {
 
 					return Arrays.stream(packageName)
-							.anyMatch(p -> keyElementEntry.getValue().getKey().startsWith(p));
+							.anyMatch(p -> e.getKey().startsWith(p));
+				}
+				return false;
+			});
+		}
+
+		if (excludePackageName != null && excludePackageName.length > 0) {
+			result = result.filter(e -> {
+				if (e instanceof ClassObject classObject) {
+					return Arrays.stream(excludePackageName).noneMatch(p -> classObject.getPackageName().startsWith(p));
+				}
+				if (e instanceof MethodObject methodObject) {
+					if (methodObject.getClassObject() != null) {
+						return Arrays.stream(excludePackageName).noneMatch(p ->
+								methodObject.getClassObject().getPackageName().startsWith(p));
+					}
+					return Arrays.stream(excludePackageName).noneMatch(p -> methodObject.getName().startsWith(p));
+				}
+				if (e.getType().equals("Object") || e.getType().startsWith("ConstantPool")) {
+
+					return Arrays.stream(excludePackageName).noneMatch(p -> e.getKey().startsWith(p));
 				}
 				return false;
 			});
 		}
 
 		if (type != null && type.length > 0) {
-			result = result.filter(keyElementEntry ->
-					Arrays.stream(type).anyMatch(t -> t.equalsIgnoreCase(keyElementEntry.getKey().type()))
+			result = result.filter(e -> Arrays.stream(type).anyMatch(t -> t.equalsIgnoreCase(e.getType()))
 			);
 		}
 
 		if (!addArrays) {
-			result = result.filter(keyElementEntry -> {
-				if (keyElementEntry.getValue() instanceof ClassObject classObject) {
+			result = result.filter(e -> {
+				if (e instanceof ClassObject classObject) {
 					return !classObject.isArray();
 				}
 				return true;
 			});
 		}
-
-		return result.map(keyElementEntry -> keyElementEntry.getValue()).toList();
+		return result.toList();
 	}
 
 	public Set<Error> getErrors() {
