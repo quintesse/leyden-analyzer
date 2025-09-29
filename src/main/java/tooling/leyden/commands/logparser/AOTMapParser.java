@@ -260,15 +260,17 @@ public class AOTMapParser implements Consumer<String> {
 		}
 
 		//Now try to locate the class itself
-		List<Element> elements = this.aotCache.getElements(objectName, null, null, true, "Class");
-		if (!elements.isEmpty()) {
-			elements.forEach(e -> element.addReference(e));
-		} else {
-			//Maybe we are looking for a Symbol
-			for (Element e : this.aotCache.getElements(
-					objectName.replaceAll("\\.", "/"), null, null, true,
-					"Symbol")) {
-				element.addReference(e);
+		if (!objectName.isBlank()) {
+			List<Element> elements = this.aotCache.getElements(objectName, null, null, true, "Class");
+			if (!elements.isEmpty()) {
+				elements.forEach(e -> element.addReference(e));
+			} else {
+				//Maybe we are looking for a Symbol
+				for (Element e : this.aotCache.getElements(
+						objectName.replaceAll("\\.", "/"), null, null, true,
+						"Symbol")) {
+					element.addReference(e);
+				}
 			}
 		}
 	}
