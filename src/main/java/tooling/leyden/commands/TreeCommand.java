@@ -5,13 +5,10 @@ import org.jline.utils.AttributedStyle;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import tooling.leyden.aotcache.AOTCache;
-import tooling.leyden.aotcache.ClassObject;
 import tooling.leyden.aotcache.Element;
-import tooling.leyden.aotcache.MethodObject;
 import tooling.leyden.aotcache.ReferencingElement;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -37,6 +34,14 @@ class TreeCommand implements Runnable {
 			paramLabel = "<N>")
 	protected Integer level;
 
+	@CommandLine.Option(names = {"-max"},
+			description = {"Maximum number of elements to display. By default, 100. If using -1, it shows all " +
+					"elements. Note that on some cases this may mean showing thousands of elements."},
+			defaultValue = "100",
+			arity = "0..*",
+			paramLabel = "<N>")
+	protected Integer max;
+
 	public void run() {
 		List<Element> elements = parent.getAotCache().getElements(parameters.name, parameters.packageName,
 				parameters.excludePackageName,
@@ -53,7 +58,7 @@ class TreeCommand implements Runnable {
 	}
 
 	private void printReferrals(Element root, String leftPadding, List<String> travelled, Integer level) {
-		if (level > this.level)
+		if (level > this.level || (max > 0 &&  travelled.size() > max))
 			return;
 		level++;
 		var referring = getElementsReferencingThisOne(root);
@@ -85,6 +90,9 @@ class TreeCommand implements Runnable {
 			isFirst = false;
 
 			travelled.add(refer.getKey());
+			if (max > 0 && travelled.size() > max) {
+				break;
+			}
 		}
 	}
 
