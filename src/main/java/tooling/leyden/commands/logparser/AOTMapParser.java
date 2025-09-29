@@ -250,7 +250,7 @@ public class AOTMapParser implements Consumer<String> {
 		if (objectName.trim().startsWith("java.lang.Class ")) {
 			//Coming from an Object, we are looking to reference the java.lang.Class
 			//and the class that that java.lang.Class refers itself
-			for (Element e : this.aotCache.getElements("java.lang.Class", "java.lang", true,
+			for (Element e : this.aotCache.getElements("java.lang.Class", new String[]{"java.lang"}, true,
 					"Class")) {
 				element.addReference(e);
 			}
@@ -275,7 +275,7 @@ public class AOTMapParser implements Consumer<String> {
 
 	private boolean literalString(ReferencingElement element, String objectName) {
 		if (objectName.trim().startsWith("java.lang.String ")) {
-			for (Element e : this.aotCache.getElements("java.lang.String", "java.lang", true,
+			for (Element e : this.aotCache.getElements("java.lang.String", new String[]{"java.lang"}, true,
 					"Class")) {
 				element.addReference(e);
 			}

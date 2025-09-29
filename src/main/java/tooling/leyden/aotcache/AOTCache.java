@@ -42,7 +42,7 @@ public class AOTCache {
 		configuration.clear();
 	}
 
-	public List<Element> getElements(String key, String packageName, Boolean addArrays, String... type) {
+	public List<Element> getElements(String key, String[] packageName, Boolean addArrays, String... type) {
 
 		var result = elements.entrySet().parallelStream();
 
@@ -50,20 +50,23 @@ public class AOTCache {
 			result = result.filter(keyElementEntry -> keyElementEntry.getKey().identifier().equalsIgnoreCase(key));
 		}
 
-		if (packageName != null && !packageName.isBlank()) {
+		if (packageName != null && packageName.length > 0) {
 			result = result.filter(keyElementEntry -> {
 				if (keyElementEntry.getValue() instanceof ClassObject classObject) {
-					return classObject.getPackageName().startsWith(packageName);
+					return Arrays.stream(packageName).anyMatch(p -> classObject.getPackageName().startsWith(p));
 				}
 				if (keyElementEntry.getValue() instanceof MethodObject methodObject) {
 					if (methodObject.getClassObject() != null) {
-						return methodObject.getClassObject().getPackageName().startsWith(packageName);
+						return Arrays.stream(packageName).anyMatch(p ->
+								methodObject.getClassObject().getPackageName().startsWith(p));
 					}
-					return methodObject.getName().startsWith(packageName);
+					return Arrays.stream(packageName).anyMatch(p -> methodObject.getName().startsWith(p));
 				}
 				if (keyElementEntry.getValue().getType().equals("Object")
 						|| keyElementEntry.getValue().getType().startsWith("ConstantPool")) {
-					return keyElementEntry.getValue().getKey().substring(0).startsWith(packageName);
+
+					return Arrays.stream(packageName)
+							.anyMatch(p -> keyElementEntry.getValue().getKey().substring(0).startsWith(p));
 				}
 				return false;
 			});

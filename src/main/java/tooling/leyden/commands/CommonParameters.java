@@ -15,11 +15,11 @@ public class CommonParameters {
 	@CommandLine.Option(names = {"-pn", "--packageName"},
 			description = {"Restrict the command to elements inside this package. ",
 			"Note that some elements don't belong to any particular package"},
-			defaultValue = "",
 			arity = "0..*",
+			split=",",
 			paramLabel = "<packageName>",
 			completionCandidates = Packages.class)
-	protected String packageName;
+	protected String[] packageName;
 
 	@CommandLine.Option(names = {"--identifier", "-i"},
 			description ={"The object identifier. If it is a class, use the full qualified name."},
@@ -38,6 +38,7 @@ public class CommonParameters {
 	@CommandLine.Option(
 			names = {"-t", "--type"},
 			arity = "0..*",
+			split=",",
 			paramLabel = "<type>",
 			description = "Restrict the command to this type of element",
 			completionCandidates = Types.class)
