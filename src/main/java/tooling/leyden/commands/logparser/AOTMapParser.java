@@ -275,7 +275,7 @@ public class AOTMapParser implements Consumer<String> {
 
 	private boolean literalString(ReferencingElement element, String objectName) {
 		if (objectName.trim().startsWith("java.lang.String ")) {
-			for (Element e : this.aotCache.getElements("java.lang.String", new String[]{"java.lang"}, null,true,
+			for (Element e : this.aotCache.getElements("java.lang.String", new String[]{"java.lang"}, null, true,
 					"Class")) {
 				element.addReference(e);
 			}
@@ -295,15 +295,13 @@ public class AOTMapParser implements Consumer<String> {
 
 	private boolean javaFileName(ReferencingElement element, String objectName) {
 		if (objectName.trim().endsWith(".java")) {
-			//Some Symbols use have the .java filename of a class:
+			//Some Symbols have the .java filename of a class:
 			objectName = objectName.substring(0, objectName.length() - 5);
 
 			//We need to find the class without package:
-			var elements = this.aotCache.getElements(null, null, null, true, "Class");
-			for (Element el : elements) {
-				if (((ClassObject) el).getName().equalsIgnoreCase(objectName)) {
-					element.addReference(el);
-				}
+			//This is heavy that's why we have a special function for it
+			for (Element el : this.aotCache.getClassesByName(objectName)) {
+				element.addReference(el);
 			}
 			return true;
 		}
@@ -383,7 +381,7 @@ public class AOTMapParser implements Consumer<String> {
 			//Let's try to separate each class and process them independently
 			String[] parameters = objectName.substring(1, objectName.indexOf(")")).split(";");
 			for (String parameter : parameters) {
-				if(parameter != null && !parameter.isBlank()) {
+				if (parameter != null && !parameter.isBlank()) {
 					fillReferencedElement(parameter, element, content);
 				}
 			}

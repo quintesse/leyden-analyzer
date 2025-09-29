@@ -14,6 +14,9 @@ import java.util.stream.Stream;
 public class AOTCache {
 	private Map<Key, Element> elements = new ConcurrentHashMap<>();
 	private Set<Error> errors = new HashSet<>();
+	//We keep classes also here to search for them by name, not package
+	//It will make sense when we link Symbols of the form Name.java
+	private Map<String, List<ClassObject>> classes = new ConcurrentHashMap<>();
 	private Configuration configuration = new Configuration();
 	private Configuration statistics = new Configuration();
 	private Configuration allocation = new Configuration();
@@ -30,6 +33,12 @@ public class AOTCache {
 	public void addElement(Element e, String source) {
 		e.addSource(source);
 		elements.put(new Key(e.getKey(), e.getType()), e);
+		if (e instanceof ClassObject classObject) {
+			if (!this.classes.containsKey(classObject.getName())) {
+				this.classes.put(classObject.getName(), new ArrayList<>());
+			}
+			this.classes.get(classObject.getName()).add(classObject);
+		}
 	}
 
 	public void addError(Element element, String reason, Boolean load) {
@@ -42,6 +51,11 @@ public class AOTCache {
 		statistics.clear();
 		allocation.clear();
 		configuration.clear();
+		classes.clear();
+	}
+
+	public List<ClassObject> getClassesByName(String name) {
+		return classes.getOrDefault(name, List.of());
 	}
 
 	public List<Element> getElements(String key, String[] packageName, String[] excludePackageName,
