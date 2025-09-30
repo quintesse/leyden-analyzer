@@ -1,0 +1,11 @@
+{
+  "aliases": {
+    "analyzer": {
+      "script-ref": "com.github.quintesse:leyden-analyzer:jitpack-SNAPSHOT:runner",
+      "repositories": [
+        "jitpack"
+      ],
+      "java": "21"
+    }
+  }
+}
