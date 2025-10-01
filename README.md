@@ -8,7 +8,17 @@ This is a very early work-in-progress. This README is going to be deprecated soo
 
 To make it work, just `mvn package` and then `java -jar target/quarkus-app/quarkus-run.jar`.
 
-It's using picocli and JLine to run. 
+Or if you have [JBang](https://jbang.dev) installed, just run:
+
+```bash
+jbang analyzer@delawen/leyden-analyzer
+```
+
+NB: The analyzer is not published officially, so JBang might not always detect that a new version is available.
+In that case run JBang with `--fresh` to force it to download the latest version: `jbang --fresh analyzer@delawen/leyden-analyzer`.
+You might need to be patient because it uses [JitPack](https://jitpack.io) to build the tool on demand.
+
+The analyzer uses [picocli](https://picocli.info) and [JLine](https://github.com/jline/jline3) to run.
 
 ## How to use it
 
