@@ -14,6 +14,13 @@ public class ClassObject extends Element {
 	private Set<MethodObject> methods = new HashSet<>();
 	private String arrayPrefix = "";
 
+	public ClassObject(String identifier) {
+		this.setName(identifier.substring(identifier.lastIndexOf(".") + 1));
+		if (identifier.indexOf(".") > 0) {
+			this.setPackageName(identifier.substring(0, identifier.lastIndexOf(".")));
+		}
+	}
+
 	public String getType() {
 		return "Class";
 	}

@@ -56,11 +56,12 @@ public class AOTMapParser implements Consumer<String> {
 			} else if (type.equalsIgnoreCase("Method")) {
 				//Metadata Method
 //					0x0000000800831250: @@ Method            88 void java.lang.management.MemoryUsage.<init>(javax.management.openmbean.CompositeData)
-//					0x0000000800831250:   0000000800001710 0000000802c9dc38 0000000000000000 0000000000000000   ........8.................
-				element = processMethod(identifier, thisSource);
+// 					0x000000080082ac80: @@ Method            88 char example.Class.example(long)
+//				 	0x0000000800773ea0: @@ Method            88 boolean java.lang.Object.equals(java.lang.Object)
+				element = processMethod(identifier, thisSource, type);
 			} else if (type.equalsIgnoreCase("ConstMethod")) {
 //					 0x0000000804990600: @@ ConstMethod       88 void jdk.internal.access.SharedSecrets.setJavaNetHttpCookieAccess(jdk.internal.access.JavaNetHttpCookieAccess)
-				element = processMethod(identifier, thisSource);
+				element = processMethod(identifier, thisSource, type);
 				((MethodObject) element).setConstMethod(true);
 			} else if (type.equalsIgnoreCase("Symbol")) {
 //					0x0000000801e3c000: @@ Symbol            40 [Ljdk/internal/vm/FillerElement;
@@ -149,76 +150,21 @@ public class AOTMapParser implements Consumer<String> {
 		return e;
 	}
 
-	private Element processMethod(final String identifier, final String thisSource) {
-		// 0x000000080082ac80: @@ Method            88 char example.Class.example(long)
-		// 0x0000000800773ea0: @@ Method            88 boolean java.lang.Object.equals(java.lang.Object)
-		MethodObject methodObject = new MethodObject();
-		String qualifiedName = identifier.substring(identifier.indexOf(" ") + 1, identifier.indexOf("("));
-		methodObject.setName(qualifiedName.substring(qualifiedName.lastIndexOf(".") + 1));
-
-		methodObject.setReturnType(identifier.substring(0, identifier.indexOf(" ")));
-		this.aotCache
-				.getElements(methodObject.getReturnType(), null, null, true, "Class")
-				.forEach(e -> methodObject.addReference(e));
-
-		String className = qualifiedName.substring(0, qualifiedName.lastIndexOf("."));
-		List<Element> objects = this.aotCache.getElements(className, null, null, true, "Class");
-		if (objects.isEmpty()) {
-			ClassObject classObject = new ClassObject();
-			classObject.setName(className.substring(className.lastIndexOf(".") + 1));
-			classObject.setPackageName(className.substring(0, className.lastIndexOf(".")));
-			this.aotCache.addElement(classObject, "Referenced from a Method element in " + thisSource);
-		} else {
-			Element element = objects.get(0);
-			if (element instanceof ClassObject classObject) {
-				//Should always be a class object, but...
-				classObject.addMethod(methodObject);
-			}
-		}
-
-		//Get parameter classes to add as references
-//88 void java.util.Hashtable.reconstitutionPut(java.util.Hashtable$Entry[], java.lang.Object, java.lang.Object)
-		String parameters[] = identifier.substring(identifier.indexOf("(") + 1, identifier.indexOf(")"))
-				.split(", ");
-		for (String parameter : parameters) {
-			if (!parameter.isBlank()) {
-				var classes = this.aotCache.getElements(parameter, null, null, true, "Class").stream().toList();
-				classes.forEach(e -> methodObject.addParameter(e));
-				if (classes.isEmpty()) {
-					methodObject.addParameter(parameter);
-					//Maybe it was an array:
-					if (parameter.endsWith("[]")) {
-						parameter = parameter.substring(0, parameter.length() - 2);
-						classes = this.aotCache.getElements(parameter, null, null, true, "Class").stream().toList();
-						classes.forEach(e -> methodObject.addParameter(e));
-					}
-				}
-			}
-		}
-
-		return methodObject;
-	}
-
 	private Element processClass(String identifier) {
 		// 0x000000080082d490: @@ Class             760 java.lang.StackFrameInfo
-		List<Element> elements = this.aotCache.getElements(identifier, null, null, true, "Class");
 		// It could have been already loaded
-		ClassObject classObject = null;
-		for (Element element : elements) {
-			if (element instanceof ClassObject object) {
-				classObject = object;
-				break;
-			}
+		for (Element element : this.aotCache.getElements(identifier, null, null, true, "Class")) {
+			return element;
 		}
-		if (classObject == null) {
-			classObject = new ClassObject();
-			classObject.setName(identifier.substring(identifier.lastIndexOf(".") + 1));
-			if (identifier.indexOf(".") > 0) {
-				classObject.setPackageName(identifier.substring(0, identifier.lastIndexOf(".")));
-			}
-		}
+		return new ClassObject(identifier);
+	}
 
-		return classObject;
+	private Element processMethod(String identifier, String thisSource, String type) {
+		// It could have been already loaded
+		for (Element element : this.aotCache.getElements(identifier, null, null, true, type)) {
+			return element;
+		}
+		return new MethodObject(identifier, thisSource, this.aotCache);
 	}
 
 	private void fillReferencedElement(final String identifier, final ReferencingElement element,

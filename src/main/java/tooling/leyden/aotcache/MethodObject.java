@@ -16,6 +16,16 @@ public class MethodObject extends ReferencingElement {
 	private Boolean constMethod = false;
 	private List<String> parameters = new ArrayList<>();
 
+	public MethodObject() {}
+
+	public MethodObject(String identifier, String thisSource, AOTCache aotCache) {
+		String qualifiedName = identifier.substring(identifier.indexOf(" ") + 1, identifier.indexOf("("));
+		this.setName(qualifiedName.substring(qualifiedName.lastIndexOf(".") + 1));
+		this.fillReturnClass(identifier, aotCache);
+		this.fillClass(thisSource, qualifiedName, aotCache);
+		this.procesParameters(identifier, aotCache);
+	}
+
 	public String getType() {
 		return (isConstMethod() ? "Const" : "" ) + "Method";
 	}
@@ -95,5 +105,51 @@ public class MethodObject extends ReferencingElement {
 			sb.append('\n' + leftPadding + "Returns " + getReturnType() + ".");
 		}
 		return sb.toString();
+	}
+
+	private void procesParameters(final String identifier, final AOTCache aotCache) {
+		//Get parameter classes to add as references
+//88 void java.util.Hashtable.reconstitutionPut(java.util.Hashtable$Entry[], java.lang.Object, java.lang.Object)
+		String parameters[] = identifier.substring(identifier.indexOf("(") + 1, identifier.indexOf(")"))
+				.split(", ");
+		for (String parameter : parameters) {
+			if (!parameter.isBlank()) {
+				var classes = aotCache.getElements(parameter, null, null, true, "Class").stream().toList();
+				classes.forEach(this::addParameter);
+				if (classes.isEmpty()) {
+					this.addParameter(parameter);
+					//Maybe it was an array:
+					if (parameter.endsWith("[]")) {
+						parameter = parameter.substring(0, parameter.length() - 2);
+						classes = aotCache.getElements(parameter, null, null, true, "Class").stream().toList();
+						classes.forEach(this::addParameter);
+					}
+				}
+			}
+		}
+	}
+
+	private void fillClass(String thisSource, String qualifiedName, AOTCache aotCache) {
+		String className = qualifiedName.substring(0, qualifiedName.lastIndexOf("."));
+		List<Element> objects = aotCache.getElements(className, null, null, true, "Class");
+		if (objects.isEmpty()) {
+			ClassObject classObject = new ClassObject(className);
+			aotCache.addElement(classObject, "Referenced from a Method element in " + thisSource);
+		} else {
+			Element element = objects.getFirst();
+			if (element instanceof ClassObject classObject) {
+				//Should always be a class object, but...
+				classObject.addMethod(this);
+			}
+		}
+	}
+
+	private void fillReturnClass(String identifier, AOTCache aotCache) {
+		if (identifier.indexOf(" ") > 0) {
+			this.setReturnType(identifier.substring(0, identifier.indexOf(" ")));
+			aotCache
+					.getElements(this.getReturnType(), null, null, true, "Class")
+					.forEach(this::addReference);
+		}
 	}
 }

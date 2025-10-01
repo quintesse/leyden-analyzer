@@ -51,14 +51,10 @@ class AOTCacheParserTest extends DefaultTest {
 		final var aotCache = loadFile.getParent().getAotCache();
 		AOTMapParser aotCacheParser = new AOTMapParser(loadFile);
 
-		var classObject = new ClassObject();
-		classObject.setName("Float");
-		classObject.setPackageName("java.lang");
+		var classObject = new ClassObject("java.lang.Float");
 		aotCache.addElement(classObject, "test");
 
-		classObject = new ClassObject();
-		classObject.setName("String$CaseInsensitiveComparator");
-		classObject.setPackageName("java.lang");
+		classObject = new ClassObject("java.lang.String$CaseInsensitiveComparator");
 		aotCache.addElement(classObject, "test");
 
 		aotCacheParser.accept("0x00000000fff63458: @@ Object (0xfff63458) java.lang.String$CaseInsensitiveComparator");
@@ -87,9 +83,7 @@ class AOTCacheParserTest extends DefaultTest {
 		aotCache.clear();
 		AOTMapParser aotCacheParser = new AOTMapParser(loadFile);
 
-		var classObject = new ClassObject();
-		classObject.setName("InvalidAlgorithmParameterException");
-		classObject.setPackageName("java.security");
+		var classObject = new ClassObject("java.security.InvalidAlgorithmParameterException");
 		aotCache.addElement(classObject, "test");
 
 		aotCacheParser.accept("0x00000008028dbaf0: @@ Symbol            48 InvalidAlgorithmParameterException.java");
@@ -114,9 +108,7 @@ class AOTCacheParserTest extends DefaultTest {
 		aotCache.clear();
 		AOTMapParser aotCacheParser = new AOTMapParser(loadFile);
 
-		var classObject = new ClassObject();
-		classObject.setName("String");
-		classObject.setPackageName("java.lang");
+		var classObject = new ClassObject("java.lang.String");
 		aotCache.addElement(classObject, "test");
 
 

@@ -45,6 +45,7 @@ public class LogParser implements Consumer<String> {
 		final String message = content.substring(content.indexOf("]") + 1);
 		// [info][class,load] java.lang.invoke.DelegatingMethodHandle$Holder source: shared objects file
 		final var thisSource = "Java Log";
+		final var trimmedMessage = message.trim();
 		if (containsTags(tags, "class", "load")) {
 			Integer indexSourceShared = message.indexOf("source: shared objects file");
 			if (indexSourceShared > 0) {
@@ -52,9 +53,7 @@ public class LogParser implements Consumer<String> {
 				if (aotCache.getElements(className, null, null, true, "Class").isEmpty()) {
 					//WARNING: this should be covered by the aot map file
 					//we are assuming no aot map file was loaded at this point
-					ClassObject classObject = new ClassObject();
-					classObject.setName(className.substring(className.lastIndexOf(".") + 1));
-					classObject.setPackageName(className.substring(0, className.lastIndexOf(".")));
+					ClassObject classObject = new ClassObject(className);
 					aotCache.addElement(classObject, thisSource);
 				}
 			}
@@ -62,7 +61,6 @@ public class LogParser implements Consumer<String> {
 			// are we interested in storing this?
 			// we are not adding anything that aot.map doesn't have
 		} else if (containsTags(tags, "aot")) {
-			final var trimmedMessage = message.trim();
 			if (trimmedMessage.startsWith("Skipping ")) {
 				processSkipping(message);
 			} else if (level.equals("error")
@@ -264,9 +262,7 @@ public class LogParser implements Consumer<String> {
 			if (!elements.isEmpty()) {
 				element = elements.getFirst();
 			} else {
-				element = new ClassObject();
-				((ClassObject) element).setName(className.substring(className.lastIndexOf(".") + 1));
-				((ClassObject) element).setPackageName(className.substring(0, className.lastIndexOf(".")));
+				element = new ClassObject(className);
 			}
 		}
 		aotCache.addError(element, reason, false);
