@@ -7,7 +7,6 @@
 
     <properties>
         <compiler-plugin.version>3.14.0</compiler-plugin.version>
-        <toolchain-plugin.version>4.5.0</toolchain-plugin.version>
         <maven.compiler.release>21</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -84,25 +83,6 @@
                 <version>${compiler-plugin.version}</version>
                 <configuration>
                     <parameters>true</parameters>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.mvnsearch</groupId>
-                <artifactId>toolchains-maven-plugin</artifactId>
-                <version>${toolchain-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>toolchain</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <toolchains>
-                        <jdk>
-                            <version>21</version>
-                        </jdk>
-                    </toolchains>
                 </configuration>
             </plugin>
             <plugin>
