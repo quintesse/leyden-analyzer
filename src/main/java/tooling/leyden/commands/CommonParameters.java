@@ -36,7 +36,7 @@ public class CommonParameters {
 			arity = "0..1",
 			paramLabel = "<id>",
 			completionCandidates = Identifiers.class)
-	protected String name;
+	private String name;
 
 	@CommandLine.Option(names = {"--useArrays"},
 			description = "Use array classes if true. True by default.",
@@ -52,4 +52,13 @@ public class CommonParameters {
 			description = "Restrict the command to this type of element",
 			completionCandidates = Types.class)
 	protected String[] types;
+
+	public String getName() {
+		if(name != null
+			&& (name.startsWith("'") && name.endsWith("'"))
+				|| (name.startsWith("\"") && name.endsWith("\""))) {
+			name = name.substring(1, name.length() - 1);
+		}
+		return name;
+	}
 }

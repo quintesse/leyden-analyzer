@@ -19,7 +19,7 @@ class ListCommand implements Runnable {
 
 	public void run() {
 		var elements =
-				parent.getAotCache().getElements(parameters.name, parameters.packageName,
+				parent.getAotCache().getElements(parameters.getName(), parameters.packageName,
 						parameters.excludePackageName, parameters.showArrays,
 						parameters.types).stream();
 

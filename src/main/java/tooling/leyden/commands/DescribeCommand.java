@@ -20,7 +20,7 @@ class DescribeCommand implements Runnable {
 	private CommonParameters parameters;
 
 	public void run() {
-		List<Element> elements = parent.getAotCache().getElements(parameters.name, parameters.packageName,
+		List<Element> elements = parent.getAotCache().getElements(parameters.getName(), parameters.packageName,
 				parameters.excludePackageName, parameters.showArrays, parameters.types);
 
 		if (!elements.isEmpty()) {

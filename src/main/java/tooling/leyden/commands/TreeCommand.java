@@ -43,7 +43,7 @@ class TreeCommand implements Runnable {
 	protected Integer max;
 
 	public void run() {
-		List<Element> elements = parent.getAotCache().getElements(parameters.name, parameters.packageName,
+		List<Element> elements = parent.getAotCache().getElements(parameters.getName(), parameters.packageName,
 				parameters.excludePackageName,
 				parameters.showArrays, parameters.types);
 
