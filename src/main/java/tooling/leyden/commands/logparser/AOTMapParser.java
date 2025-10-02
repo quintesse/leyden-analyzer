@@ -63,12 +63,26 @@ public class AOTMapParser implements Consumer<String> {
 //					 0x0000000804990600: @@ ConstMethod       88 void jdk.internal.access.SharedSecrets.setJavaNetHttpCookieAccess(jdk.internal.access.JavaNetHttpCookieAccess)
 				element = processMethod(identifier, thisSource, type);
 				((MethodObject) element).setConstMethod(true);
+				var methods = this.aotCache.getElements(identifier, null, null, true, "Method");
+				if (!methods.isEmpty()) {
+					((MethodObject) element).addReference(methods.getFirst());
+				}
 			} else if (type.equalsIgnoreCase("Symbol")) {
 //					0x0000000801e3c000: @@ Symbol            40 [Ljdk/internal/vm/FillerElement;
 //					0x0000000801e3c028: @@ Symbol            32 jdk/internal/event/Event
 //					0x0000000801e3c048: @@ Symbol            24 jdk/jfr/Event
 //					0x0000000801e3c060: @@ Symbol            8 [Z
 				element = processReferencingElement(new ReferencingElement(), identifier, content);
+			}  else if (type.equalsIgnoreCase("MethodCounters")
+//					0x0000000801e4c280: @@ MethodCounters    64
+//					0x0000000801e4c280:   0000000800001800 0000000000000002 0000000801e4c228 0000000801e4c280   ................(...............
+//					0x0000000801e4c2a0:   0000000000000000 000000fe00000000 00000000000007fe 0000000000000000   ................................
+					|| type.equalsIgnoreCase("MethodData")) {
+//					0x0000000801f54000: @@ MethodData        496 java.lang.Class sun.invoke.util.Wrapper.wrapperType(java.lang.Class)
+//					0x0000000801f5fb68: @@ MethodData        296 void java.lang.Long.<init>(long)
+//					0x0000000801f6b328: @@ MethodData        328 int jdk.internal.util.ArraysSupport.hashCode(int, short[], int, int)
+//					0x0000000801f6f848: @@ MethodData        584 void java.util.ImmutableCollections$Set12.<init>(java.lang.Object, java.lang.Object)
+				element = processMethodDataAndCounter(content, identifier, address);
 			} else if (type.equalsIgnoreCase("ConstantPoolCache")) {
 //					0x0000000800ec7408: @@ ConstantPoolCache 64 javax.naming.spi.ObjectFactory
 				element = processReferencingElement(new ConstantPoolObject(true), identifier, content);
@@ -91,19 +105,12 @@ public class AOTMapParser implements Consumer<String> {
 					|| type.equalsIgnoreCase("Annotations")
 //					0x0000000802bf50f0: @@ Annotations       32
 //					0x0000000802bf50f0:   0000000802b719a0 0000000000000000 0000000000000000 0000000000000000   ................................
-					|| type.equalsIgnoreCase("MethodCounters")
-//					0x0000000801e4c280: @@ MethodCounters    64
-//					0x0000000801e4c280:   0000000800001800 0000000000000002 0000000801e4c228 0000000801e4c280   ................(...............
-//					0x0000000801e4c2a0:   0000000000000000 000000fe00000000 00000000000007fe 0000000000000000   ................................
-					|| type.equalsIgnoreCase("MethodData")
-//					0x0000000801e44448: @@ MethodData        584
-//					0x0000000801e44448:   0000000800001788 0000000800773428 000000b800000248 0000000000000000   ........(4w.....H...............
 					|| type.endsWith("TrainingData")
 //					0x0000000801d5e050: @@ MethodTrainingData 96
 //					0x0000000801d5e050:   0000000800001bd0 0000000000000000 0000000801d5e028 0000000000000000   ................(...............
 //					0x0000000800a45f58: @@ CompileTrainingData 80
 			) {
-				element = new BasicObject(address);
+				element = new BasicObject(identifier.isBlank() ? address : identifier);
 			} else if (type.equalsIgnoreCase("Misc")) {
 //					0x00000008049a8410: @@ Misc data 1985520 bytes
 //					0x00000008049a8410:   0000000000000005 0000000801e563d0 0000000801e56600 0000000801e56420   .........c.......f...... d......
@@ -142,6 +149,22 @@ public class AOTMapParser implements Consumer<String> {
 			loadFile.getParent().getOut().println("ERROR: " + e.getMessage());
 			loadFile.getParent().getOut().println("ERROR: " + content);
 		}
+	}
+
+	private Element processMethodDataAndCounter(String content, String identifier, String address) {
+		ReferencingElement result = new ReferencingElement();
+		if (!identifier.isBlank()) {
+			result.setName(identifier);
+			var methods = this.aotCache.getElements(identifier, null, null, true, "Method");
+			if (!methods.isEmpty()) {
+				result.addReference(methods.getFirst());
+			} else {
+				result.addReference(new MethodObject(identifier, "Referenced by '" + content + "'", this.aotCache));
+			}
+		} else {
+			result.setName(address);
+		}
+		return result;
 	}
 
 	private Element processReferencingElement(ReferencingElement e, String identifier, String content) {
