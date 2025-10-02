@@ -50,14 +50,14 @@ class TreeCommand implements Runnable {
 		if (!elements.isEmpty()) {
 			elements.forEach(e -> {
 				parent.getOut().println("+── [" + e.getType() + "] " + e.getKey());
-				printReferrals(e, "  ", new ArrayList<>(List.of(e.getKey())), 0);
+				printReferrals(e, "  ", new ArrayList<>(List.of(e)), 0);
 			});
 		} else {
 			parent.getOut().println("ERROR: Element not found. Try looking for it with ls.");
 		}
 	}
 
-	private void printReferrals(Element root, String leftPadding, List<String> travelled, Integer level) {
+	private void printReferrals(Element root, String leftPadding, List<Element> travelled, Integer level) {
 		if (level > this.level || (max > 0 &&  travelled.size() > max))
 			return;
 		level++;
@@ -65,7 +65,7 @@ class TreeCommand implements Runnable {
 		boolean isFirst = true;
 		for (Element refer : referring) {
 			var style = AttributedStyle.DEFAULT.bold();
-			if (travelled.contains(refer.getKey())) {
+			if (travelled.contains(refer)) {
 				style = AttributedStyle.DEFAULT.italic().foreground(AttributedStyle.BLUE);
 			}
 
@@ -84,12 +84,12 @@ class TreeCommand implements Runnable {
 				parent.getTerminal().flush();
 			}
 
-			if (!travelled.contains(refer.getKey())) {
+			if (!travelled.contains(refer)) {
 				printReferrals(refer, leftPadding + "  ", travelled, level);
 			}
 			isFirst = false;
 
-			travelled.add(refer.getKey());
+			travelled.add(refer);
 			if (max > 0 && travelled.size() > max) {
 				break;
 			}
