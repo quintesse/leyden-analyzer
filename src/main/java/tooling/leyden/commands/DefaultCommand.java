@@ -18,7 +18,7 @@ import java.io.PrintWriter;
 				CleanCommand.class,
 				CountCommand.class,
 				DescribeCommand.class,
-				ErrorCommand.class,
+				WarningCommand.class,
 				InfoCommand.class,
 				ListCommand.class,
 				LoadFileCommand.class,

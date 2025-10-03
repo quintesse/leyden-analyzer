@@ -25,7 +25,7 @@ class AOTCacheParserTest extends DefaultTest {
 		final var aotCache = getDefaultCommand().getAotCache();
 		getSystemRegistry().execute("load aotCache " + file.getAbsolutePath());
 		assertTrue(aotCache.getAll().size() > 0);
-		assertEquals(0, aotCache.getErrors().size());
+		assertEquals(0, aotCache.getWarnings().size());
 
 		//Now check individual values
 		//Skip classes because they may have been indirectly generated

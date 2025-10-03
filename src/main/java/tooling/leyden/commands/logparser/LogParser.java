@@ -5,6 +5,7 @@ import tooling.leyden.aotcache.ClassObject;
 import tooling.leyden.aotcache.Configuration;
 import tooling.leyden.aotcache.Element;
 import tooling.leyden.aotcache.MethodObject;
+import tooling.leyden.aotcache.WarningType;
 import tooling.leyden.commands.LoadFileCommand;
 
 import java.util.Arrays;
@@ -16,7 +17,6 @@ import java.util.function.Consumer;
 public class LogParser implements Consumer<String> {
 
 	private final AOTCache aotCache;
-	private Boolean loadingLog = false;
 
 	public LogParser(LoadFileCommand loadFile) {
 		this.aotCache = loadFile.getParent().getAotCache();
@@ -69,7 +69,7 @@ public class LogParser implements Consumer<String> {
 
 				// [warning][aot] Preload Warning: Verification failed for org.infinispan.remoting.transport.jgroups.JGroupsRaftManager
 				// [warning][aot] Preload Warning: Verification failed for org.apache.logging.log4j.core.async.AsyncLoggerContext
-				aotCache.addError(null, "[" + level + "] " + trimmedMessage, loadingLog);
+				aotCache.addWarning(null, "[" + level + "] " + trimmedMessage, WarningType.StoringIntoAOTCache);
 			} else if (level.equals("info")) {
 				try {
 					processInfo(trimmedMessage);
@@ -81,12 +81,7 @@ public class LogParser implements Consumer<String> {
 	}
 
 	private void processInfo(String trimmedMessage) {
-		if (trimmedMessage.equals("Selected AOTMode=record because AOTCacheOutput is specified")
-				|| trimmedMessage.startsWith("Opened AOT configuration file")) {
-//[info][aot] Selected AOTMode=record because AOTCacheOutput is specified
-//[info][aot] Opened AOT configuration file app.aot.config.
-			loadingLog = false; // we are creating/saving the AOT cache
-		} else if (trimmedMessage.startsWith("Core region alignment:")) {
+		if (trimmedMessage.startsWith("Core region alignment:")) {
 //	[info][aot] Core region alignment: 4096
 			aotCache.getConfiguration().addValue("Core region alignment", trimmedMessage.substring(23));
 		} else if (trimmedMessage.startsWith("The AOT configuration file was created with ")) {
@@ -131,7 +126,7 @@ public class LogParser implements Consumer<String> {
 			storeConfigurationSplitByCharacter(aotCache.getConfiguration(), trimmedMessage, ":", false);
 		} else if (trimmedMessage.startsWith("JVM_StartThread() ignored:")) {
 //[info][aot       ] JVM_StartThread() ignored: java.lang.ref.Reference$ReferenceHandler
-			this.aotCache.addError(null, trimmedMessage, loadingLog);
+			this.aotCache.addWarning(null, trimmedMessage, WarningType.StoringIntoAOTCache);
 		} else if (trimmedMessage.startsWith("Heap range = ")
 				|| trimmedMessage.startsWith("heap range")) {
 //[info][aot       ] Heap range = [0x00000000e0000000 - 0x0000000100000000]
@@ -265,7 +260,7 @@ public class LogParser implements Consumer<String> {
 				element = new ClassObject(className);
 			}
 		}
-		aotCache.addError(element, reason, false);
+		aotCache.addWarning(element, reason, WarningType.StoringIntoAOTCache);
 	}
 
 	private boolean containsTags(String[] tags, String... wantedTags) {

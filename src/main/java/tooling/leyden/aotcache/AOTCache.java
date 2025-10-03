@@ -3,7 +3,6 @@ package tooling.leyden.aotcache;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -13,7 +12,7 @@ import java.util.stream.Stream;
 
 public class AOTCache {
 	private Map<Key, Element> elements = new ConcurrentHashMap<>();
-	private Set<Error> errors = new HashSet<>();
+	private Set<Warning> warnings = new HashSet<>();
 	//We keep classes also here to search for them by name, not package
 	//It will make sense when we link Symbols of the form Name.java
 	private Map<String, List<ClassObject>> classes = new ConcurrentHashMap<>();
@@ -41,13 +40,13 @@ public class AOTCache {
 		}
 	}
 
-	public void addError(Element element, String reason, Boolean load) {
-		this.errors.add(new Error(element, reason, load));
+	public void addWarning(Element element, String reason, WarningType warningType) {
+		this.warnings.add(new Warning(element, reason, warningType));
 	}
 
 	public void clear() {
 		elements.clear();
-		errors.clear();
+		warnings.clear();
 		statistics.clear();
 		allocation.clear();
 		configuration.clear();
@@ -146,8 +145,8 @@ public class AOTCache {
 		return result.toList();
 	}
 
-	public Set<Error> getErrors() {
-		return errors;
+	public Set<Warning> getWarnings() {
+		return warnings;
 	}
 
 	public Collection<Element> getAll() {

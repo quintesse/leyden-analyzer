@@ -31,7 +31,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.Supplier;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -48,27 +47,24 @@ public class QuarkusPicocliLineApp implements Runnable, QuarkusApplication {
 
 	public static void updateStatus() {
 		if (status != null && aotCache != null) {
-			try {
-				AttributedStringBuilder asb = new AttributedStringBuilder();
-				// Update the status line
-				asb.append("Our Playground contains: ");
+			AttributedStringBuilder asb = new AttributedStringBuilder();
+			// Update the status line
+			asb.append("Our Playground contains: ");
 
-				asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN))
-						.append(aotCache.getAll().size() + " elements | "
-								+ aotCache.getAllPackages().size() + " packages | "
-								+ aotCache.getAllTypes().size() + " element types");
+			asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN))
+					.append(aotCache.getAll().size() + " elements");
+			asb.style(AttributedStyle.DEFAULT).append(" | ");
+			asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN))
+					.append(aotCache.getAllPackages().size() + " packages");
+			asb.style(AttributedStyle.DEFAULT).append(" | ");
+			asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN))
+					.append(aotCache.getAllTypes().size() + " element types");
+			asb.style(AttributedStyle.DEFAULT).append(" | ");
+			asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.RED))
+					.append(aotCache.getWarnings().size() + " warnings")
+					.toAttributedString();
 
-				asb.style(AttributedStyle.DEFAULT).append(" | ");
-
-
-				asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.RED))
-						.append(aotCache.getErrors().size() + " errors")
-						.toAttributedString();
-
-				status.update(Collections.singletonList(asb.toAttributedString()));
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
+			status.update(Collections.singletonList(asb.toAttributedString()));
 		}
 	}
 
@@ -97,7 +93,7 @@ public class QuarkusPicocliLineApp implements Runnable, QuarkusApplication {
 				status = Status.getStatus(terminal);
 				new Thread(() ->
 						Executors.newScheduledThreadPool(1)
-							.scheduleAtFixedRate(() -> updateStatus(), 0, 1, SECONDS)).start();
+								.scheduleAtFixedRate(() -> updateStatus(), 0, 1, SECONDS)).start();
 
 				final var historyFileName = ".leyden-analyzer.history";
 				LineReader reader = LineReaderBuilder.builder()

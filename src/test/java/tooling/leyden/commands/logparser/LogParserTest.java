@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import tooling.leyden.aotcache.Element;
-import tooling.leyden.aotcache.Error;
 import tooling.leyden.commands.DefaultTest;
 
 import java.io.File;
@@ -41,6 +40,6 @@ class LogParserTest extends DefaultTest {
 		File f2 = new File(getClass().getResource("aot.log.1").getPath());
 		getSystemRegistry().execute("load log " + f.getAbsolutePath() + " " + f2.getAbsolutePath());
 		final var aotCache = getDefaultCommand().getAotCache();
-		assertTrue(aotCache.getErrors().size() > 0);
+		assertTrue(aotCache.getWarnings().size() > 0);
 	}
 }
