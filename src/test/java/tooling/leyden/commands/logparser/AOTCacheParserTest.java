@@ -4,6 +4,7 @@ import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
 import tooling.leyden.aotcache.ClassObject;
 import tooling.leyden.aotcache.Element;
+import tooling.leyden.aotcache.MethodObject;
 import tooling.leyden.aotcache.ReferencingElement;
 import tooling.leyden.commands.DefaultTest;
 import tooling.leyden.commands.LoadFileCommand;
@@ -169,5 +170,61 @@ class AOTCacheParserTest extends DefaultTest {
 
 	}
 
+
+	@Test
+	void acceptMethodDataAndMethodCounters() throws Exception {
+		final var loadFile = new LoadFileCommand();
+		loadFile.setParent(getDefaultCommand());
+		final var aotCache = loadFile.getParent().getAotCache();
+		aotCache.clear();
+		AOTMapParser aotCacheParser = new AOTMapParser(loadFile);
+
+		aotCacheParser.accept("0x0000000800772d58: @@ Class             528 java.lang.Object");
+		aotCacheParser.accept("0x0000000800799620: @@ Class             528 jdk.internal.misc.CDS");
+		aotCacheParser.accept("0x0000000801d92878: @@ Method            88 void jdk.internal.misc.CDS.keepAlive(java.lang.Object)");
+		aotCacheParser.accept("0x0000000801d928d0: @@ MethodData        568 void jdk.internal.misc.CDS.keepAlive(java.lang.Object)");
+		aotCacheParser.accept("0x0000000801d92b08: @@ MethodCounters    64 void jdk.internal.misc.CDS.keepAlive(java.lang.Object)");
+		aotCacheParser.accept("0x00000008048c5c60: @@ ConstMethod       152 void jdk.internal.misc.CDS.keepAlive(java.lang.Object)");
+
+		aotCacheParser.accept("0x0000000801f5fb68: @@ MethodData        296 void java.lang.Long.<init>(long)");
+		aotCacheParser.accept("0x0000000801f5fd90: @@ MethodData        288 void java.lang.Short.<init>(short)");
+		aotCacheParser.accept("0x0000000801f6a670: @@ MethodData        672 int jdk.internal.util.ArraysSupport.hugeLength(int, int)");
+		aotCacheParser.accept("0x0000000801f6a968: @@ MethodData        408 int jdk.internal.util.ArraysSupport.utf16hashCode(int, byte[], int, int)");
+		aotCacheParser.accept("0x0000000801f6b188: @@ MethodData        328 int jdk.internal.util.ArraysSupport.hashCode(int, int[], int, int)");
+		aotCacheParser.accept("0x0000000801f6b328: @@ MethodData        328 int jdk.internal.util.ArraysSupport.hashCode(int, short[], int, int)");
+		aotCacheParser.accept("0x0000000801f6b4c8: @@ MethodData        328 int jdk.internal.util.ArraysSupport.hashCode(int, char[], int, int)");
+		aotCacheParser.accept("0x0000000801f6f848: @@ MethodData        584 void java.util.ImmutableCollections$Set12.<init>(java.lang.Object, java.lang.Object)");
+		aotCacheParser.accept("0x0000000801f895e0: @@ MethodCounters    64 java.util.Optional java.lang.VersionProps.optional()");
+		aotCacheParser.accept("0x0000000801f89678: @@ MethodCounters    64 java.util.Optional java.lang.VersionProps.build()");
+		aotCacheParser.accept("0x0000000801f89710: @@ MethodCounters    64 java.util.Optional java.lang.VersionProps.pre()");
+		aotCacheParser.accept("0x0000000801f897a8: @@ MethodCounters    64 java.util.List java.lang.VersionProps.versionNumbers()");
+		aotCacheParser.accept("0x0000000801f89840: @@ MethodCounters    64 java.util.Optional java.lang.VersionProps.optionalOf(java.lang.String)");
+		aotCacheParser.accept("0x0000000801f898d8: @@ MethodCounters    64 java.util.List java.lang.VersionProps.parseVersionNumbers(java.lang.String)");
+
+		var elements = aotCache.getElements(null, null, null, true, "MethodData");
+		assertEquals(9, elements.size());
+		for (Element e : elements) {
+			assertTrue(((ReferencingElement) e).getReferences().size() > 0);
+		}
+
+		elements = aotCache.getElements(null, null, null, true, "MethodCounters");
+		assertEquals(7, elements.size());
+		for (Element e : elements) {
+			assertTrue(((ReferencingElement) e).getReferences().size() > 0);
+		}
+
+		elements = aotCache.getElements("void jdk.internal.misc.CDS.keepAlive(java.lang.Object)",
+				null, null, true, "Method");
+		var method = elements.getFirst();
+		assertNotNull(method.getClass());
+		assertEquals("jdk.internal.misc.CDS", ((MethodObject)method).getClassObject().getKey());
+		elements = aotCache.getElements("void jdk.internal.misc.CDS.keepAlive(java.lang.Object)",
+				null, null, true, "ConstMethod", "MethodData", "MethodCounters");
+
+		assertEquals(3, elements.size());
+		for (Element e : elements) {
+			assertTrue(((ReferencingElement) e).getReferences().contains(method));
+		}
+	}
 
 }
