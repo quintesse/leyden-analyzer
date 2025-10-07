@@ -111,6 +111,38 @@ You may mix logs and aot map files from the same training or production run. The
 
 After loading some information, we can start the analysis.
 
+### Show summarized information
+
+The `info` command is very useful to get a general idea of what is happening in your application:
+
+```bash
+> info
+RUN SUMMARY: 
+Classes loaded: 
+  -> Cached:9.163 (97,28 %)
+  -> Not Cached:256 (2,72 %)
+Methods loaded: 
+  -> Cached:38.560 (96,09 %)
+  -> Not Cached:1.571 (3,91 %)
+Lambda Methods (4,37 % of total methods) loaded: 
+  -> Cached:197 (11,24 %)
+  -> Not Cached:1.556 (88,76 %)
+Code Entries: 493
+  -> Adapters: 493 (100,00 %)
+  -> Shared Blobs: 0 (0,00 %)
+  -> C1 Blobs: 0 (0,00 %)
+  -> C2 Blobs: 0 (0,00 %)
+AOT code cache size: 598432 bytes
+AOT CACHE SUMMARY: 
+Classes in AOT Cache: 9.163
+Methods in AOT Cache: 38.560
+  -> ConstMethods size: 38.362 (99,49 %)
+  -> MethodCounters size: 0 (0,00 %)
+  -> MethodData size: 0 (0,00 %)
+ConstantPool: 3.066
+  -> ConstantPoolCache: 3.066 (100,00 %)
+```
+
 ### Listing elements (and errors!) detected
 
 We have the `ls` command to list errors and what we know is on the cache. Most options in all the commands are autocompletable, so you can use `tab` to understand what to fill in there.
