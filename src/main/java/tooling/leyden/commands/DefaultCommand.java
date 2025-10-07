@@ -4,7 +4,7 @@ import org.jline.reader.LineReader;
 import org.jline.terminal.Terminal;
 import picocli.CommandLine;
 import picocli.shell.jline3.PicocliCommands;
-import tooling.leyden.aotcache.AOTCache;
+import tooling.leyden.aotcache.Information;
 
 import java.io.PrintWriter;
 
@@ -27,7 +27,7 @@ import java.io.PrintWriter;
 				CommandLine.HelpCommand.class})
 public class DefaultCommand implements Runnable {
 	private PrintWriter out;
-	private AOTCache aotCache = new AOTCache();
+	private Information information = new Information();
 	private Terminal terminal;
 
 
@@ -43,8 +43,8 @@ public class DefaultCommand implements Runnable {
 		out.println(new CommandLine(this).getUsageMessage());
 	}
 
-	public AOTCache getAotCache() {
-		return aotCache;
+	public Information getInformation() {
+		return information;
 	}
 
 	public PrintWriter getOut() {

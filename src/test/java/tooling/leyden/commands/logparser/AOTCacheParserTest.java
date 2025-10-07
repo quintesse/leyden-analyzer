@@ -22,7 +22,7 @@ class AOTCacheParserTest extends DefaultTest {
 	@Test
 	void accept() throws Exception {
 		File file = new File(getClass().getResource("aot.map").getPath());
-		final var aotCache = getDefaultCommand().getAotCache();
+		final var aotCache = getDefaultCommand().getInformation();
 		getSystemRegistry().execute("load aotCache " + file.getAbsolutePath());
 		assertTrue(aotCache.getAll().size() > 0);
 		assertEquals(0, aotCache.getWarnings().size());
@@ -37,33 +37,33 @@ class AOTCacheParserTest extends DefaultTest {
 			assertEquals(1, e.getSources().size(), "We shouldn't have more than one source here " + e.getSources().stream().reduce((s, s2) -> s + ", " + s2));
 		});
 
-		assertEquals(655, aotCache.getElements(null, null, null, true, "Symbol").size());
-		assertEquals(114, aotCache.getElements(null, null, null, true, "ConstantPool").size());
-		assertEquals(192, aotCache.getElements(null, null, null, true, "ConstantPoolCache").size());
-		assertEquals(494 + 5, aotCache.getElements(null, null, null, true, "Class").size());
-		assertEquals(5927, aotCache.getElements(null, null, null, true, "Method").size());
-		assertEquals(1385, aotCache.getElements(null, null, null, true, "ConstMethod").size());
+		assertEquals(655, aotCache.getElements(null, null, null, true, false, "Symbol").size());
+		assertEquals(114, aotCache.getElements(null, null, null, true, false, "ConstantPool").size());
+		assertEquals(192, aotCache.getElements(null, null, null, true, false, "ConstantPoolCache").size());
+		assertEquals(494 + 5, aotCache.getElements(null, null, null, true, true, "Class").size());
+		assertEquals(5927, aotCache.getElements(null, null, null, true, false, "Method").size());
+		assertEquals(1385, aotCache.getElements(null, null, null, true, false, "ConstMethod").size());
 	}
 
 	@Test
 	void acceptObjectsWithReferences() throws Exception {
 		final var loadFile = new LoadFileCommand();
 		loadFile.setParent(getDefaultCommand());
-		final var aotCache = loadFile.getParent().getAotCache();
+		final var aotCache = loadFile.getParent().getInformation();
 		AOTMapParser aotCacheParser = new AOTMapParser(loadFile);
 
 		var classObject = new ClassObject("java.lang.Float");
-		aotCache.addElement(classObject, "test");
+		aotCache.addAOTCacheElement(classObject, "test");
 
 		classObject = new ClassObject("java.lang.String$CaseInsensitiveComparator");
-		aotCache.addElement(classObject, "test");
+		aotCache.addAOTCacheElement(classObject, "test");
 
 		aotCacheParser.accept("0x00000000fff63458: @@ Object (0xfff63458) java.lang.String$CaseInsensitiveComparator");
 		aotCacheParser.accept("0x00000000fff632f0: @@ Object (0xfff632f0) [I length: 0");
 		aotCacheParser.accept("0x00000000fff62900: @@ Object (0xfff62900) java.lang.Float");
 
 		assertEquals(5, aotCache.getAll().size());
-		final var objects = aotCache.getElements(null, null, null, true, "Object");
+		final var objects = aotCache.getElements(null, null, null, true, false, "Object");
 		assertEquals(3, objects.size());
 		for (Element e : objects) {
 			assertTrue(e instanceof ReferencingElement);
@@ -80,19 +80,19 @@ class AOTCacheParserTest extends DefaultTest {
 	void acceptSymbol() throws Exception {
 		final var loadFile = new LoadFileCommand();
 		loadFile.setParent(getDefaultCommand());
-		final var aotCache = loadFile.getParent().getAotCache();
+		final var aotCache = loadFile.getParent().getInformation();
 		aotCache.clear();
 		AOTMapParser aotCacheParser = new AOTMapParser(loadFile);
 
 		var classObject = new ClassObject("java.security.InvalidAlgorithmParameterException");
-		aotCache.addElement(classObject, "test");
+		aotCache.addAOTCacheElement(classObject, "test");
 
 		aotCacheParser.accept("0x00000008028dbaf0: @@ Symbol            48 InvalidAlgorithmParameterException.java");
 
 		assertEquals(2, aotCache.getAll().size());
-		assertEquals(1, aotCache.getElements(null, null, null, true, "Symbol").size());
-		assertEquals(1, aotCache.getElements(null, null, null, true, "Class").size());
-		for (Element e : aotCache.getElements(null, null, null, true, "Symbol")) {
+		assertEquals(1, aotCache.getElements(null, null, null, true, false, "Symbol").size());
+		assertEquals(1, aotCache.getElements(null, null, null, true, false, "Class").size());
+		for (Element e : aotCache.getElements(null, null, null, true, false, "Symbol")) {
 			assertTrue(e instanceof ReferencingElement);
 			ReferencingElement re = (ReferencingElement) e;
 			assertNotEquals(0, re.getReferences().size());
@@ -105,12 +105,12 @@ class AOTCacheParserTest extends DefaultTest {
 	void acceptObjectsWithExplicitReference() throws Exception {
 		final var loadFile = new LoadFileCommand();
 		loadFile.setParent(getDefaultCommand());
-		final var aotCache = loadFile.getParent().getAotCache();
+		final var aotCache = loadFile.getParent().getInformation();
 		aotCache.clear();
 		AOTMapParser aotCacheParser = new AOTMapParser(loadFile);
 
 		var classObject = new ClassObject("java.lang.String");
-		aotCache.addElement(classObject, "test");
+		aotCache.addAOTCacheElement(classObject, "test");
 
 
 		aotCacheParser.accept("0x0000000800a8efe8: @@ Class             536 sun.util.locale.BaseLocale");
@@ -152,19 +152,19 @@ class AOTCacheParserTest extends DefaultTest {
 		aotCacheParser.accept("0x00000000ffefd1e8: @@ Object (0xffefd1e8) java.lang.Class Lsun/util/locale/BaseLocale;");
 		aotCacheParser.accept("0x00000000ffefd288: @@ Object (0xffefd288) java.lang.Class [Lsun/util/locale/BaseLocale;");
 
-		assertEquals(1, aotCache.getElements(null, null, null, true, "ConstantPool").size());
-		assertEquals(2, aotCache.getElements(null, null, null, true, "ConstantPoolCache").size());
-		assertEquals(19, aotCache.getElements(null, null, null, true, "Symbol").size());
-		assertEquals(8, aotCache.getElements(null, null, null, true, "Object").size());
+		assertEquals(1, aotCache.getElements(null, null, null, true, false, "ConstantPool").size());
+		assertEquals(2, aotCache.getElements(null, null, null, true, false, "ConstantPoolCache").size());
+		assertEquals(19, aotCache.getElements(null, null, null, true, false, "Symbol").size());
+		assertEquals(8, aotCache.getElements(null, null, null, true, false, "Object").size());
 
-		for (Element e : aotCache.getElements(null, null, null, true,
+		for (Element e : aotCache.getElements(null, null, null, true, false,
 				"Object", "ConstantPoolCache", "ConstantPool")) {
 			assertTrue(e instanceof ReferencingElement);
 			ReferencingElement re = (ReferencingElement) e;
 			assertNotEquals(0, re.getReferences().size(), e + " should have a reference");
 		}
 
-		assertEquals(3 + 1, aotCache.getElements(null, null, null, true, "Class").size());
+		assertEquals(3 + 1, aotCache.getElements(null, null, null, true, false, "Class").size());
 
 		assertEquals(1 + 2 + 19 + 8 + 3 + 1, aotCache.getAll().size());
 
@@ -175,7 +175,7 @@ class AOTCacheParserTest extends DefaultTest {
 	void acceptMethodDataAndMethodCounters() throws Exception {
 		final var loadFile = new LoadFileCommand();
 		loadFile.setParent(getDefaultCommand());
-		final var aotCache = loadFile.getParent().getAotCache();
+		final var aotCache = loadFile.getParent().getInformation();
 		aotCache.clear();
 		AOTMapParser aotCacheParser = new AOTMapParser(loadFile);
 
@@ -201,25 +201,25 @@ class AOTCacheParserTest extends DefaultTest {
 		aotCacheParser.accept("0x0000000801f89840: @@ MethodCounters    64 java.util.Optional java.lang.VersionProps.optionalOf(java.lang.String)");
 		aotCacheParser.accept("0x0000000801f898d8: @@ MethodCounters    64 java.util.List java.lang.VersionProps.parseVersionNumbers(java.lang.String)");
 
-		var elements = aotCache.getElements(null, null, null, true, "MethodData");
+		var elements = aotCache.getElements(null, null, null, true, false, "MethodData");
 		assertEquals(9, elements.size());
 		for (Element e : elements) {
 			assertTrue(((ReferencingElement) e).getReferences().size() > 0);
 		}
 
-		elements = aotCache.getElements(null, null, null, true, "MethodCounters");
+		elements = aotCache.getElements(null, null, null, true, false, "MethodCounters");
 		assertEquals(7, elements.size());
 		for (Element e : elements) {
 			assertTrue(((ReferencingElement) e).getReferences().size() > 0);
 		}
 
 		elements = aotCache.getElements("void jdk.internal.misc.CDS.keepAlive(java.lang.Object)",
-				null, null, true, "Method");
+				null, null, true, false, "Method");
 		var method = elements.getFirst();
 		assertNotNull(method.getClass());
 		assertEquals("jdk.internal.misc.CDS", ((MethodObject)method).getClassObject().getKey());
 		elements = aotCache.getElements("void jdk.internal.misc.CDS.keepAlive(java.lang.Object)",
-				null, null, true, "ConstMethod", "MethodData", "MethodCounters");
+				null, null, true, false, "ConstMethod", "MethodData", "MethodCounters");
 
 		assertEquals(3, elements.size());
 		for (Element e : elements) {

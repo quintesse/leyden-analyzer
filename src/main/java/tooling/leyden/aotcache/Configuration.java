@@ -6,16 +6,23 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class Configuration {
 
-	private Map<String, String> configuration = new ConcurrentHashMap<>();
+	private Map<String, Object> configuration = new ConcurrentHashMap<>();
 
-	public void addValue(String key, String value) {
+	public void addValue(String key, Object value) {
 		if (configuration.containsKey(key) && !configuration.get(key).equals(value)) {
 			System.out.println("Rewriting value for '" + key + "' previously it was '" + configuration.get(key) + "'.");
 		}
-		configuration.put(key.trim(), value.trim());
+		configuration.put(key.trim(), value);
 	}
 
-	public String getValue(String key) {
+	public void incrementValue(String key) {
+		if (!configuration.containsKey(key)) {
+			configuration.put(key, 0);
+		}
+		configuration.compute(key, (k, val) -> ((Integer)val) + 1);
+	}
+
+	public Object getValue(String key) {
 		return configuration.getOrDefault(key, "unknown");
 	}
 

@@ -24,7 +24,7 @@ import org.jline.utils.Status;
 import picocli.CommandLine;
 import picocli.shell.jline3.PicocliCommands;
 import picocli.shell.jline3.PicocliCommands.PicocliCommandsFactory;
-import tooling.leyden.aotcache.AOTCache;
+import tooling.leyden.aotcache.Information;
 import tooling.leyden.commands.DefaultCommand;
 
 import java.nio.file.Path;
@@ -43,25 +43,25 @@ public class QuarkusPicocliLineApp implements Runnable, QuarkusApplication {
 	CommandLine.IFactory factory;
 
 	private static Status status;
-	private static AOTCache aotCache;
+	private static Information information;
 
 	public static void updateStatus() {
-		if (status != null && aotCache != null) {
+		if (status != null && information != null) {
 			AttributedStringBuilder asb = new AttributedStringBuilder();
 			// Update the status line
 			asb.append("Our Playground contains: ");
 
 			asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN))
-					.append(aotCache.getAll().size() + " elements");
+					.append(information.getAll().size() + " elements");
 			asb.style(AttributedStyle.DEFAULT).append(" | ");
 			asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN))
-					.append(aotCache.getAllPackages().size() + " packages");
+					.append(information.getAllPackages().size() + " packages");
 			asb.style(AttributedStyle.DEFAULT).append(" | ");
 			asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.GREEN))
-					.append(aotCache.getAllTypes().size() + " element types");
+					.append(information.getAllTypes().size() + " element types");
 			asb.style(AttributedStyle.DEFAULT).append(" | ");
 			asb.style(AttributedStyle.DEFAULT.foreground(AttributedStyle.RED))
-					.append(aotCache.getWarnings().size() + " warnings")
+					.append(information.getWarnings().size() + " warnings")
 					.toAttributedString();
 
 			status.update(Collections.singletonList(asb.toAttributedString()));
@@ -78,7 +78,7 @@ public class QuarkusPicocliLineApp implements Runnable, QuarkusApplication {
 			builtins.rename(Builtins.Command.TTOP, "top");
 
 			DefaultCommand commands = new DefaultCommand();
-			aotCache = commands.getAotCache();
+			information = commands.getInformation();
 			PicocliCommandsFactory factory = new PicocliCommandsFactory();
 
 			CommandLine cmd = new CommandLine(commands, factory);

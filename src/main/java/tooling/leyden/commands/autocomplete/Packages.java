@@ -1,6 +1,6 @@
 package tooling.leyden.commands.autocomplete;
 
-import tooling.leyden.aotcache.AOTCache;
+import tooling.leyden.aotcache.Information;
 
 import java.util.Iterator;
 
@@ -8,6 +8,6 @@ import java.util.Iterator;
 public class Packages implements Iterable<String> {
 	@Override
 	public Iterator<String> iterator() {
-		return AOTCache.getMyself().getAllPackages().iterator();
+		return Information.getMyself().getAllPackages().iterator();
 	}
 }

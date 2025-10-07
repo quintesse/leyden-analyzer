@@ -4,7 +4,7 @@ import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStyle;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
-import tooling.leyden.aotcache.AOTCache;
+import tooling.leyden.aotcache.Information;
 import tooling.leyden.aotcache.Element;
 import tooling.leyden.aotcache.ReferencingElement;
 
@@ -43,9 +43,9 @@ class TreeCommand implements Runnable {
 	protected Integer max;
 
 	public void run() {
-		List<Element> elements = parent.getAotCache().getElements(parameters.getName(), parameters.packageName,
+		List<Element> elements = parent.getInformation().getElements(parameters.getName(), parameters.packageName,
 				parameters.excludePackageName,
-				parameters.showArrays, parameters.types);
+				parameters.showArrays, parameters.useNotCached, parameters.types);
 
 		if (!elements.isEmpty()) {
 			elements.forEach(e -> {
@@ -102,16 +102,16 @@ class TreeCommand implements Runnable {
 		if (element instanceof ReferencingElement re) {
 			referenced.addAll(filter(re.getReferences().parallelStream()));
 		}
-		referenced.addAll(filter(parent.getAotCache().getAll().parallelStream()
+		referenced.addAll(filter(parent.getInformation().getAll().parallelStream()
 				.filter(e -> (e instanceof ReferencingElement))
 				.filter(e -> ((ReferencingElement) e).getReferences().contains(element))));
 
 		return referenced;
 	}
 
-	//Delegate on AOTCache for filtering
+	//Delegate on Information for filtering
 	private List<Element> filter(Stream<Element> elements) {
-		return AOTCache.filterByParams(parameters.packageName, parameters.excludePackageName, parameters.showArrays,
+		return Information.filterByParams(parameters.packageName, parameters.excludePackageName, parameters.showArrays,
 				parameters.types, elements);
 	}
 

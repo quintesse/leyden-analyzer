@@ -13,7 +13,7 @@ class CleanCommand implements Runnable {
 	DefaultCommand parent;
 
 	public void run() {
-		parent.getAotCache().clear();
+		parent.getInformation().clear();
 		parent.getOut().println("Cleaned the elements. Load again files to start a new analysis.");
 	}
 }

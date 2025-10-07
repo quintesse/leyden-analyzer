@@ -30,19 +30,22 @@ Interactive shell to explore the contents of the AOT cache. Start by loading an
 AOT map file.
 Commands:
   clean       Empties the information loaded.
+  count       Count what elements are on the AOT Cache based on the information
+                we have loaded.
   describe    Describe an object, showing all related info.
-  error       Help detect and clarify errors found. By default, it lists errors
-                detected on the logs.
+  warning     Help detect and clarify warnings found. By default, it lists
+                incidents detected on the logs.
   info        Show information and statistics on the AOT Cache based on the
                 information we have loaded.
   ls          List what is on the cache. By default, it lists everything on the
                 cache.
   load        Load a file to extract information.
   cls, clear  Clears the screen
-  tree        Shows all dependencies of an object.
+  tree        Shows a tree with elements that are linked to the root.
   help        Display help information about the specified command.
 
 Press Ctrl-D to exit.
+
 ```
 
 ### Load some information
@@ -62,33 +65,43 @@ Commands:
   log       Load a log generated with -Xlog:class+load,aot*=warning:file=aot.
               log:level,tags
 ```
+
 We can load java logs of our app generated 
 with `-Xlog:class+load,aot*=warning:file=aot.log:tags` :
+
 ```bash
 > load log aot.log.0 aot.log
-Adding aot.log.0 to our analysis.
-This may take a while, be patient.
-Now the AOTCache contains 124 elements and 39 errors.
-Adding aot.log to our analysis.
-This may take a while, be patient.
-Rewriting value for 'ArchiveRelocationMode' previously it was '0'.
+Adding aot.log.0 to our analysis...
+File aot.log.0 added in 223ms.
+Adding aot.log to our analysis...
+File aot.log added in 175ms.
+Adding aot.log.1 to our analysis...
+Rewriting value for 'ArchiveRelocationMode' previously it was ' 0'.
 Rewriting value for 'initial full module graph' previously it was 'enabled'.
 Rewriting value for 'Using AOT-linked classes' previously it was 'true (static archive: has aot-linked classes)'.
-Now the AOTCache contains 8949 elements and 42 errors.
+File aot.log.1 added in 17ms.
+Adding aot.log.loading to our analysis...
+File aot.log.loading added in 196ms.
 ```
 
+There is a status bar on the bottom of the interactive console showing the current elements loaded in our playground:
+```
+Our Playground contains: 9014 elements | 768 packages | 2 element types | 42 warnings  
+```
 And we can add an AOT map file generated with `-Xlog:aot+map=trace:file=aot.
 map:none:filesize=0`
 
 ```bash
-> load aotCache /tmp/baselocale.map
-Adding /tmp/baselocale.map to our analysis.
-This may take a while, be patient.
-... processed 10000 elements from the AOT cache ...
-Now the AOTCache contains 14837 elements and 42 errors.
+> load aotCache aot.map
+Adding aot.map to our analysis...
+This is a big file. The size of this file is 331 MB. This may take a while.
+Consider using the `--background` option to load this file.
+File aot.map added in 5478ms.
 ```
 
-Loading the AOT Map gives a better overview on what the cache contains. Loading log files gives a better overview of why things are (or are not) in the cache and detect potential errors.
+Loading the AOT Map gives a better overview on what the cache contains. 
+
+Loading log files gives a better overview of why things are (or are not) in the cache and detect potential errors.
 
 > **Do not mix logs and caches from different runs.**
 > 
@@ -96,51 +109,79 @@ Loading the AOT Map gives a better overview on what the cache contains. Loading 
 
 You may mix logs and aot map files from the same training or production run. Then, the information will complement each other. It is recommended to load first the AOT cache map so when processing the log we already have the details about the elements inside the cache.
 
-Now we can start the analysis.
+After loading some information, we can start the analysis.
 
 ### Listing elements (and errors!) detected
 
-We have the `ls` command to list errors and what we know is on the cache.
+We have the `ls` command to list errors and what we know is on the cache. Most options in all the commands are autocompletable, so you can use `tab` to understand what to fill in there.
+
 ```bash
 > ls help
-Usage:  ls [-hV] [-pn=<packageName>] [-t[=<type>...]]... [COMMAND]
+
+Usage:
+
+ ls [-hV] [-i[=<id>]] [--useArrays[=<showArrays>]] [--useNotCached
+    [=<useNotCached>]] [-epn[=<exclude>[,<exclude>...]...]]... [-pn
+    [=<packageName>[,<packageName>...]...]]... [-t[=<type>[,<type>...]...]]...
+    [COMMAND]
+
+Description:
+
 List what is on the cache. By default, it lists everything on the cache.
-  -h, --help               Show this help message and exit.
-      -pn, --packageName=<packageName>
-                           Restrict the listing to this package.
-  -t, --type[=<type>...]   Restrict the listing to this type of element
-  -V, --version            Print version information and exit.
+
+Options:
+
+      -epn, --excludePackageName[=<exclude>[,<exclude>...]...]
+                            Exclude the elements inside this package.
+                            Note that some elements don't belong to any
+                              particular package.
+  -h, --help                Show this help message and exit.
+  -i, --identifier[=<id>]   The object identifier. If it is a class, use the
+                              full qualified name.
+      -pn, --packageName[=<packageName>[,<packageName>...]...]
+                            Restrict the command to elements inside this
+                              package.
+                            Note that some elements don't belong to any
+                              particular package
+  -t, --type[=<type>[,<type>...]...]
+                            Restrict the command to this type of element
+      --useArrays[=<showArrays>]
+                            Use array classes if true. True by default.
+      --useNotCached[=<useNotCached>]
+                            Use elements that are used in your app but were not
+                              in the AOT Cache. False by default.
+  -V, --version             Print version information and exit.
+
 Commands:
+
   help  Display help information about the specified command.
 ```
 
 ```bash
 > ls 
 [....]
-  > Annotations -> [random generated key] 1758018320071
-  > Method -> java.net.URL.getUserInfo
-  > Symbol -> Method javax/sql/DataSource.getParentLogger()Ljava/util/logging/Logger; is abstract
-  > Method -> java.lang.AbstractStringBuilder.length
-  > TypeArrayU4 -> [random generated key] 1758018319895
-  > TypeArrayU2 -> [random generated key] 1758018319895
-  > TypeArrayU1 -> [random generated key] 1758018319895
-  > Class -> java.lang.management.ManagementFactory$$Lambda/0x8000000b0
-  > Class -> org.jgroups.util.IntHashMap
-  > Class -> java.lang.annotation.RetentionPolicy
-  > Method -> jdk.internal.vm.vector.VectorSupport.libraryBinaryOp
-  > Symbol -> java/lang/invoke/LambdaForm$DMH+0x80000001d
-  > TypeArrayU4 -> [random generated key] 1758018319894
-  > Method -> java.util.concurrent.atomic.AtomicReferenceFieldUpdater$AtomicReferenceFieldUpdaterImpl.isSamePackage
-  > Class -> org.infinispan.xsite.spi.XSiteEntryMergePolicy
-  > Method -> java.lang.VirtualThread.unblockVirtualThreads
-  > Class -> org.infinispan.commons.util.ArrayMap
-  > TypeArrayU2 -> [random generated key] 1758018319894
-  > Class -> com.fasterxml.jackson.databind.cfg.MapperConfigBase
-  > TypeArrayU1 -> [random generated key] 1758018319894
-  > Symbol -> java/lang/ProcessHandleImpl$$Lambda+0x8000000a6
-  > Class -> org.apache.logging.log4j.core.layout.PatternLayout$SerializerBuilder
-  > AdapterHandlerEntry -> [random generated key] 1758017931833
-  Found 15704 elements.
+  > Symbol -> Ljdk/internal/misc/TerminatingThreadLocal<[Lsun/nio/fs/NativeBuffer;>;
+  > TypeArrayOther -> 0x0000000800754aa8
+  > Object -> (0xffd86a88) java.lang.String "M05"
+  > Symbol -> setNormalizedYear
+  > Class -> org.infinispan.configuration.cache.GroupsConfiguration
+  > Symbol -> java/time/chrono/ThaiBuddhistChronology
+  > Method -> void java.util.ArrayList$ArrayListSpliterator.forEachRemaining(java.util.function.Consumer)
+  > ConstMethod -> boolean java.util.regex.CharPredicates.lambda$PUNCTUATION$0(int)
+  > Method -> void jdk.internal.platform.CgroupSubsystemFactory.<init>()
+  > Symbol -> jdk/internal/vm/vector/VectorSupport$VectorBlendOp
+  > Object -> (0xffd4ac78) java.util.concurrent.ConcurrentHashMap$Node
+  > ConstMethod -> java.util.List java.time.chrono.IsoChronology.eras()
+  > Symbol -> Method javax/crypto/SecretKey.getEncoded()[B is abstract
+  > TypeArrayU8 -> 0x0000000803e93be8
+  > TypeArrayU1 -> 0x0000000802ad86a0
+  > Method -> java.io.FileDescriptor sun.nio.ch.Net.serverSocket()
+  > ConstMethod -> boolean java.io.ObjectStreamClass.classNamesEqual(java.lang.String, java.lang.String)
+  > Class -> io.netty.util.concurrent.FutureListener
+  > TypeArrayU1 -> 0x00000008028aac38
+  > TypeArrayU1 -> 0x0000000802b17450
+  > Object -> (0xffe7f538) [I length: 18
+Found 260732 elements.
 ```
 
 We can filter by type of element and package (the parameters are auto-completable with suggestions):
@@ -152,24 +193,22 @@ We can filter by type of element and package (the parameters are auto-completabl
 Found 3 elements.
 ```
 
-We can also explore the errors:
+We can also explore the potential errors/warnings/incidents:
 
 ```bash
-> error
+> warning 
 [...]
-  > Element 'org.apache.logging.log4j.core.async.AsyncLoggerContext' of type 'Class' couldn't be added to the cache because: 'Failed verification'
-  > Element 'jdk.proxy1.$Proxy36' of type 'Class' couldn't be added to the cache because: 'Unsupported location'
-  > Element 'org.apache.logging.slf4j.Log4jMarkerFactory' of type 'Class' couldn't be added to the cache because: 'Old class has been linked'
-  > Element 'jdk.proxy1.$Proxy18' of type 'Class' couldn't be added to the cache because: 'Unsupported location'
-  > Element 'org.apache.logging.slf4j.Log4jLoggerFactory$$Lambda+0x800000258' of type 'Method' couldn't be added to the cache because: 'nest_host class org/apache/logging/slf4j/Log4jLoggerFactory is excluded'
-  > Element 'org.slf4j.Marker' of type 'Class' couldn't be added to the cache because: 'Unlinked class not supported by AOTConfiguration'
-  > Element 'jdk.internal.event.ThreadSleepEvent' of type 'Class' couldn't be added to the cache because: 'JFR event class'
-  > Element 'org.slf4j.event.LoggingEvent' of type 'Class' couldn't be added to the cache because: 'Unlinked class not supported by AOTConfiguration'
-Found 35 errors.
+  > Element 'org.infinispan.remoting.transport.jgroups.JGroupsTransport' of type 'Class' couldn't be stored into the A
+OTcache because: 'nest host class org/infinispan/remoting/transport/jgroups/JGroupsTransport is excluded'
+  > Element 'jdk.proxy1.$Proxy0' of type 'Class' couldn't be stored into the AOTcache because: 'Unsupported location'
+  > [Unknown]: 'Preload Warning: Verification failed for org.apache.logging.log4j.core.async.AsyncLoggerContext'
+  > [StoringIntoAOTCache]: 'JVM_StartThread() ignored: jdk.internal.misc.InnocuousThread'
+  > Element 'org.infinispan.remoting.transport.jgroups.JGroupsTransport' of type 'Class' couldn't be stored into the A
+OTcache because: 'nest host class org/infinispan/remoting/transport/jgroups/JGroupsTransport is excluded'
+Found 42 warnings.
 ```
-TODO: Add suggestions on how to solve these errors/warnings. Maybe on the `describe` command?
 
-TODO: Detect more errors, these were just the low hanging fruits with `ERROR` label.
+TODO: Add suggestions on how to solve these errors/warnings. Maybe on the `describe` command?
 
 ### Looking for details
 
@@ -177,161 +216,184 @@ To explore a bit more about what is on stored on the cache, we can use the comma
 
 ```bash
 > describe help
-Usage:  describe [-hV] [-t=<type>] <name> [COMMAND]
+
+Usage:
+
+ describe [-hV] [-i[=<id>]] [--useArrays[=<showArrays>]] [--useNotCached
+          [=<useNotCached>]] [-epn[=<exclude>[,<exclude>...]...]]... [-pn
+          [=<packageName>[,<packageName>...]...]]... [-t[=<type>[,
+          <type>...]...]]... [COMMAND]
+
+Description:
+
 Describe an object, showing all related info.
-      <name>          The object name/identifier. If it is a class, use the
-                        full qualified name.
-  -h, --help          Show this help message and exit.
-  -t, --type=<type>   Restrict the listing to this type of element
-  -V, --version       Print version information and exit.
+
+Options:
+
+      -epn, --excludePackageName[=<exclude>[,<exclude>...]...]
+                            Exclude the elements inside this package.
+                            Note that some elements don't belong to any
+                              particular package.
+  -h, --help                Show this help message and exit.
+  -i, --identifier[=<id>]   The object identifier. If it is a class, use the
+                              full qualified name.
+      -pn, --packageName[=<packageName>[,<packageName>...]...]
+                            Restrict the command to elements inside this
+                              package.
+                            Note that some elements don't belong to any
+                              particular package
+  -t, --type[=<type>[,<type>...]...]
+                            Restrict the command to this type of element
+      --useArrays[=<showArrays>]
+                            Use array classes if true. True by default.
+      --useNotCached[=<useNotCached>]
+                            Use elements that are used in your app but were not
+                              in the AOT Cache. False by default.
+  -V, --version             Print version information and exit.
+
 Commands:
+
   help  Display help information about the specified command.
 ```
 
-Depending if it was loaded from one type of file or another, the details may vary:
+Depending on if it was loaded from one type of file or another, the details may vary:
 
 ```bash
-> describe jdk.internal.vm.vector.VectorSupport.libraryBinaryOp
 -----
-|  Method jdk.internal.vm.vector.VectorSupport.libraryBinaryOp on address 0x0000000802bc8da0 with size 208.
+|  Class org.infinispan.server.loader.Loader on address 0x0000000800a58b58 with size 528.
 |  This information comes from: 
-|    > AOT Map
-|  This is a ConstMethod.
-|  Compilation level unknown.
-|  Belongs to the class jdk.internal.vm.vector.VectorSupport
-|  Returns jdk.internal.vm.vector.VectorSupport$VectorPayload.
------
-```
-
-
-```bash
-> describe org.infinispan.commons.util.ArrayMap
------
-|  Class org.infinispan.commons.util.ArrayMap with size null.
-|  This information comes from: 
-|    > Java Log
------
-```
-
-TODO: Does this make sense if we can't really know from the log if the class was properly stored on the cache? Should we just load from the cache?
-
-```bash
-> describe java.lang.ref.WeakReference
------
-|  Class java.lang.ref.WeakReference on address 0x00000008007abc00 with size 600.
-|  This information comes from: 
-|    > AOT Map
-|  This class has the following methods:
-|     | ______
-|     | 
-|     | Method java.lang.ref.WeakReference.<init> on address 0x00000008007ac0b0 with size 88.
-|     | This information comes from: 
-|     |   > AOT Map
-|     | Compilation level unknown.
-|     | Belongs to the class java.lang.ref.WeakReference
-|     | Returns void.
-|     | 
-|     | ______
-|     | 
-|     | Method java.lang.ref.WeakReference.<init> on address 0x00000008007ac148 with size 88.
-|     | This information comes from: 
-|     |   > AOT Map
-|     | Compilation level unknown.
-|     | Belongs to the class java.lang.ref.WeakReference
-|     | Returns void.
-|     | 
-|     | ______
-|     | 
-|     | Method java.lang.ref.WeakReference.<init> on address 0x0000000802bcd5e0 with size 104.
-|     | This information comes from: 
-|     |   > AOT Map
-|     | This is a ConstMethod.
-|     | Compilation level unknown.
-|     | Belongs to the class java.lang.ref.WeakReference
-|     | Returns void.
-|     | 
-|     | ______
-|     | 
-|     | Method java.lang.ref.WeakReference.<init> on address 0x0000000802bcd648 with size 120.
-|     | This information comes from: 
-|     |   > AOT Map
-|     | This is a ConstMethod.
-|     | Compilation level unknown.
-|     | Belongs to the class java.lang.ref.WeakReference
-|     | Returns void.
-|     | 
-|     | ______
-|  There are other elements of the cache that link to this element: 
-|    _____
-|    | ConstantPoolCache java.lang.ref.WeakReference on address 0x00000008007ac058 with size 64.
-|    | This information comes from: 
-|    |   > AOT Map
-|    | This element refers to Class -> java.lang.ref.WeakReference
-|    | ConstantPool java.lang.ref.WeakReference on address 0x0000000802bcd470 with size 344.
-|    | This information comes from: 
-|    |   > AOT Map
-|    | This element refers to Class -> java.lang.ref.WeakReference
-|    _____
------
------
-|  ConstantPoolCache java.lang.ref.WeakReference on address 0x00000008007ac058 with size 64.
-|  This information comes from: 
-|    > AOT Map
-|  This element refers to Class -> java.lang.ref.WeakReference
------
------
-|  ConstantPool java.lang.ref.WeakReference on address 0x0000000802bcd470 with size 344.
-|  This information comes from: 
-|    > AOT Map
-|  This element refers to Class -> java.lang.ref.WeakReference
------
-```
-Or we can filter by type of element we want to explore:
-
-```bash
-> describe java.lang.ref.WeakReference --type=constantpool
------
-|  ConstantPool java.lang.ref.WeakReference on address 0x0000000802bcd470 with size 344.
-|  This information comes from:
-|    > AOT Map
-|  This element refers to Class -> java.lang.ref.WeakReference
------
-```
-
-```bash
-> describe sun.util.locale.BaseLocale -t=Class
------
-|  Class sun.util.locale.BaseLocale on address 0x0000000800a8efe8 with size 536.
-|  This information comes from: 
-|    > Java Log
 |    > AOT Map
 |  This class has the following methods:
 |     ______
-|     | 
-|     | Method sun.util.locale.BaseLocale.getLanguage on address 0x0000000800a8f750 with size 88.
-|     | This information comes from: 
-|     |   > AOT Map
-[...]
+|     | void org.infinispan.server.loader.Loader.<init>()
+|     | void org.infinispan.server.loader.Loader.main(java.lang.String[], java.lang.String)
+|     | void org.infinispan.server.loader.Loader.run(java.lang.String[], java.lang.String, java.util.Properties)
+|     | java.lang.ClassLoader org.infinispan.server.loader.Loader.classLoaderFromPath(java.nio.file.Path, java.lang.Cl
+assLoader)
+|     | java.lang.String org.infinispan.server.loader.Loader.extractArtifactName(java.lang.String)
+|     | void org.infinispan.server.loader.Loader.<init>()
+|     | void org.infinispan.server.loader.Loader.main(java.lang.String[], java.lang.String)
+|     | void org.infinispan.server.loader.Loader.run(java.lang.String[], java.lang.String, java.util.Properties)
+|     | java.lang.ClassLoader org.infinispan.server.loader.Loader.classLoaderFromPath(java.nio.file.Path, java.lang.Cl
+assLoader)
+|     | java.lang.String org.infinispan.server.loader.Loader.extractArtifactName(java.lang.String)
+|     | ______
+|  There are other elements of the cache that link to this element: 
+|    _____
+|    | Method -> void org.infinispan.server.loader.Loader.run(java.lang.String[], java.lang.String, java.util.Properti
+es)
+|    | Method -> void org.infinispan.server.loader.Loader.<init>()
+|    | ConstantPoolCache -> org.infinispan.server.loader.Loader
+|    | Method -> void org.infinispan.server.loader.Loader.main(java.lang.String[], java.lang.String)
+|    | ConstMethod -> java.lang.ClassLoader org.infinispan.server.loader.Loader.classLoaderFromPath(java.nio.file.Path
+, java.lang.ClassLoader)
+|    | ConstMethod -> java.lang.String org.infinispan.server.loader.Loader.extractArtifactName(java.lang.String)
+|    | ConstMethod -> void org.infinispan.server.loader.Loader.run(java.lang.String[], java.lang.String, java.util.Pro
+perties)
+|    | ConstMethod -> void org.infinispan.server.loader.Loader.<init>()
+|    | Symbol -> Loader.java
+|    | Symbol -> org/infinispan/server/loader/Loader
+|    | ConstMethod -> void org.infinispan.server.loader.Loader.main(java.lang.String[], java.lang.String)
+|    | ConstantPool -> org.infinispan.server.loader.Loader
+|    | Method -> java.lang.String org.infinispan.server.loader.Loader.extractArtifactName(java.lang.String)
+|    | Method -> java.lang.ClassLoader org.infinispan.server.loader.Loader.classLoaderFromPath(java.nio.file.Path, jav
+a.lang.ClassLoader)
+|    _____
+-----
+-----
+|  ConstantPool org.infinispan.server.loader.Loader on address 0x0000000802f2cb48 with size 2824.
+|  This information comes from: 
+|    > AOT Map
+|  This element refers to :
+|   > Class -> org.infinispan.server.loader.Loader
+-----
+```
+
+If we don't ask to describe something coming from the AOTCache, the information is much more limited:
+
+```bash
+> describe -i=org.infinispan.configuration.cache.GroupsConfiguration
+-----
+|  Class org.infinispan.configuration.cache.GroupsConfiguration with size null.
+|  This information comes from: 
+|    > Java Log
+|  This class has the following methods:
+|     ______
+|     | null org.infinispan.configuration.cache.GroupsConfiguration.Lambda/0x8000000fa()
+|     | null org.infinispan.configuration.cache.GroupsConfiguration.Lambda/0x000000080601e710()
+|     | null org.infinispan.configuration.cache.GroupsConfiguration.Lambda/0x000000080501edb8()
+|     | ______
+-----
+```
+
+Or we can filter by type of element we want to explore:
+
+```bash
+> describe -i=org.infinispan.server.loader.Loader -t=ConstantPoolCache 
+-----
+|  ConstantPoolCache org.infinispan.server.loader.Loader on address 0x0000000800a58d68 with size 64.
+|  This information comes from: 
+|    > AOT Map
+|  This element refers to :
+|   > Class -> org.infinispan.server.loader.Loader
+-----
 ```
 
 #### Tree information
 
-The `tree` command shows related elements. It can be used with the `describe` command to check details on elements inside the AOT Cache. By default, it shows a class.
+The `tree` command shows related elements. It can be used with the `describe` command to check details on elements inside the AOT Cache.
 
 ```bash
 > tree help
-Usage:  tree [-hV] [-t=<type>] <name> [COMMAND]
-Shows all dependencies of an object.
-      <name>          The object name/identifier. If it is a class, use the
-                        full qualified name.
-  -h, --help          Show this help message and exit.
-  -t, --type=<type>   Restrict the listing to this type of element. By default,
-                        it shows classes.
-  -V, --version       Print version information and exit.
+
+Usage:
+
+ tree [-hV] [-i[=<id>]] [--useArrays[=<showArrays>]] [--useNotCached
+      [=<useNotCached>]] [-l[=<N>...]] [-max[=<N>...]] [-epn[=<exclude>[,
+      <exclude>...]...]]... [-pn[=<packageName>[,<packageName>...]...]]... [-t
+      [=<type>[,<type>...]...]]... [COMMAND]
+
+Description:
+
+Shows a tree with elements that are linked to the root.
+This means, elements that refer to/use the root element.,
+Blue italic elements have already been shown and will not be expanded.
+
+Options:
+
+      -epn, --excludePackageName[=<exclude>[,<exclude>...]...]
+                            Exclude the elements inside this package.
+                            Note that some elements don't belong to any
+                              particular package.
+  -h, --help                Show this help message and exit.
+  -i, --identifier[=<id>]   The object identifier. If it is a class, use the
+                              full qualified name.
+  -l, --level[=<N>...]      Maximum number of tree levels to display.
+      -max[=<N>...]         Maximum number of elements to display. By default,
+                              100. If using -1, it shows all elements. Note
+                              that on some cases this may mean showing
+                              thousands of elements.
+      -pn, --packageName[=<packageName>[,<packageName>...]...]
+                            Restrict the command to elements inside this
+                              package.
+                            Note that some elements don't belong to any
+                              particular package
+  -t, --type[=<type>[,<type>...]...]
+                            Restrict the command to this type of element
+      --useArrays[=<showArrays>]
+                            Use array classes if true. True by default.
+      --useNotCached[=<useNotCached>]
+                            Use elements that are used in your app but were not
+                              in the AOT Cache. False by default.
+  -V, --version             Print version information and exit.
+
 Commands:
+
   help  Display help information about the specified command.
+
 ```
 
+To avoid infinite loops and circular references, each element will be iterated over on the tree only once. Elements that have already appeared on the tree will be colored blue and will not have children.
 
 ```bash
 > tree sun.util.locale.BaseLocale

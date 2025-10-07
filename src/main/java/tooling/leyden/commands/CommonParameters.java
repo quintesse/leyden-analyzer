@@ -44,6 +44,12 @@ public class CommonParameters {
 			arity = "0..1")
 	protected Boolean showArrays;
 
+	@CommandLine.Option(names = {"--useNotCached"},
+			description = "Use elements that are used in your app but were not in the AOT Cache. False by default.",
+			defaultValue = "false",
+			arity = "0..1")
+	protected Boolean useNotCached;
+
 	@CommandLine.Option(
 			names = {"-t", "--type"},
 			arity = "0..*",

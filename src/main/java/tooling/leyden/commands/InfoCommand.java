@@ -2,17 +2,10 @@ package tooling.leyden.commands;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
-import tooling.leyden.aotcache.ClassObject;
 import tooling.leyden.aotcache.Configuration;
-import tooling.leyden.aotcache.Element;
 import tooling.leyden.commands.autocomplete.InfoCommandTypes;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
 
 @Command(name = "info", mixinStandardHelpOptions = true,
 		version = "1.0",
@@ -32,11 +25,11 @@ class InfoCommand implements Runnable {
 
 	public void run() {
 		if (shouldShow("configuration"))
-			print("Configuration", parent.getAotCache().getConfiguration());
+			print("Configuration", parent.getInformation().getConfiguration());
 		if (shouldShow("statistics"))
-			print("Statistics", parent.getAotCache().getStatistics());
+			print("Statistics", parent.getInformation().getStatistics());
 		if (shouldShow("allocation"))
-			print("Allocation", parent.getAotCache().getAllocation());
+			print("Allocation", parent.getInformation().getAllocation());
 	}
 
 	private boolean shouldShow(String s) {

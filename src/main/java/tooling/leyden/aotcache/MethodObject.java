@@ -1,7 +1,6 @@
 package tooling.leyden.aotcache;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -16,18 +15,29 @@ public class MethodObject extends ReferencingElement {
 	private Boolean constMethod = false;
 	private List<String> parameters = new ArrayList<>();
 
-	public MethodObject() {}
+	public MethodObject() {
+	}
 
-	public MethodObject(String identifier, String thisSource, AOTCache aotCache) {
-		String qualifiedName = identifier.substring(identifier.indexOf(" ") + 1, identifier.indexOf("("));
-		this.setName(qualifiedName.substring(qualifiedName.lastIndexOf(".") + 1));
-		this.fillReturnClass(identifier, aotCache);
-		this.fillClass(thisSource, qualifiedName, aotCache);
-		this.procesParameters(identifier, aotCache);
+	public MethodObject(String identifier, String thisSource, Boolean useNotCached, Information information) {
+		String qualifiedName = identifier.substring(identifier.indexOf(" ") + 1);
+		if (qualifiedName.contains("(")) {
+			qualifiedName = qualifiedName.substring(0, qualifiedName.indexOf("("));
+		}
+		String className;
+		if (qualifiedName.contains("$$")) {
+			this.setName(qualifiedName.substring(qualifiedName.indexOf("$$") + 2));
+			className = qualifiedName.substring(0, qualifiedName.indexOf("$$"));
+		} else {
+			this.setName(qualifiedName.substring(qualifiedName.lastIndexOf(".") + 1));
+			className = qualifiedName.substring(0, qualifiedName.lastIndexOf("."));
+		}
+		this.fillReturnClass(identifier, information);
+		this.fillClass(thisSource, className, information, useNotCached);
+		this.procesParameters(identifier, information);
 	}
 
 	public String getType() {
-		return (isConstMethod() ? "Const" : "" ) + "Method";
+		return (isConstMethod() ? "Const" : "") + "Method";
 	}
 
 	public ClassObject getClassObject() {
@@ -99,29 +109,33 @@ public class MethodObject extends ReferencingElement {
 		StringBuilder sb = new StringBuilder(super.getDescription(leftPadding));
 		sb.append('\n' + leftPadding + "Compilation level " + compilationLevel + ".");
 		if (classObject != null) {
-			sb.append('\n' + leftPadding + "Belongs to the class " +  getClassObject().getKey());
-		};
+			sb.append('\n' + leftPadding + "Belongs to the class " + getClassObject().getKey());
+		}
+		;
 		if (getReturnType() != null) {
 			sb.append('\n' + leftPadding + "Returns " + getReturnType() + ".");
 		}
 		return sb.toString();
 	}
 
-	private void procesParameters(final String identifier, final AOTCache aotCache) {
+	private void procesParameters(final String identifier, final Information information) {
+		if (!identifier.contains("(") || !identifier.contains(")")) {
+			return;
+		}
 		//Get parameter classes to add as references
 //88 void java.util.Hashtable.reconstitutionPut(java.util.Hashtable$Entry[], java.lang.Object, java.lang.Object)
 		String parameters[] = identifier.substring(identifier.indexOf("(") + 1, identifier.indexOf(")"))
 				.split(", ");
 		for (String parameter : parameters) {
 			if (!parameter.isBlank()) {
-				var classes = aotCache.getElements(parameter, null, null, true, "Class").stream().toList();
+				var classes = information.getElements(parameter, null, null, true, true, "Class").stream().toList();
 				classes.forEach(this::addParameter);
 				if (classes.isEmpty()) {
 					this.addParameter(parameter);
 					//Maybe it was an array:
 					if (parameter.endsWith("[]")) {
 						parameter = parameter.substring(0, parameter.length() - 2);
-						classes = aotCache.getElements(parameter, null, null, true, "Class").stream().toList();
+						classes = information.getElements(parameter, null, null, true, true, "Class").stream().toList();
 						classes.forEach(this::addParameter);
 					}
 				}
@@ -129,12 +143,12 @@ public class MethodObject extends ReferencingElement {
 		}
 	}
 
-	private void fillClass(String thisSource, String qualifiedName, AOTCache aotCache) {
-		String className = qualifiedName.substring(0, qualifiedName.lastIndexOf("."));
-		List<Element> objects = aotCache.getElements(className, null, null, true, "Class");
+	private void fillClass(String thisSource, String className, Information information, Boolean useNotCached) {
+		List<Element> objects = information.getElements(className, null, null, true, useNotCached, "Class");
 		if (objects.isEmpty()) {
 			ClassObject classObject = new ClassObject(className);
-			aotCache.addElement(classObject, "Referenced from a Method element in " + thisSource);
+			classObject.addMethod(this);
+			information.addExternalElement(classObject, "Referenced from a Method element in " + thisSource);
 		} else {
 			Element element = objects.getFirst();
 			if (element instanceof ClassObject classObject) {
@@ -144,11 +158,11 @@ public class MethodObject extends ReferencingElement {
 		}
 	}
 
-	private void fillReturnClass(String identifier, AOTCache aotCache) {
+	private void fillReturnClass(String identifier, Information information) {
 		if (identifier.indexOf(" ") > 0) {
 			this.setReturnType(identifier.substring(0, identifier.indexOf(" ")));
-			aotCache
-					.getElements(this.getReturnType(), null, null, true, "Class")
+			information
+					.getElements(this.getReturnType(), null, null, true, true, "Class")
 					.forEach(this::addReference);
 		}
 	}

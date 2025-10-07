@@ -6,7 +6,6 @@ import tooling.leyden.aotcache.WarningType;
 
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Command(name = "warning", mixinStandardHelpOptions = true,
@@ -28,7 +27,7 @@ class WarningCommand implements Runnable {
 	protected String[] types;
 
 	public void run() {
-		var wa = parent.getAotCache().getWarnings();
+		var wa = parent.getInformation().getWarnings();
 		if (types != null && types.length > 0) {
 			wa = wa.parallelStream().filter(
 					warning -> Arrays.stream(types).anyMatch(t -> t.equalsIgnoreCase(warning.getType().name())))

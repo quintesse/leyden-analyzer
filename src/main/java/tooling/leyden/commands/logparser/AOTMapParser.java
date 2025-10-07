@@ -1,6 +1,6 @@
 package tooling.leyden.commands.logparser;
 
-import tooling.leyden.aotcache.AOTCache;
+import tooling.leyden.aotcache.Information;
 import tooling.leyden.aotcache.ClassObject;
 import tooling.leyden.aotcache.ConstantPoolObject;
 import tooling.leyden.aotcache.Element;
@@ -18,11 +18,11 @@ import java.util.function.Consumer;
 public class AOTMapParser implements Consumer<String> {
 
 	private final LoadFileCommand loadFile;
-	private final AOTCache aotCache;
+	private final Information information;
 
 	public AOTMapParser(LoadFileCommand loadFile) {
 		this.loadFile = loadFile;
-		this.aotCache = loadFile.getParent().getAotCache();
+		this.information = loadFile.getParent().getInformation();
 	}
 
 
@@ -63,7 +63,7 @@ public class AOTMapParser implements Consumer<String> {
 //					 0x0000000804990600: @@ ConstMethod       88 void jdk.internal.access.SharedSecrets.setJavaNetHttpCookieAccess(jdk.internal.access.JavaNetHttpCookieAccess)
 				element = processMethod(identifier, thisSource, type);
 				((MethodObject) element).setConstMethod(true);
-				var methods = this.aotCache.getElements(identifier, null, null, true, "Method");
+				var methods = this.information.getElements(identifier, null, null, true, false, "Method");
 				if (!methods.isEmpty()) {
 					((MethodObject) element).addReference(methods.getFirst());
 				}
@@ -143,7 +143,7 @@ public class AOTMapParser implements Consumer<String> {
 				element.setAddress(address);
 				element.setType(type);
 				element.setSize(size);
-				this.aotCache.addElement(element, thisSource);
+				this.information.addAOTCacheElement(element, thisSource);
 			}
 		} catch (Exception e) {
 			loadFile.getParent().getOut().println("ERROR: " + e.getMessage());
@@ -155,11 +155,11 @@ public class AOTMapParser implements Consumer<String> {
 		ReferencingElement result = new ReferencingElement();
 		if (!identifier.isBlank()) {
 			result.setName(identifier);
-			var methods = this.aotCache.getElements(identifier, null, null, true, "Method");
+			var methods = this.information.getElements(identifier, null, null, true, false, "Method");
 			if (!methods.isEmpty()) {
 				result.addReference(methods.getFirst());
 			} else {
-				result.addReference(new MethodObject(identifier, "Referenced by '" + content + "'", this.aotCache));
+				result.addReference(new MethodObject(identifier, "Referenced by '" + content + "'", false, this.information));
 			}
 		} else {
 			result.setName(address);
@@ -176,7 +176,7 @@ public class AOTMapParser implements Consumer<String> {
 	private Element processClass(String identifier) {
 		// 0x000000080082d490: @@ Class             760 java.lang.StackFrameInfo
 		// It could have been already loaded
-		for (Element element : this.aotCache.getElements(identifier, null, null, true, "Class")) {
+		for (Element element : this.information.getElements(identifier, null, null, true, false,"Class")) {
 			return element;
 		}
 		return new ClassObject(identifier);
@@ -184,10 +184,10 @@ public class AOTMapParser implements Consumer<String> {
 
 	private Element processMethod(String identifier, String thisSource, String type) {
 		// It could have been already loaded
-		for (Element element : this.aotCache.getElements(identifier, null, null, true, type)) {
+		for (Element element : this.information.getElements(identifier, null, null, true, false, type)) {
 			return element;
 		}
-		return new MethodObject(identifier, thisSource, this.aotCache);
+		return new MethodObject(identifier, thisSource, false, this.information);
 	}
 
 	private void fillReferencedElement(final String identifier, final ReferencingElement element,
@@ -219,7 +219,7 @@ public class AOTMapParser implements Consumer<String> {
 		if (objectName.trim().startsWith("java.lang.Class ")) {
 			//Coming from an Object, we are looking to reference the java.lang.Class
 			//and the class that that java.lang.Class refers itself
-			for (Element e : this.aotCache.getElements("java.lang.Class", new String[]{"java.lang"}, null, true,
+			for (Element e : this.information.getElements("java.lang.Class", new String[]{"java.lang"}, null, true, false,
 					"Class")) {
 				element.addReference(e);
 			}
@@ -230,13 +230,13 @@ public class AOTMapParser implements Consumer<String> {
 
 		//Now try to locate the class itself
 		if (!objectName.isBlank()) {
-			List<Element> elements = this.aotCache.getElements(objectName, null, null, true, "Class");
+			List<Element> elements = this.information.getElements(objectName, null, null, true, false,  "Class");
 			if (!elements.isEmpty()) {
 				elements.forEach(e -> element.addReference(e));
 			} else {
 				//Maybe we are looking for a Symbol
-				for (Element e : this.aotCache.getElements(
-						objectName.replaceAll("\\.", "/"), null, null, true,
+				for (Element e : this.information.getElements(
+						objectName.replaceAll("\\.", "/"), null, null, true, false,
 						"Symbol")) {
 					element.addReference(e);
 				}
@@ -246,7 +246,7 @@ public class AOTMapParser implements Consumer<String> {
 
 	private boolean literalString(ReferencingElement element, String objectName) {
 		if (objectName.trim().startsWith("java.lang.String ")) {
-			for (Element e : this.aotCache.getElements("java.lang.String", new String[]{"java.lang"}, null, true,
+			for (Element e : this.information.getElements("java.lang.String", new String[]{"java.lang"}, null, true, false,
 					"Class")) {
 				element.addReference(e);
 			}
@@ -255,8 +255,8 @@ public class AOTMapParser implements Consumer<String> {
 				//avoid empty strings
 				final var name = objectName.substring(18, objectName.length() - 1);
 				if (!name.isBlank()) {
-					for (Element e : this.aotCache.getElements(
-							name, null, null, true,
+					for (Element e : this.information.getElements(
+							name, null, null, true, false,
 							"Symbol")) {
 						element.addReference(e);
 					}
@@ -274,7 +274,7 @@ public class AOTMapParser implements Consumer<String> {
 
 			//We need to find the class without package:
 			//This is heavy that's why we have a special function for it
-			for (Element el : this.aotCache.getClassesByName(objectName)) {
+			for (Element el : this.information.getClassesByName(objectName)) {
 				element.addReference(el);
 			}
 			return true;
@@ -286,7 +286,7 @@ public class AOTMapParser implements Consumer<String> {
 		//if it refers to a method, let's search for it
 		if (objectName.indexOf("$$") > 0) {
 			objectName = objectName.replace("$$", ".");
-			for (Element e : this.aotCache.getElements(objectName, null, null, true, "Method", "ConstMethod")) {
+			for (Element e : this.information.getElements(objectName, null, null, true, false, "Method", "ConstMethod")) {
 				element.addReference(e);
 			}
 			return true;

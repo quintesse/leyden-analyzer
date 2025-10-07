@@ -1,6 +1,6 @@
 package tooling.leyden.commands.logparser;
 
-import tooling.leyden.aotcache.AOTCache;
+import tooling.leyden.aotcache.Information;
 import tooling.leyden.aotcache.ClassObject;
 import tooling.leyden.aotcache.Configuration;
 import tooling.leyden.aotcache.Element;
@@ -16,10 +16,10 @@ import java.util.function.Consumer;
  */
 public class LogParser implements Consumer<String> {
 
-	private final AOTCache aotCache;
+	private final Information information;
 
 	public LogParser(LoadFileCommand loadFile) {
-		this.aotCache = loadFile.getParent().getAotCache();
+		this.information = loadFile.getParent().getInformation();
 	}
 
 	@Override
@@ -47,62 +47,134 @@ public class LogParser implements Consumer<String> {
 		final var thisSource = "Java Log";
 		final var trimmedMessage = message.trim();
 		if (containsTags(tags, "class", "load")) {
-			Integer indexSourceShared = message.indexOf("source: shared objects file");
-			if (indexSourceShared > 0) {
-				String className = message.substring(0, indexSourceShared).trim();
-				if (aotCache.getElements(className, null, null, true, "Class").isEmpty()) {
-					//WARNING: this should be covered by the aot map file
-					//we are assuming no aot map file was loaded at this point
-					ClassObject classObject = new ClassObject(className);
-					aotCache.addElement(classObject, thisSource);
+			if (message.contains(" source: ")) {
+				String className = message.substring(0, message.indexOf("source: ")).trim();
+				if (message.indexOf("source: shared objects file") > 0) {
+					Element e;
+					if (className.contains("$$")) {
+						//This is a method
+						this.information.getStatistics().incrementValue("[LOG] Methods loaded from AOT Cache");
+						if (className.contains("$$Lambda")) {
+							this.information.getStatistics().incrementValue("[LOG] Lambda Methods loaded from AOT Cache");
+						}
+
+						var methods = information.getElements(className, null, null, true, true, "Method");
+						if (methods.isEmpty()) {
+							//WARNING: this should be covered by the aot map file
+							//we are assuming no aot map file was loaded at this point
+							e = new MethodObject(className, thisSource, false, information);
+						} else {
+							e = methods.getFirst();
+						}
+					} else {
+						var classes = information.getElements(className, null, null, true, true, "Class");
+						//This is a class
+						if (classes.isEmpty()) {
+							//WARNING: this should be covered by the aot map file
+							//we are assuming no aot map file was loaded at this point
+							e = new ClassObject(className);
+						} else {
+							e = classes.getFirst();
+						}
+						this.information.getStatistics().incrementValue("[LOG] Classes loaded from AOT Cache");
+					}
+					e.setWhereDoesItComeFrom(content.substring(content.indexOf("source: ")));
+					information.addAOTCacheElement(e, thisSource);
+				} else {
+					Element e;
+					// else this wasn't loaded from the aot.map
+					if (className.contains("$$")) {
+						//This is a method
+						this.information.getStatistics().incrementValue("[LOG] Methods not loaded from AOT Cache");
+						if (className.contains("$$Lambda")) {
+							this.information.getStatistics().incrementValue("[LOG] Lambda Methods not loaded from AOT Cache");
+						}
+						e = new MethodObject(className, thisSource, true, information);
+					} else {
+						this.information.getStatistics().incrementValue("[LOG] Classes not loaded from AOT Cache");
+						e = new ClassObject(className);
+					}
+					e.setWhereDoesItComeFrom(content.substring(content.indexOf("source: ")));
+					information.addExternalElement(e, thisSource);
 				}
 			}
-			// else this class wasn't loaded from the aot.map
-			// are we interested in storing this?
-			// we are not adding anything that aot.map doesn't have
 		} else if (containsTags(tags, "aot")) {
+			if (containsTags(tags, "codecache")) {
+				if (containsTags(tags, "init")) {
+					if (trimmedMessage.startsWith("Loaded ")
+							&& trimmedMessage.endsWith("AOT code entries from AOT Code Cache")) {
+						//[info ][aot,codecache,init] Loaded 493 AOT code entries from AOT Code Cache
+						information.getStatistics().addValue("[LOG] [CodeCache] Loaded AOT code entries",
+								trimmedMessage.substring(7, trimmedMessage.substring(7).indexOf(" ") + 7));
+					} else if (trimmedMessage.contains(" total=")) {
+						//[debug][aot,codecache,init]   Adapters:  total=493
+						//[debug][aot,codecache,init]   Shared Blobs: total=0
+						//[debug][aot,codecache,init]   C1 Blobs: total=0
+						//[debug][aot,codecache,init]   C2 Blobs: total=0
+						information.getStatistics().addValue("[LOG] [CodeCache] Loaded " + trimmedMessage.substring(0,
+								trimmedMessage.indexOf(":")).trim(), trimmedMessage.substring(trimmedMessage.indexOf(
+								"total=") + 6));
+					} else if (trimmedMessage.startsWith("AOT code cache size:")) {
+						//[debug][aot,codecache,init]   AOT code cache size: 598432 bytes
+						information.getStatistics().addValue("[LOG] [CodeCache] AOT code cache size", trimmedMessage.substring(20).trim());
+					}
+				}
+			}
 			if (trimmedMessage.startsWith("Skipping ")) {
 				processSkipping(message);
-			} else if (level.equals("error")
-					|| level.equals("warning")) {
-				//Very generic, but at least catch things
-
-				// [warning][aot] Preload Warning: Verification failed for org.infinispan.remoting.transport.jgroups.JGroupsRaftManager
-				// [warning][aot] Preload Warning: Verification failed for org.apache.logging.log4j.core.async.AsyncLoggerContext
-				aotCache.addWarning(null, "[" + level + "] " + trimmedMessage, WarningType.StoringIntoAOTCache);
+			} else if (level.equals("warning")) {
+				processWarning(trimmedMessage);
+			} else if (level.equals("error")) {
+				processError(trimmedMessage);
 			} else if (level.equals("info")) {
-				try {
-					processInfo(trimmedMessage);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
+				processInfo(trimmedMessage);
 			}
+		}
+	}
+
+	private void processWarning(String trimmedMessage) {
+		if (trimmedMessage.startsWith("The AOT cache was created by a different")) {
+			information.addWarning(null, trimmedMessage, WarningType.LoadingFromAOTCache);
+		} else {
+			//Very generic, but at least catch things
+			information.addWarning(null, trimmedMessage, WarningType.Unknown);
+		}
+	}
+
+	private void processError(String trimmedMessage) {
+		if (trimmedMessage.startsWith("An error has occurred while processing the AOT cache")
+				|| trimmedMessage.equals("Loading static archive failed.")
+				|| trimmedMessage.equals("Unable to map shared spaces")) {
+			information.addWarning(null, trimmedMessage, WarningType.LoadingFromAOTCache);
+		} else {
+			//Very generic, but at least catch things
+			information.addWarning(null, trimmedMessage, WarningType.Unknown);
 		}
 	}
 
 	private void processInfo(String trimmedMessage) {
 		if (trimmedMessage.startsWith("Core region alignment:")) {
 //	[info][aot] Core region alignment: 4096
-			aotCache.getConfiguration().addValue("Core region alignment", trimmedMessage.substring(23));
+			information.getConfiguration().addValue("Core region alignment", trimmedMessage.substring(23));
 		} else if (trimmedMessage.startsWith("The AOT configuration file was created with ")) {
 //[info][aot] The AOT configuration file was created with UseCompressedOops = 1, UseCompressedClassPointers = 1, UseCompactObjectHeaders = 0
 			String[] config = trimmedMessage.split(" ");
 			for (int i = 8; i < config.length - 1; i++) {
 				if (config[i].equals("=")) {
-					aotCache.getConfiguration().addValue(config[i - 1], config[i + 1].replace(",", ""));
+					information.getConfiguration().addValue(config[i - 1], config[i + 1].replace(",", ""));
 				}
 			}
 		} else if (trimmedMessage.startsWith("ArchiveRelocationMode:")) {
 //[info][aot] ArchiveRelocationMode: 1 # always map archive(s) at an alternative address
-			aotCache.getConfiguration().addValue("ArchiveRelocationMode", trimmedMessage.substring(22));
+			information.getConfiguration().addValue("ArchiveRelocationMode", trimmedMessage.substring(22));
 		} else if (trimmedMessage.startsWith("Reserved") && trimmedMessage.contains("bytes")) {
 			if (trimmedMessage.contains("at 0x")) {
 //[info][aot       ] Reserved output buffer space at 0x00007f5702e00000 [1084227584 bytes]
-				storeConfigurationSplitByCharacter(aotCache.getAllocation(), trimmedMessage, "at", false);
+				storeConfigurationSplitByCharacter(information.getAllocation(), trimmedMessage, "at", false);
 			} else {
 //[info][aot] Reserved archive_space_rs [0x0000000057000000 - 0x000000005c000000] (83886080) bytes (includes protection zone)
 //[info][aot] Reserved class_space_rs   [0x000000005c000000 - 0x000000009c000000] (1073741824) bytes
-				storeConfigurationSplitByCharacter(aotCache.getAllocation(), trimmedMessage, "[", true);
+				storeConfigurationSplitByCharacter(information.getAllocation(), trimmedMessage, "[", true);
 			}
 		} else if (trimmedMessage.startsWith("Mapped static")) {
 //[info][aot] Mapped static  region #0 at base 0x0000000057001000 top 0x0000000058fbe000 (ReadWrite)
@@ -110,30 +182,30 @@ public class LogParser implements Consumer<String> {
 //[info][aot] Mapped static  region #2 at base 0x00007f57574fe000 top 0x00007f5757600000 (Bitmap)
 			var key = trimmedMessage.substring(0, trimmedMessage.indexOf("at base"));
 			var value = trimmedMessage.substring(trimmedMessage.indexOf("0x"));
-			aotCache.getAllocation().addValue(key, value);
+			information.getAllocation().addValue(key, value);
 		} else if (trimmedMessage.startsWith("archived module property")) {
 //[info][aot] archived module property jdk.module.main: (null)
 //[info][aot] archived module property jdk.module.addexports: java.naming/com.sun.jndi.ldap=ALL-UNNAMED
 //[info][aot] archived module property jdk.module.enable.native.access: ALL-UNNAMED
-			storeConfigurationSplitByCharacter(aotCache.getConfiguration(), trimmedMessage, ":", false);
+			storeConfigurationSplitByCharacter(information.getConfiguration(), trimmedMessage, ":", false);
 		} else if (trimmedMessage.startsWith("initial ") && trimmedMessage.indexOf(":") > 0) {
 //[info][aot] initial optimized module handling: enabled
 //[info][aot] initial full module graph: disabled
-			storeConfigurationSplitByCharacter(aotCache.getConfiguration(), trimmedMessage, ":", false);
+			storeConfigurationSplitByCharacter(information.getConfiguration(), trimmedMessage, ":", false);
 		} else if (trimmedMessage.startsWith("Using AOT-linked classes: ")) {
 //[info][aot] Using AOT-linked classes: false (static archive: no aot-linked classes)
 			//Maybe we should be more explicit on the info command about this
-			storeConfigurationSplitByCharacter(aotCache.getConfiguration(), trimmedMessage, ":", false);
+			storeConfigurationSplitByCharacter(information.getConfiguration(), trimmedMessage, ":", false);
 		} else if (trimmedMessage.startsWith("JVM_StartThread() ignored:")) {
 //[info][aot       ] JVM_StartThread() ignored: java.lang.ref.Reference$ReferenceHandler
-			this.aotCache.addWarning(null, trimmedMessage, WarningType.StoringIntoAOTCache);
+			this.information.addWarning(null, trimmedMessage, WarningType.StoringIntoAOTCache);
 		} else if (trimmedMessage.startsWith("Heap range = ")
 				|| trimmedMessage.startsWith("heap range")) {
 //[info][aot       ] Heap range = [0x00000000e0000000 - 0x0000000100000000]
-			storeConfigurationSplitByCharacter(aotCache.getAllocation(), trimmedMessage, "=", false);
+			storeConfigurationSplitByCharacter(information.getAllocation(), trimmedMessage, "=", false);
 		} else if (trimmedMessage.startsWith("string table array (single level) length")) {
 //[info][aot       ] Heap range = [0x00000000e0000000 - 0x0000000100000000]
-			storeConfigurationSplitByCharacter(aotCache.getStatistics(), trimmedMessage, "=", false);
+			storeConfigurationSplitByCharacter(information.getStatistics(), trimmedMessage, "=", false);
 		} else if (trimmedMessage.startsWith("Archived")) {
 //[info][aot       ] Archived 4797 interned strings
 //[info][aot       ] Archived 97 method handle intrinsics (26392 bytes)
@@ -141,7 +213,7 @@ public class LogParser implements Consumer<String> {
 			var value = msg[1];
 			msg[0] = "";
 			msg[1] = "";
-			aotCache.getStatistics().addValue(String.join(" ", msg), value);
+			information.getStatistics().addValue(String.join(" ", msg), value);
 		} else if (trimmedMessage.startsWith("Shared file region (")) {
 //[info][aot       ] Shared file region (rw) 0: 31818032 bytes, addr 0x0000000800001000 file offset 0x00001000 crc 0xc67c8575
 //[info][aot       ] Shared file region (ro) 1: 47394376 bytes, addr 0x0000000801e5a000 file offset 0x01e5a000 crc 0xf5404ff5
@@ -150,13 +222,13 @@ public class LogParser implements Consumer<String> {
 //[info][aot       ] Shared file region (hp) 3:  1481952 bytes, addr 0x00000000ffe00000 file offset 0x04d25000 crc 0x44000459
 			var msg = trimmedMessage.split("\\s+");
 			var key = trimmedMessage.substring(0, 25);
-			aotCache.getConfiguration().addValue(key + " size", msg[5] + " " + msg[6].replace(",", ""));
-			aotCache.getAllocation().addValue(key + " addr", msg[8]);
-			aotCache.getAllocation().addValue(key + " file offset", msg[11]);
-			aotCache.getConfiguration().addValue(key + " crc", msg[13]);
+			information.getConfiguration().addValue(key + " size", msg[5] + " " + msg[6].replace(",", ""));
+			information.getAllocation().addValue(key + " addr", msg[8]);
+			information.getAllocation().addValue(key + " file offset", msg[11]);
+			information.getConfiguration().addValue(key + " crc", msg[13]);
 		} else if (trimmedMessage.startsWith("Number of classes")) {
 //[info][aot       ] Number of classes 10857
-			aotCache.getStatistics().addValue(trimmedMessage.substring(0, trimmedMessage.lastIndexOf(" ")),
+			information.getStatistics().addValue(trimmedMessage.substring(0, trimmedMessage.lastIndexOf(" ")),
 					trimmedMessage.substring(trimmedMessage.lastIndexOf(" ") + 1));
 		} else if (trimmedMessage.indexOf(" = ") > 0) {
 			//This is very generic processing, but, why not?
@@ -204,7 +276,7 @@ public class LogParser implements Consumer<String> {
 					} else {
 						firstKey = s.substring(0, s.indexOf(" =")).trim() + " ";
 					}
-					storeConfigurationSplitByCharacter(aotCache.getStatistics(), s, " = ", false);
+					storeConfigurationSplitByCharacter(information.getStatistics(), s, " = ", false);
 				}
 			}
 		}
@@ -240,11 +312,12 @@ public class LogParser implements Consumer<String> {
 		Element element = null;
 		if (className.contains("$$")) {
 
-			var elements = aotCache.getElements(className.replace("$$", "."), null, null, true, "Method");
+			var elements = information.getElements(className.replace("$$", "."), null, null, true, true, "Method");
 			if (!elements.isEmpty()) {
 				element = elements.getFirst();
 			} else {
-				elements = aotCache.getElements(className.substring(0, className.indexOf("$$")), null, null, true, "Class");
+				elements = information.getElements(className.substring(0, className.indexOf("$$")), null, null, true,
+						true, "Class");
 				if (!elements.isEmpty()) {
 					element = elements.getFirst();
 				} else {
@@ -253,17 +326,17 @@ public class LogParser implements Consumer<String> {
 				}
 			}
 		} else {
-			var elements = aotCache.getElements(className, null, null, true, "Class");
+			var elements = information.getElements(className, null, null, true, true, "Class");
 			if (!elements.isEmpty()) {
 				element = elements.getFirst();
 			} else {
 				element = new ClassObject(className);
 			}
 		}
-		aotCache.addWarning(element, reason, WarningType.StoringIntoAOTCache);
+		information.addWarning(element, reason, WarningType.StoringIntoAOTCache);
 	}
 
 	private boolean containsTags(String[] tags, String... wantedTags) {
-		return Arrays.asList(wantedTags).containsAll(Arrays.asList(tags));
+		return Arrays.asList(tags).containsAll(Arrays.asList(wantedTags));
 	}
 }

@@ -20,8 +20,8 @@ class DescribeCommand implements Runnable {
 	private CommonParameters parameters;
 
 	public void run() {
-		List<Element> elements = parent.getAotCache().getElements(parameters.getName(), parameters.packageName,
-				parameters.excludePackageName, parameters.showArrays, parameters.types);
+		List<Element> elements = parent.getInformation().getElements(parameters.getName(), parameters.packageName,
+				parameters.excludePackageName, parameters.showArrays, parameters.useNotCached, parameters.types);
 
 		if (!elements.isEmpty()) {
 			elements.forEach(e -> {
@@ -44,7 +44,7 @@ class DescribeCommand implements Runnable {
 	}
 
 	public List<Element> getElementsReferencingThisOne(Element element) {
-		return parent.getAotCache().getAll().parallelStream()
+		return parent.getInformation().getAll().parallelStream()
 				.filter(e -> (e instanceof ReferencingElement))
 				.filter(e -> ((ReferencingElement) e).getReferences().contains(element))
 				.toList();

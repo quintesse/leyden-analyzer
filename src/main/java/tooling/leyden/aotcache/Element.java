@@ -4,7 +4,7 @@ package tooling.leyden.aotcache;
 import java.util.LinkedList;
 import java.util.List;
 
-/** Elements that can be found on the AOTCache.**/
+/** Elements that can be found on the Information.**/
 public abstract class Element {
 
 	private String type;

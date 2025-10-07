@@ -52,7 +52,7 @@ public class LoadFileCommand implements Runnable {
 	private void load(Path path, Consumer<String> consumer) {
 		long time = System.currentTimeMillis();
 		parent.getOut().println("Adding " + path.toAbsolutePath().getFileName()
-				+ (background ? " in background " : "")
+				+ (background ? " in background " : " ")
 				+ "to our analysis...");
 
 		long megabytes = Math.round((double) path.toFile().length() / 1024 / 1024);
@@ -76,7 +76,12 @@ public class LoadFileCommand implements Runnable {
 
 		try (Scanner scanner = new Scanner(Files.newInputStream(path), StandardCharsets.UTF_8)) {
 			while (scanner.hasNextLine()) {
-				consumer.accept(scanner.nextLine());
+				try {
+					consumer.accept(scanner.nextLine());
+				} catch (Exception e) {
+					//Silently fails, we don't care about weirdly formatted log lines and seem similar
+					//to other loglines that we know how to process
+				}
 			}
 		} catch (Exception e) {
 			parent.getOut().println("ERROR: Loading " + path.getFileName());

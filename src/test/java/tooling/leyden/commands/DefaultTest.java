@@ -38,8 +38,8 @@ public class DefaultTest {
 	}
 
 	@BeforeEach
-	void clearAot() {
-		getDefaultCommand().getAotCache().clear();
+	void clear() {
+		getDefaultCommand().getInformation().clear();
 	}
 
 	@BeforeAll

@@ -10,34 +10,66 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
-public class AOTCache {
+public class Information {
+
+	//This represents the AOT Cache
 	private Map<Key, Element> elements = new ConcurrentHashMap<>();
+
+	//This represents elements that were loaded in the app
+	//from a different source, not the AOT Cache.
+	//Useful to detect if there are elements that should have been cached.
+	private Map<Key, Element> elementsNotInTheCache = new ConcurrentHashMap<>();
+
+	//List of warnings and incidents that may be useful to check
 	private Set<Warning> warnings = new HashSet<>();
+
 	//We keep classes also here to search for them by name, not package
 	//It will make sense when we link Symbols of the form Name.java
 	private Map<String, List<ClassObject>> classes = new ConcurrentHashMap<>();
+
+	//Store information extracted and inferred
 	private Configuration configuration = new Configuration();
 	private Configuration statistics = new Configuration();
 	private Configuration allocation = new Configuration();
-	private static AOTCache myself;
 
-	public static AOTCache getMyself() {
+	//Singletonish
+	private static Information myself;
+	public static Information getMyself() {
 		return myself;
 	}
 
-	public AOTCache() {
+
+	public Information() {
 		myself = this;
 	}
 
-	public void addElement(Element e, String source) {
+	public void addAOTCacheElement(Element e, String source) {
 		e.addSource(source);
-		elements.put(new Key(e.getKey(), e.getType()), e);
+		final var key = new Key(e.getKey(), e.getType());
+		elements.put(key, e);
 		if (e instanceof ClassObject classObject) {
 			if (!this.classes.containsKey(classObject.getName())) {
 				this.classes.put(classObject.getName(), new ArrayList<>());
 			}
 			this.classes.get(classObject.getName()).add(classObject);
 		}
+
+		// Due to weird ordering in logfiles, sometimes a method gets
+		// referenced before the class it belongs to gets referenced.
+		// So we have to make sure elements are not repeated both in
+		// this.elements and this.elementsNotInTheCache
+		if (elementsNotInTheCache.containsKey(key)) {
+			elementsNotInTheCache.remove(key);
+		}
+	}
+
+	public void addExternalElement(Element e, String source) {
+		elementsNotInTheCache.put(new Key(e.getKey(), e.getType()), e);
+		e.addSource(source);
+	}
+
+	public Map<Key, Element> getExternalElements() {
+		return this.elementsNotInTheCache;
 	}
 
 	public void addWarning(Element element, String reason, WarningType warningType) {
@@ -46,11 +78,12 @@ public class AOTCache {
 
 	public void clear() {
 		elements.clear();
+		elementsNotInTheCache.clear();
 		warnings.clear();
+		classes.clear();
 		statistics.clear();
 		allocation.clear();
 		configuration.clear();
-		classes.clear();
 	}
 
 	public List<ClassObject> getClassesByName(String name) {
@@ -58,7 +91,7 @@ public class AOTCache {
 	}
 
 	public List<Element> getElements(String key, String[] packageName, String[] excludePackageName,
-									 Boolean addArrays, String... type) {
+									 Boolean includeArrays, Boolean includeExternalElements, String... type) {
 
 		if (key != null && !key.isBlank() && type != null && type.length > 0) {
 			//This is trivial, don't search through all elements
@@ -67,18 +100,28 @@ public class AOTCache {
 				Element e = elements.get(new Key(key, t));
 				if (e != null) {
 					result.add(e);
+				} else if (includeExternalElements) {
+					e = elementsNotInTheCache.get(new Key(key, t));
+					if (e != null) {
+						result.add(e);
+					}
 				}
 			}
 			return result;
 		}
 
-		var result = elements.entrySet().parallelStream();
+		var tmp = new HashSet<Map.Entry<Key, Element>>();
+		tmp.addAll(elements.entrySet());
+		if (includeExternalElements) {
+			tmp.addAll(elementsNotInTheCache.entrySet());
+		}
+		var result = tmp.parallelStream();
 
 		if (key != null && !key.isBlank()) {
 			result = result.filter(keyElementEntry -> keyElementEntry.getKey().identifier().equalsIgnoreCase(key));
 		}
 
-		return filterByParams(packageName, excludePackageName, addArrays, type,
+		return filterByParams(packageName, excludePackageName, includeArrays, type,
 				result.map(keyElementEntry -> keyElementEntry.getValue()));
 	}
 
@@ -179,6 +222,6 @@ public class AOTCache {
 				.toList();
 	}
 
-	record Key(String identifier, String type) {
+	public record Key(String identifier, String type) {
 	}
 }

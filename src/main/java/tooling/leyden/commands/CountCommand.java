@@ -2,18 +2,10 @@ package tooling.leyden.commands;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
-import tooling.leyden.aotcache.ClassObject;
-import tooling.leyden.aotcache.Configuration;
 import tooling.leyden.aotcache.Element;
-import tooling.leyden.commands.autocomplete.InfoCommandTypes;
-import tooling.leyden.commands.autocomplete.Packages;
-import tooling.leyden.commands.autocomplete.Types;
 
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
@@ -30,8 +22,8 @@ class CountCommand implements Runnable {
 	private CommonParameters parameters;
 
 	public void run() {
-		Stream<Element> elements = parent.getAotCache().getElements(parameters.getName(), parameters.packageName,
-				parameters.excludePackageName, parameters.showArrays, parameters.types).stream();
+		Stream<Element> elements = parent.getInformation().getElements(parameters.getName(), parameters.packageName,
+				parameters.excludePackageName, parameters.showArrays, parameters.useNotCached, parameters.types).stream();
 		final var counts = new HashMap<String, AtomicInteger>();
 
 		elements.forEach(item -> {
