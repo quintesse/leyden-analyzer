@@ -50,7 +50,7 @@ public class LogParser implements Consumer<String> {
 			if (message.contains(" source: ")) {
 				String className = message.substring(0, message.indexOf("source: ")).trim();
 				if (message.indexOf("source: shared objects file") > 0) {
-					Element e;
+					Element e = null;
 					if (className.contains("$$")) {
 						//This is a method
 						this.information.getStatistics().incrementValue("[LOG] Methods loaded from AOT Cache");
@@ -58,14 +58,15 @@ public class LogParser implements Consumer<String> {
 							this.information.getStatistics().incrementValue("[LOG] Lambda Methods loaded from AOT Cache");
 						}
 
-						var methods = information.getElements(className, null, null, true, true, "Method");
-						if (methods.isEmpty()) {
-							//WARNING: this should be covered by the aot map file
-							//we are assuming no aot map file was loaded at this point
-							e = new MethodObject(className, thisSource, false, information);
-						} else {
-							e = methods.getFirst();
-						}
+						//Methods in the log do not come with parameters, so we are not going to load them
+//						var methods = information.getElements(className, null, null, true, true, "Method");
+//						if (methods.isEmpty()) {
+//							//WARNING: this should be covered by the aot map file
+//							//we are assuming no aot map file was loaded at this point
+//							e = new MethodObject(className, thisSource, false, information);
+//						} else {
+//							e = methods.getFirst();
+//						}
 					} else {
 						var classes = information.getElements(className, null, null, true, true, "Class");
 						//This is a class
@@ -78,8 +79,10 @@ public class LogParser implements Consumer<String> {
 						}
 						this.information.getStatistics().incrementValue("[LOG] Classes loaded from AOT Cache");
 					}
-					e.setWhereDoesItComeFrom(content.substring(content.indexOf("source: ")));
-					information.addAOTCacheElement(e, thisSource);
+					if (e != null) {
+						e.setWhereDoesItComeFrom(content.substring(content.indexOf("source: ")));
+						information.addAOTCacheElement(e, thisSource);
+					}
 				} else {
 					Element e;
 					// else this wasn't loaded from the aot.map
