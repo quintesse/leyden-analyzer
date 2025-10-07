@@ -2,13 +2,22 @@ package tooling.leyden.commands.autocomplete;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 
 
 public class InfoCommandTypes implements Iterable<String> {
+
+	public enum Types {
+		Allocation,
+		Configuration,
+		Statistics,
+		Summary;
+	}
+
+	private List<String> names = Arrays.stream(Types.values()).map(type -> type.name()).toList();
+
 	@Override
 	public Iterator<String> iterator() {
-		return Arrays.asList(
-				"configuration", "statistics", "allocation"
-		).iterator();
+		return names.iterator();
 	}
 }

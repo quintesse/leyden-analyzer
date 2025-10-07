@@ -26,6 +26,10 @@ public class Configuration {
 		return configuration.getOrDefault(key, "unknown");
 	}
 
+	public Object getValue(String key, Object defaultValue) {
+		return configuration.getOrDefault(key, defaultValue);
+	}
+
 	public Set<String> getKeys(){
 		return configuration.keySet();
 	}
