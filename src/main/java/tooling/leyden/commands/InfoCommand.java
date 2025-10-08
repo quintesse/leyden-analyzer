@@ -57,13 +57,8 @@ class InfoCommand implements Runnable {
 
 	private void printSummary() {
 		var stats = parent.getInformation().getStatistics();
-		var extClasses = Double.valueOf(stats.getValue("[LOG] Classes not loaded from AOT Cache", -1).toString());
-		var extMethods = Double.valueOf(stats.getValue("[LOG] Methods not loaded from AOT Cache", -1).toString());
-		var extLambdas = Double.valueOf(stats.getValue("[LOG] Lambda Methods not loaded from AOT Cache", -1).toString());
-		var classes = (double) parent.getInformation().getElements(null, null, null, true, false, "Class").size();
-		var methods = (double) parent.getInformation().getElements(null, null, null, true, false, "Method").size();
-		var lambdas = Double.valueOf(stats.getValue("[LOG] Lambda Methods loaded from AOT Cache", -1).toString());
 
+		//Some formatting output utilities
 		final var percentFormat = NumberFormat.getPercentInstance();
 		percentFormat.setMaximumFractionDigits(2);
 		percentFormat.setMinimumFractionDigits(2);
@@ -75,27 +70,37 @@ class InfoCommand implements Runnable {
 		final var redFormat =
 				AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.RED);
 
+		//Get information from log
+		var extClasses = Double.valueOf(stats.getValue("[LOG] Classes not loaded from AOT Cache", -1).toString());
+		var extLambdas = Double.valueOf(stats.getValue("[LOG] Lambda Methods not loaded from AOT Cache", -1).toString());
+		var classes = Double.valueOf(stats.getValue("[LOG] Classes loaded from AOT Cache", -1).toString());
+		var lambdas = Double.valueOf(stats.getValue("[LOG] Lambda Methods loaded from AOT Cache", -1).toString());
+		Integer methods =
+				parent.getInformation().getElements(null, null, null, true, false, "Method").size();
+
 
 		(new AttributedString("RUN SUMMARY: ", blueFormat)).println(parent.getTerminal());
-		if (extClasses < 0 || extMethods < 0) {
+		if (extClasses < 0 ) {
 			(new AttributedString(
 					"Loading app information is missing. Please, load a log that represents the loading of the app using the AOT Cache.",
 					redFormat))
 					.println(parent.getTerminal());
+			classes = (double) parent.getInformation().getElements(null, null, null, true, false, "Class").size();
 		} else {
 			(new AttributedString("Classes loaded: ", AttributedStyle.DEFAULT)).println(parent.getTerminal());
 			printPercentages(intFormat, classes, percentFormat, extClasses, greenFormat, redFormat);
 
-
-			(new AttributedString("Methods loaded: ", AttributedStyle.DEFAULT)).println(parent.getTerminal());
-			printPercentages(intFormat, methods, percentFormat, extMethods, greenFormat, redFormat);
-
-
 			(new AttributedString(
-					"Lambda Methods (" + percentFormat.format((lambdas + extLambdas) / (methods + extMethods)) +
-							" of total methods) loaded: ",
+					"Lambda Methods loaded: ",
 					AttributedStyle.DEFAULT)).println(parent.getTerminal());
 			printPercentages(intFormat, lambdas, percentFormat, extLambdas, greenFormat, redFormat);
+
+
+			if (methods > 0) {
+				printPercentage("  -> Portion of methods that are lambda: ", methods.doubleValue(), percentFormat,
+						intFormat,
+						greenFormat, lambdas + extLambdas);
+			}
 
 			Integer aotCodeEntries =
 					Integer.valueOf(stats.getValue("[LOG] [CodeCache] Loaded AOT code entries", -1).toString());
@@ -141,10 +146,10 @@ class InfoCommand implements Runnable {
 			(new AttributedString("Methods in AOT Cache: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
 			(new AttributedString(intFormat.format(methods), greenFormat)).println(parent.getTerminal());
 
-			printPercentage("  -> ConstMethods size: ", methods, percentFormat, intFormat, greenFormat,
+			printPercentage("  -> ConstMethods: ", methods.doubleValue(), percentFormat, intFormat, greenFormat,
 					constMethods.doubleValue());
-			printPercentage("  -> MethodCounters size: ",methods, percentFormat, intFormat, greenFormat, methodCounters.doubleValue());
-			printPercentage("  -> MethodData size: ", methods, percentFormat, intFormat, greenFormat,
+			printPercentage("  -> MethodCounters: ",methods.doubleValue(), percentFormat, intFormat, greenFormat, methodCounters.doubleValue());
+			printPercentage("  -> MethodData: ", methods.doubleValue(), percentFormat, intFormat, greenFormat,
 					methodData.doubleValue());
 		}
 
