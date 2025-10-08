@@ -77,7 +77,7 @@ public class MethodObject extends ReferencingElement {
 	}
 
 	public String getReturnType() {
-		return returnType;
+		return returnType == null ? "void" : returnType;
 	}
 
 	public void setReturnType(String returnType) {
