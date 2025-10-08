@@ -52,7 +52,7 @@ public class AOTMapParser implements Consumer<String> {
 				// Metadata Klass
 //					0x0000000800868d58: @@ Class             520 java.lang.constant.ClassDesc
 //					0x0000000800869078: @@ Class             512 [Ljava.lang.constant.ClassDesc;
-				element = processClass(identifier);
+				element = processClass(identifier, thisSource);
 			} else if (type.equalsIgnoreCase("Method")) {
 				//Metadata Method
 //					0x0000000800831250: @@ Method            88 void java.lang.management.MemoryUsage.<init>(javax.management.openmbean.CompositeData)
@@ -173,13 +173,28 @@ public class AOTMapParser implements Consumer<String> {
 		return e;
 	}
 
-	private Element processClass(String identifier) {
+	private Element processClass(String identifier, String thisSource) {
 		// 0x000000080082d490: @@ Class             760 java.lang.StackFrameInfo
 		// It could have been already loaded
 		for (Element element : this.information.getElements(identifier, null, null, true, false,"Class")) {
 			return element;
 		}
-		return new ClassObject(identifier);
+		ClassObject classObject = new ClassObject(identifier);
+
+		if (identifier.contains("$$")) {
+			//Lambda class, link to main outer class
+			String parent = identifier.substring(0, identifier.indexOf("$$"));
+			final var parentClass = this.information.getElements(parent, null, null, true, false, "Class");
+			if (parentClass.isEmpty()){
+				ClassObject parentObject = new ClassObject(parent);
+				information.addExternalElement(parentObject, "Referenced from a Class element in " + thisSource);
+			}
+			else {
+				classObject.getReferences().add(parentClass.getFirst());
+			}
+		}
+
+		return classObject;
 	}
 
 	private Element processMethod(String identifier, String thisSource, String type) {

@@ -12,6 +12,7 @@ import tooling.leyden.commands.LoadFileCommand;
 import java.io.File;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -176,7 +177,6 @@ class AOTCacheParserTest extends DefaultTest {
 		final var loadFile = new LoadFileCommand();
 		loadFile.setParent(getDefaultCommand());
 		final var aotCache = loadFile.getParent().getInformation();
-		aotCache.clear();
 		AOTMapParser aotCacheParser = new AOTMapParser(loadFile);
 
 		aotCacheParser.accept("0x0000000800772d58: @@ Class             528 java.lang.Object");
@@ -224,6 +224,30 @@ class AOTCacheParserTest extends DefaultTest {
 		assertEquals(3, elements.size());
 		for (Element e : elements) {
 			assertTrue(((ReferencingElement) e).getReferences().contains(method));
+		}
+	}
+
+	@Test
+	void acceptLambda() {
+		final var loadFile = new LoadFileCommand();
+		loadFile.setParent(getDefaultCommand());
+		final var aotCache = loadFile.getParent().getInformation();
+		AOTMapParser aotCacheParser = new AOTMapParser(loadFile);
+
+		aotCacheParser.accept("0x0000000800ede8d0: @@ Class             1248 sun.security.pkcs11.SunPKCS11");
+		aotCacheParser.accept("0x00000008019c1890: @@ Class             584 sun.security.pkcs11.SunPKCS11$$Lambda/0x8000000cf");
+		aotCacheParser.accept("0x00000008019c1b48: @@ Method            88 void sun.security.pkcs11.SunPKCS11$$Lambda/0x8000000cf.<init>()");
+		aotCacheParser.accept("0x00000008019c1be0: @@ Method            88 java.lang.Object sun.security.pkcs11.SunPKCS11$$Lambda/0x8000000cf.apply(java.lang.Object)");
+
+		var sunPKCS = aotCache.getElements("sun.security.pkcs11.SunPKCS11", null, null, false, false, "Class");
+		var lambdaClass = aotCache.getElements("sun.security.pkcs11.SunPKCS11$$Lambda/0x8000000cf", null, null, false, false, "Class");
+		assertFalse(lambdaClass.isEmpty());
+		ReferencingElement lambda = (ReferencingElement) lambdaClass.getFirst();
+		assertEquals(1, lambda.getReferences().size());
+		assertEquals(lambda.getReferences().getFirst(), sunPKCS.getFirst());
+		var methods = aotCache.getElements(null, null, null, false, false, "Method");
+		for (Element method : methods) {
+			assertEquals(lambda, ((MethodObject) method).getClassObject());
 		}
 	}
 

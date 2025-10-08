@@ -23,14 +23,8 @@ public class MethodObject extends ReferencingElement {
 		if (qualifiedName.contains("(")) {
 			qualifiedName = qualifiedName.substring(0, qualifiedName.indexOf("("));
 		}
-		String className;
-		if (qualifiedName.contains("$$")) {
-			this.setName(qualifiedName.substring(qualifiedName.indexOf("$$") + 2));
-			className = qualifiedName.substring(0, qualifiedName.indexOf("$$"));
-		} else {
-			this.setName(qualifiedName.substring(qualifiedName.lastIndexOf(".") + 1));
-			className = qualifiedName.substring(0, qualifiedName.lastIndexOf("."));
-		}
+		this.setName(qualifiedName.substring(qualifiedName.lastIndexOf(".") + 1));
+		String className = qualifiedName.substring(0, qualifiedName.lastIndexOf("."));
 		this.fillReturnClass(identifier, information);
 		this.fillClass(thisSource, className, information, useNotCached);
 		this.procesParameters(identifier, information);

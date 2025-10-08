@@ -7,7 +7,7 @@ import java.util.Set;
 /**
  * This element represents a class inside the AOT Cache.
  */
-public class ClassObject extends Element {
+public class ClassObject extends ReferencingElement {
 
 	private String name;
 	private String packageName;
