@@ -49,57 +49,35 @@ public class LogParser implements Consumer<String> {
 		if (containsTags(tags, "class", "load")) {
 			if (message.contains(" source: ")) {
 				String className = message.substring(0, message.indexOf("source: ")).trim();
+				Element e;
 				if (message.indexOf("source: shared objects file") > 0) {
-					Element e = null;
-					if (className.contains("$$")) {
-						//This is a method
-						this.information.getStatistics().incrementValue("[LOG] Methods loaded from AOT Cache");
-						if (className.contains("$$Lambda")) {
-							this.information.getStatistics().incrementValue("[LOG] Lambda Methods loaded from AOT Cache");
-						}
-
-						//Methods in the log do not come with parameters, so we are not going to load them
-//						var methods = information.getElements(className, null, null, true, true, "Method");
-//						if (methods.isEmpty()) {
-//							//WARNING: this should be covered by the aot map file
-//							//we are assuming no aot map file was loaded at this point
-//							e = new MethodObject(className, thisSource, false, information);
-//						} else {
-//							e = methods.getFirst();
-//						}
-					} else {
-						var classes = information.getElements(className, null, null, true, true, "Class");
-						//This is a class
-						if (classes.isEmpty()) {
-							//WARNING: this should be covered by the aot map file
-							//we are assuming no aot map file was loaded at this point
-							e = new ClassObject(className);
-						} else {
-							e = classes.getFirst();
-						}
-						this.information.getStatistics().incrementValue("[LOG] Classes loaded from AOT Cache");
+					if (className.contains("$$Lambda/")) {
+						//This is a lambda
+						this.information.getStatistics().incrementValue("[LOG] Lambda Methods loaded from AOT Cache");
 					}
-					if (e != null) {
-						e.setWhereDoesItComeFrom(content.substring(content.indexOf("source: ")));
-						information.addAOTCacheElement(e, thisSource);
-					}
-				} else {
-					Element e;
-					// else this wasn't loaded from the aot.map
-					if (className.contains("$$")) {
-						//This is a method
-						this.information.getStatistics().incrementValue("[LOG] Methods not loaded from AOT Cache");
-						if (className.contains("$$Lambda")) {
-							this.information.getStatistics().incrementValue("[LOG] Lambda Methods not loaded from AOT Cache");
-						}
-						e = new MethodObject(className, thisSource, true, information);
-					} else {
-						this.information.getStatistics().incrementValue("[LOG] Classes not loaded from AOT Cache");
+					var classes = information.getElements(className, null, null, true, true, "Class");
+					if (classes.isEmpty()) {
+						//WARNING: this should be covered by the aot map file
+						//we are assuming no aot map file was loaded at this point
+						//so we create a basic placeholder
 						e = new ClassObject(className);
+					} else {
+						e = classes.getFirst();
 					}
-					e.setWhereDoesItComeFrom(content.substring(content.indexOf("source: ")));
+					this.information.getStatistics().incrementValue("[LOG] Classes loaded from AOT Cache");
+					information.addAOTCacheElement(e, thisSource);
+
+				} else {
+					// else this wasn't loaded from the aot.map
+					if (className.contains("$$Lambda/")) {
+						this.information.getStatistics().incrementValue("[LOG] Lambda Methods not loaded from AOT Cache");
+					}
+					this.information.getStatistics().incrementValue("[LOG] Classes not loaded from AOT Cache");
+
+					e = new ClassObject(className);
 					information.addExternalElement(e, thisSource);
 				}
+				e.setWhereDoesItComeFrom(content.substring(content.indexOf("source: ")));
 			}
 		} else if (containsTags(tags, "aot")) {
 			if (containsTags(tags, "codecache")) {

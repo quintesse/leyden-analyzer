@@ -60,23 +60,17 @@ class LogParserTest extends DefaultTest {
 		assertFalse(aotCache.getExternalElements().isEmpty());
 
 		final var extClasses = Integer.valueOf(aotCache.getStatistics().getValue("[LOG] Classes not loaded from AOT Cache").toString());
-		final var extMethods = Integer.valueOf(aotCache.getStatistics().getValue("[LOG] Methods not loaded from AOT Cache").toString());
 		final var extLambdas = Integer.valueOf(aotCache.getStatistics().getValue("[LOG] Lambda Methods not loaded from AOT Cache").toString());
 		final var classes = Integer.valueOf(aotCache.getStatistics().getValue("[LOG] Classes loaded from AOT Cache").toString());
-		final var methods = Integer.valueOf(aotCache.getStatistics().getValue("[LOG] Methods loaded from AOT Cache").toString());
 		final var lambdas = Integer.valueOf(aotCache.getStatistics().getValue("[LOG] Lambda Methods loaded from AOT Cache").toString());
 
-		assertEquals(256, extClasses);
-		assertEquals(1571, extMethods);
+		assertEquals(1827, extClasses);
 		assertEquals(1556, extLambdas);
-		assertEquals(8601, classes);
-		assertEquals(198, methods);
+		assertEquals(8799, classes);
 		assertEquals(197, lambdas);
 
-		assertEquals(aotCache.getExternalElements().size(), extClasses + extMethods);
+		assertEquals(aotCache.getExternalElements().size(), extClasses);
 		assertEquals(aotCache.getElements(null, null, null, true, false, "Class").size(), classes);
 		assertEquals(aotCache.getElements(null, null, null, true, true, "Class").size(), extClasses + classes);
-//		assertEquals(aotCache.getElements(null, null, null, true, false, "Method").size(), methods);
-//		assertEquals(aotCache.getElements(null, null, null, true, true, "Method").size(), extMethods + methods);
 	}
 }
