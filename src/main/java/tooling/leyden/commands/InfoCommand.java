@@ -80,7 +80,7 @@ class InfoCommand implements Runnable {
 
 
 		(new AttributedString("RUN SUMMARY: ", blueFormat)).println(parent.getTerminal());
-		if (extClasses < 0 ) {
+		if (extClasses < 0) {
 			(new AttributedString(
 					"Loading app information is missing. Please, load a log that represents the loading of the app using the AOT Cache.",
 					redFormat))
@@ -104,19 +104,20 @@ class InfoCommand implements Runnable {
 
 			Integer aotCodeEntries =
 					Integer.valueOf(stats.getValue("[LOG] [CodeCache] Loaded AOT code entries", -1).toString());
-			if (aotCodeEntries != 0 ) {
+			if (aotCodeEntries > 0) {
 				(new AttributedString(
 						"Code Entries: " + aotCodeEntries, AttributedStyle.DEFAULT)).println(parent.getTerminal());
 				printPercentage("  -> Adapters: ", aotCodeEntries.doubleValue(), percentFormat, intFormat, greenFormat,
-						Double.valueOf(stats.getValue("[LOG] [CodeCache] Loaded Adapters").toString()));
+						Double.valueOf(stats.getValue("[LOG] [CodeCache] Loaded Adapters", 0).toString()));
 				printPercentage("  -> Shared Blobs: ", aotCodeEntries.doubleValue(), percentFormat, intFormat,
-						greenFormat, Double.valueOf(stats.getValue("[LOG] [CodeCache] Loaded Shared Blobs").toString()));
+						greenFormat,
+						Double.valueOf(stats.getValue("[LOG] [CodeCache] Loaded Shared Blobs", 0).toString()));
 				printPercentage("  -> C1 Blobs: ", aotCodeEntries.doubleValue(), percentFormat, intFormat,
-						greenFormat, Double.valueOf(stats.getValue("[LOG] [CodeCache] Loaded C1 Blobs").toString()));
+						greenFormat, Double.valueOf(stats.getValue("[LOG] [CodeCache] Loaded C1 Blobs", 0).toString()));
 				printPercentage("  -> C2 Blobs: ", aotCodeEntries.doubleValue(), percentFormat, intFormat,
-						greenFormat, Double.valueOf(stats.getValue("[LOG] [CodeCache] Loaded C2 Blobs").toString()));
+						greenFormat, Double.valueOf(stats.getValue("[LOG] [CodeCache] Loaded C2 Blobs", 0).toString()));
 				(new AttributedString(
-						"AOT code cache size: " + stats.getValue("[LOG] [CodeCache] AOT code cache size"),
+						"AOT code cache size: " + stats.getValue("[LOG] [CodeCache] AOT code cache size", 0),
 						AttributedStyle.DEFAULT)).println(parent.getTerminal());
 			}
 		}
@@ -127,8 +128,17 @@ class InfoCommand implements Runnable {
 			(new AttributedString("Classes information is missing. Please, load an aot map.", redFormat))
 					.println(parent.getTerminal());
 		} else {
+
+			Integer trainingData =
+				parent.getInformation().getElements(null, null, null, true, false, "KlassTrainingData").size();
+
 			(new AttributedString("Classes in AOT Cache: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
 			(new AttributedString(intFormat.format(classes), greenFormat)).println(parent.getTerminal());
+			printPercentage("  -> KlassTrainingData: ", classes.doubleValue(), percentFormat, intFormat, greenFormat,
+					trainingData.doubleValue());
+			(new AttributedString("Objects in AOT Cache: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
+			(new AttributedString(intFormat.format(parent.getInformation().getElements(null, null, null, true, false,
+					"Object").size()), greenFormat)).println(parent.getTerminal());
 		}
 
 		Integer constMethods =
@@ -142,23 +152,33 @@ class InfoCommand implements Runnable {
 					parent.getInformation().getElements(null, null, null, true, false, "MethodCounters").size();
 			Integer methodData =
 					parent.getInformation().getElements(null, null, null, true, false, "MethodData").size();
+			Integer methodTrainingData =
+					parent.getInformation().getElements(null, null, null, true, false, "MethodTrainingData").size();
 
 			(new AttributedString("Methods in AOT Cache: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
 			(new AttributedString(intFormat.format(methods), greenFormat)).println(parent.getTerminal());
 
 			printPercentage("  -> ConstMethods: ", methods.doubleValue(), percentFormat, intFormat, greenFormat,
 					constMethods.doubleValue());
-			printPercentage("  -> MethodCounters: ",methods.doubleValue(), percentFormat, intFormat, greenFormat, methodCounters.doubleValue());
+			printPercentage("  -> MethodCounters: ", methods.doubleValue(), percentFormat, intFormat, greenFormat,
+					methodCounters.doubleValue());
 			printPercentage("  -> MethodData: ", methods.doubleValue(), percentFormat, intFormat, greenFormat,
 					methodData.doubleValue());
+			printPercentage("  -> MethodTrainingData: ", methods.doubleValue(), percentFormat, intFormat, greenFormat,
+					methodTrainingData.doubleValue());
 		}
+
+
+		(new AttributedString("Symbol: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
+		(new AttributedString(intFormat.format(
+				parent.getInformation().getElements(null, null, null, true, false, "Symbol").size()), greenFormat)).println(parent.getTerminal());
 
 		Integer constantPool =
 				parent.getInformation().getElements(null, null, null, true, false, "ConstantPool").size();
 
 		if (constantPool > 0) {
 			Integer constantPoolCache =
-				parent.getInformation().getElements(null, null, null, true, false, "ConstantPoolCache").size();
+					parent.getInformation().getElements(null, null, null, true, false, "ConstantPoolCache").size();
 
 			(new AttributedString("ConstantPool: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
 			(new AttributedString(intFormat.format(constantPool), greenFormat)).println(parent.getTerminal());
@@ -170,6 +190,46 @@ class InfoCommand implements Runnable {
 					.println(parent.getTerminal());
 		}
 
+
+		(new AttributedString("Type Arrays: ", AttributedStyle.DEFAULT)).println(parent.getTerminal());
+		parent.getInformation().getAllTypes().stream().filter(t -> t.startsWith("TypeArray")).sorted().forEachOrdered(type -> {
+			(new AttributedString("  -> " + type + ": ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
+			(new AttributedString(
+					intFormat.format(
+							parent.getInformation()
+									.getElements(null, null, null, true, false, type)
+									.size()), greenFormat)).println(parent.getTerminal());
+		});
+
+
+		(new AttributedString("Adapters: ", AttributedStyle.DEFAULT)).println(parent.getTerminal());
+		(new AttributedString("  -> AdapterFingerPrint: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
+		(new AttributedString(
+				intFormat.format(
+						parent.getInformation()
+								.getElements(null, null, null, true, false, "AdapterFingerPrint")
+								.size()), greenFormat)).println(parent.getTerminal());
+		(new AttributedString("  -> AdapterHandlerEntry: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
+		(new AttributedString(
+				intFormat.format(
+						parent.getInformation()
+								.getElements(null, null, null, true, false, "AdapterHandlerEntry")
+								.size()), greenFormat)).println(parent.getTerminal());
+
+		(new AttributedString("RecordComponent: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
+		(new AttributedString(intFormat.format(
+				parent.getInformation().getElements(null, null, null, true, false, "RecordComponent").size()), greenFormat)).println(parent.getTerminal());
+
+		(new AttributedString("Annotations: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
+		(new AttributedString(intFormat.format(
+				parent.getInformation().getElements(null, null, null, true, false, "Annotations").size()),
+				greenFormat)).println(parent.getTerminal());
+
+
+		(new AttributedString("Misc Data: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
+		(new AttributedString(intFormat.format(parent.getInformation()
+				.getElements(null, null, null, true, false, "Misc-data")
+				.size()), greenFormat)).println(parent.getTerminal());
 
 	}
 

@@ -1,11 +1,20 @@
 package tooling.leyden.commands;
 
+import org.jline.utils.AttributedString;
+import org.jline.utils.AttributedStyle;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
+import tooling.leyden.aotcache.Element;
+import tooling.leyden.aotcache.Information;
+import tooling.leyden.aotcache.Warning;
 import tooling.leyden.aotcache.WarningType;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Command(name = "warning", mixinStandardHelpOptions = true,
@@ -27,13 +36,18 @@ class WarningCommand implements Runnable {
 	protected String[] types;
 
 	public void run() {
-		var wa = parent.getInformation().getWarnings();
+		printWarnings(parent.getInformation().getWarnings());
+	}
+
+	private void printWarnings(Collection<Warning> wa) {
 		if (types != null && types.length > 0) {
 			wa = wa.parallelStream().filter(
 					warning -> Arrays.stream(types).anyMatch(t -> t.equalsIgnoreCase(warning.getType().name())))
 					.collect(Collectors.toSet());
 		}
-		wa.forEach(element -> parent.getOut().println("  > " + element.toString()));
+
+		wa.forEach(element -> element.getDescription().println(parent.getTerminal()));
+
 		parent.getOut().println("Found " + wa.size() + " warnings.");
 	}
 
