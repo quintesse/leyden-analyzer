@@ -6,7 +6,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
@@ -21,7 +20,9 @@ public class Information {
 	private Map<Key, Element> elementsNotInTheCache = new ConcurrentHashMap<>();
 
 	//List of warnings and incidents that may be useful to check
-	private Set<Warning> warnings = new HashSet<>();
+	private List<Warning> warnings = new ArrayList<>();
+	//Auto-generated warnings by `warning check` command
+	private List<Warning> autoWarnings = new ArrayList<>();
 
 	//We keep classes also here to search for them by name, not package
 	//It will make sense when we link Symbols of the form Name.java
@@ -80,6 +81,7 @@ public class Information {
 		elements.clear();
 		elementsNotInTheCache.clear();
 		warnings.clear();
+		autoWarnings.clear();
 		classes.clear();
 		statistics.clear();
 		allocation.clear();
@@ -188,8 +190,12 @@ public class Information {
 		return result.toList();
 	}
 
-	public Set<Warning> getWarnings() {
+	public List<Warning> getWarnings() {
 		return warnings;
+	}
+
+	public List<Warning> getAutoWarnings() {
+		return autoWarnings;
 	}
 
 	public Collection<Element> getAll() {

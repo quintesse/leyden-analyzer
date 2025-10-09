@@ -1,27 +1,21 @@
 package tooling.leyden.commands;
 
-import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStringBuilder;
 import org.jline.utils.AttributedStyle;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import tooling.leyden.aotcache.ClassObject;
 import tooling.leyden.aotcache.Element;
-import tooling.leyden.aotcache.Information;
 import tooling.leyden.aotcache.Warning;
 import tooling.leyden.aotcache.WarningType;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 @Command(name = "warning", mixinStandardHelpOptions = true,
@@ -47,10 +41,13 @@ class WarningCommand implements Runnable {
 	private String[] excludedPackages = new String[]{"java", "jdk", "sun", "com.sun"};
 
 	public void run() {
-		printWarnings(parent.getInformation().getWarnings());
+		printWarnings();
 	}
 
-	private void printWarnings(Collection<Warning> wa) {
+	private void printWarnings() {
+		Set<Warning> wa = new HashSet<>();
+		wa.addAll(parent.getInformation().getWarnings());
+		wa.addAll(parent.getInformation().getAutoWarnings());
 		if (types != null && types.length > 0) {
 			wa = wa.parallelStream().filter(
 							warning -> Arrays.stream(types).anyMatch(t -> t.equalsIgnoreCase(warning.getType().name())))
@@ -70,13 +67,15 @@ class WarningCommand implements Runnable {
 	public void check() {
 
 		parent.getOut().println("Trying to detect problems...");
-		parent.getOut().println("The following issues may or may not be problematic. It is up to the developer to decide that.");
 
-		List<Warning> warnings;
+		List<Warning> warnings = parent.getInformation().getAutoWarnings();
+		warnings.clear();
 
-		warnings = getTopTenPackagesNotCached();
+		warnings.addAll(getTopTenPackagesNotCached());
 
-		printWarnings(warnings);
+		printWarnings();
+		parent.getOut().println("The auto-detected issues may or may not be problematic.");
+		parent.getOut().println("It is up to the developer to decide that.");
 	}
 
 	private List<Warning> getTopTenPackagesNotCached() {
