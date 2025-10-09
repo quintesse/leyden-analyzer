@@ -35,7 +35,7 @@ public class Warning {
 
 		if (this.element != null) {
 			sb.append("Element '");
-			sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.BLUE));
+			sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.CYAN));
 			sb.append(this.element.getKey());
 			sb.style(AttributedStyle.DEFAULT);
 			sb.append("' of type '");
@@ -51,17 +51,9 @@ public class Warning {
 				sb.append("processed");
 			}
 			sb.append(" because: ");
-		} else {
-			sb.append("[");
-			sb.style(AttributedStyle.DEFAULT.italic().foreground(AttributedStyle.BLUE));
-			sb.append(this.type.name());
-			sb.style(AttributedStyle.DEFAULT);
-			sb.append("]: ");
 		}
 
-		sb.append("'");
 		sb.append(description);
-		sb.append("'");
 
 		this.message = sb.toAttributedString();
 	}
@@ -75,7 +67,15 @@ public class Warning {
 	}
 
 	public AttributedString getDescription() {
-		return this.message;
+
+		AttributedStringBuilder sb = new AttributedStringBuilder();
+		sb.append("[");
+		sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.CYAN));
+		sb.append(this.type.name());
+		sb.style(AttributedStyle.DEFAULT);
+		sb.append("] ");
+		sb.append(this.message);
+		return sb.toAttributedString();
 	}
 
 	public String toString() {

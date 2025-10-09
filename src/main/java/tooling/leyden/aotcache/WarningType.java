@@ -6,5 +6,6 @@ package tooling.leyden.aotcache;
 public enum WarningType {
 	StoringIntoAOTCache,
 	LoadingFromAOTCache,
+	Training,
 	Unknown
 }
