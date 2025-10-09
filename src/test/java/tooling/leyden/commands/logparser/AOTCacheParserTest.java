@@ -13,6 +13,7 @@ import java.io.File;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -249,6 +250,43 @@ class AOTCacheParserTest extends DefaultTest {
 		for (Element method : methods) {
 			assertEquals(lambda, ((MethodObject) method).getClassObject());
 		}
+	}
+
+	@Test
+	void acceptTrainingData() {
+		final var loadFile = new LoadFileCommand();
+		loadFile.setParent(getDefaultCommand());
+		final var aotCache = loadFile.getParent().getInformation();
+		AOTMapParser aotCacheParser = new AOTMapParser(loadFile);
+
+		aotCacheParser.accept("0x0000000800ede8d0: @@ Class             1248 java.util.logging.LogManager");
+		aotCacheParser.accept("0x0000000801bc7e40: @@ KlassTrainingData 40 java.util.logging.LogManager");
+		aotCacheParser.accept("0x0000000801bcb1a8: @@ KlassTrainingData 40 java.lang.classfile.AttributeMapper$AttributeStability");
+		aotCacheParser.accept("0x00000008019c1b48: @@ Class            88 java.lang.classfile.AttributeMapper$AttributeStability");
+
+		var klassTrainingData = aotCache.getElements(null, null, null, false, false, "KlassTrainingData");
+		assertEquals(2, klassTrainingData.size());
+
+		for (Element e : klassTrainingData) {
+			ReferencingElement re = (ReferencingElement) e;
+			assertEquals(1, re.getReferences().size());
+			var classObj = re.getReferences().getFirst();
+			assertInstanceOf(ClassObject.class, classObj);
+			assertEquals(classObj.getKey(), re.getKey());
+		}
+
+		//Now check we don't break on empty class name
+		aotCache.clear();
+
+		aotCacheParser.accept("0x0000000801d14768: @@ KlassTrainingData 40");
+		klassTrainingData = aotCache.getElements(null, null, null, false, false, "KlassTrainingData");
+		assertEquals(1, klassTrainingData.size());
+
+		for (Element e : klassTrainingData) {
+			ReferencingElement re = (ReferencingElement) e;
+			assertEquals(0, re.getReferences().size());
+		}
+
 	}
 
 }

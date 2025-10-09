@@ -88,6 +88,11 @@ public class AOTMapParser implements Consumer<String> {
 				element = processReferencingElement(new ConstantPoolObject(true), identifier, content);
 			} else if (type.equalsIgnoreCase("ConstantPool")) {
 				element = processReferencingElement(new ConstantPoolObject(false), identifier, content);
+			} else if (type.equalsIgnoreCase("KlassTrainingData")) {
+//					0x0000000801bc7e40: @@ KlassTrainingData 40 java.util.logging.LogManager
+//					0x0000000801bc8968: @@ KlassTrainingData 40 java.lang.invoke.MethodHandleImpl$IntrinsicMethodHandle
+//					0x0000000801bcb1a8: @@ KlassTrainingData 40 java.lang.classfile.AttributeMapper$AttributeStability
+				element = processKlassTrainingData(new ReferencingElement(), identifier);
 			} else if (type.startsWith("TypeArray")
 //					0x0000000800001d80: @@ TypeArrayU1       600
 //					0x000000080074cc50: @@ TypeArrayOther    800
@@ -173,10 +178,32 @@ public class AOTMapParser implements Consumer<String> {
 		return e;
 	}
 
+	private Element processKlassTrainingData(ReferencingElement e, String identifier) {
+		//0x0000000801bb4950: @@ KlassTrainingData 40 java.nio.file.Files$AcceptAllFilter
+		//0x0000000801bbd700: @@ KlassTrainingData 40 sun.util.calendar.ZoneInfo
+
+		//Looking for the Class
+		var classes = this.information.getElements(identifier, null, null, true, true,"Class");
+		if (classes.isEmpty()){
+			if (!identifier.isBlank()) {
+				ClassObject classObject = new ClassObject(identifier);
+				e.getReferences().add(classObject);
+				this.information.addExternalElement(classObject, "Referenced from a KlassTrainingData.");
+			}
+		} else {
+			e.getReferences().add(classes.getFirst());
+		}
+
+		e.setName(identifier);
+
+		return e;
+	}
+
 	private Element processClass(String identifier, String thisSource) {
 		// 0x000000080082d490: @@ Class             760 java.lang.StackFrameInfo
 		// It could have been already loaded
-		for (Element element : this.information.getElements(identifier, null, null, true, false,"Class")) {
+		for (Element element : this.information.getElements(identifier, null, null, true, true,"Class")) {
+			element.getSources().add(thisSource);
 			return element;
 		}
 		ClassObject classObject = new ClassObject(identifier);
