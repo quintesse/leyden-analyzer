@@ -218,7 +218,7 @@ class AOTCacheParserTest extends DefaultTest {
 				null, null, true, false, "Method");
 		var method = elements.getFirst();
 		assertNotNull(method.getClass());
-		assertEquals("jdk.internal.misc.CDS", ((MethodObject)method).getClassObject().getKey());
+		assertEquals("jdk.internal.misc.CDS", ((MethodObject) method).getClassObject().getKey());
 		elements = aotCache.getElements("void jdk.internal.misc.CDS.keepAlive(java.lang.Object)",
 				null, null, true, false, "ConstMethod", "MethodData", "MethodCounters");
 
@@ -263,6 +263,8 @@ class AOTCacheParserTest extends DefaultTest {
 		aotCacheParser.accept("0x0000000801bc7e40: @@ KlassTrainingData 40 java.util.logging.LogManager");
 		aotCacheParser.accept("0x0000000801bcb1a8: @@ KlassTrainingData 40 java.lang.classfile.AttributeMapper$AttributeStability");
 		aotCacheParser.accept("0x00000008019c1b48: @@ Class            88 java.lang.classfile.AttributeMapper$AttributeStability");
+		aotCacheParser.accept("0x0000000800b5b3a8: @@ Method            88 org.apache.logging.log4j.spi.LoggerContext org.apache.logging.log4j.LogManager.getContext(boolean)");
+		aotCacheParser.accept("0x0000000801a23fc8: @@ MethodTrainingData 96 org.apache.logging.log4j.spi.LoggerContext org.apache.logging.log4j.LogManager.getContext(boolean)");
 
 		var klassTrainingData = aotCache.getElements(null, null, null, false, false, "KlassTrainingData");
 		assertEquals(2, klassTrainingData.size());
@@ -275,18 +277,29 @@ class AOTCacheParserTest extends DefaultTest {
 			assertEquals(classObj.getKey(), re.getKey());
 		}
 
+		var methodTrainingData = aotCache.getElements(null, null, null, false, false, "MethodTrainingData");
+		assertEquals(1, methodTrainingData.size());
+
+		for (Element e : methodTrainingData) {
+			ReferencingElement re = (ReferencingElement) e;
+			assertEquals(1, re.getReferences().size());
+			assertEquals(re.getReferences().getFirst().getKey(), re.getKey());
+		}
+
 		//Now check we don't break on empty class name
 		aotCache.clear();
 
 		aotCacheParser.accept("0x0000000801d14768: @@ KlassTrainingData 40");
-		klassTrainingData = aotCache.getElements(null, null, null, false, false, "KlassTrainingData");
-		assertEquals(1, klassTrainingData.size());
+		aotCacheParser.accept("0x0000000801cd0518: @@ MethodTrainingData 96");
 
-		for (Element e : klassTrainingData) {
+		var trainingData = aotCache.getElements(null, null, null, false, false, "MethodTrainingData",
+				"KlassTrainingData");
+		assertEquals(2, trainingData.size());
+
+		for (Element e : trainingData) {
 			ReferencingElement re = (ReferencingElement) e;
 			assertEquals(0, re.getReferences().size());
 		}
-
 	}
 
 }

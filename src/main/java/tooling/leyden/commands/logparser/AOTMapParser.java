@@ -93,6 +93,11 @@ public class AOTMapParser implements Consumer<String> {
 //					0x0000000801bc8968: @@ KlassTrainingData 40 java.lang.invoke.MethodHandleImpl$IntrinsicMethodHandle
 //					0x0000000801bcb1a8: @@ KlassTrainingData 40 java.lang.classfile.AttributeMapper$AttributeStability
 				element = processKlassTrainingData(new ReferencingElement(), identifier);
+			} else if (type.equalsIgnoreCase("MethodTrainingData")) {
+//					0x0000000801bc7e40: @@ KlassTrainingData 40 java.util.logging.LogManager
+//					0x0000000801bc8968: @@ KlassTrainingData 40 java.lang.invoke.MethodHandleImpl$IntrinsicMethodHandle
+//					0x0000000801bcb1a8: @@ KlassTrainingData 40 java.lang.classfile.AttributeMapper$AttributeStability
+				element = processMethodTrainingData(new ReferencingElement(), identifier);
 			} else if (type.startsWith("TypeArray")
 //					0x0000000800001d80: @@ TypeArrayU1       600
 //					0x000000080074cc50: @@ TypeArrayOther    800
@@ -192,6 +197,27 @@ public class AOTMapParser implements Consumer<String> {
 			}
 		} else {
 			e.getReferences().add(classes.getFirst());
+		}
+
+		e.setName(identifier);
+
+		return e;
+	}
+
+	private Element processMethodTrainingData(ReferencingElement e, String identifier) {
+		//0x0000000801c4d7a8: @@ MethodTrainingData 96 void java.util.concurrent.atomic.AtomicLong.lazySet(long)
+
+		//Looking for the Method
+		var methods = this.information.getElements(identifier, null, null, true, true,"Method");
+		if (methods.isEmpty()){
+			if (!identifier.isBlank()) {
+				String source = "Referenced from a MethodTrainingData.";
+				MethodObject method = new MethodObject(identifier, source, true, this.information);
+				e.getReferences().add(method);
+				this.information.addExternalElement(method, source);
+			}
+		} else {
+			e.getReferences().add(methods.getFirst());
 		}
 
 		e.setName(identifier);
