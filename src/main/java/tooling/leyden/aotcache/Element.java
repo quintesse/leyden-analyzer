@@ -1,6 +1,10 @@
 package tooling.leyden.aotcache;
 
 
+import org.jline.utils.AttributedString;
+import org.jline.utils.AttributedStringBuilder;
+import org.jline.utils.AttributedStyle;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -40,16 +44,30 @@ public abstract class Element {
 	 *
 	 * @return A complete description of this element.
 	 */
-	public String getDescription(String leftPadding) {
-		StringBuilder sb =
-				new StringBuilder(leftPadding + getType() + " " + getKey());
+	public AttributedString getDescription(String leftPadding) {
+
+		AttributedStringBuilder sb = new AttributedStringBuilder();
+		sb.style(AttributedStyle.DEFAULT.bold());
+		sb.append(leftPadding + getType());
+		sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.CYAN));
+		sb.append(" " + getKey());
+		sb.style(AttributedStyle.DEFAULT);
 		if (getAddress() != null) {
-			sb.append(" on address " + address);
+			sb.append(" on address ");
+			sb.style(AttributedStyle.DEFAULT.bold());
+			sb.append(address);
+			sb.style(AttributedStyle.DEFAULT);
 		}
-		sb.append(" with size " + getSize() + ".");
+		sb.append(" with size ");
+		sb.style(AttributedStyle.DEFAULT.bold());
+		sb.append(getSize().toString());
+		sb.style(AttributedStyle.DEFAULT);
+		sb.append(".");
 		sb.append('\n' + leftPadding + "This information comes from: ");
+		sb.style(AttributedStyle.DEFAULT.italic());
 		getSources().forEach( s -> sb.append('\n' + leftPadding + "  > " + s));
-		return sb.toString();
+		sb.style(AttributedStyle.DEFAULT);
+		return sb.toAttributedString();
 	}
 
 	/**

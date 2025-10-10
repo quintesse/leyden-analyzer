@@ -1,6 +1,9 @@
 package tooling.leyden.aotcache;
 
 
+import org.jline.utils.AttributedString;
+import org.jline.utils.AttributedStringBuilder;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -36,13 +39,15 @@ public class ReferencingElement extends Element {
 	}
 
 	@Override
-	public String getDescription(String leftPadding) {
-		StringBuilder sb = new StringBuilder(super.getDescription(leftPadding));
+	public AttributedString getDescription(String leftPadding) {
+
+		AttributedStringBuilder sb = new AttributedStringBuilder();
+		sb.append(super.getDescription(leftPadding));
 
 		if (!this.getReferences().isEmpty()) {
 			sb.append('\n' + leftPadding + "This element refers to " + getReferences().size() + " other elements.");
 		}
 
-		return sb.toString();
+		return sb.toAttributedString();
 	}
 }

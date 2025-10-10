@@ -1,5 +1,9 @@
 package tooling.leyden.aotcache;
 
+import org.jline.utils.AttributedString;
+import org.jline.utils.AttributedStringBuilder;
+import org.jline.utils.AttributedStyle;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -127,35 +131,52 @@ public class MethodObject extends ReferencingElement {
 	}
 
 	@Override
-	public String getDescription(String leftPadding) {
-		StringBuilder sb = new StringBuilder(super.getDescription(leftPadding));
-		sb.append('\n' + leftPadding + "Belongs to the class " + getClassObject().getKey());
+	public AttributedString getDescription(String leftPadding) {
+		AttributedStringBuilder sb = new AttributedStringBuilder();
+		sb.append(super.getDescription(leftPadding));
+		sb.append(AttributedString.NEWLINE);
+		sb.append(leftPadding + "Belongs to the class ");
+		sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.CYAN));
+		sb.style(AttributedStyle.DEFAULT.bold());
+		if (this.getClassObject() != null && this.getClassObject().getAddress() != null) {
+			sb.append(" (address: " + this.getClassObject().getAddress() + ")");
+		}
+		sb.append(getClassObject().getKey());
+		sb.style(AttributedStyle.DEFAULT);
 
 		if (!this.parameters.isEmpty()) {
-			sb.append('\n' + leftPadding + "Accepts the following parameters:");
+			sb.append(AttributedString.NEWLINE);
+			sb.append(leftPadding + "Accepts the following parameters:");
 			parameters.forEach(p -> sb.append('\n' + leftPadding + " - " + p));
 		} else {
-			sb.append('\n' + leftPadding + "It has no parameters.");
+			sb.append(AttributedString.NEWLINE);
+			sb.append(leftPadding + "It has no parameters.");
 		}
 		if (getReturnType() != null) {
-			sb.append('\n' + leftPadding + "Returns " + getReturnType() + ".");
+			sb.append(AttributedString.NEWLINE);
+			sb.append(leftPadding + "Returns " + getReturnType() + ".");
 		}
 		if (this.methodCounters != null) {
-			sb.append('\n' + leftPadding + "It has a MethodCounters associated to it: " + this.methodCounters.getAddress());
+			sb.append(AttributedString.NEWLINE);
+			sb.append(leftPadding + "It has a MethodCounters associated to it: " + this.methodCounters.getAddress());
 		}
 		if (this.methodData != null) {
-			sb.append('\n' + leftPadding + "It has a MethodData associated to it: " + this.methodData.getAddress());
+			sb.append(AttributedString.NEWLINE);
+			sb.append(leftPadding + "It has a MethodData associated to it: " + this.methodData.getAddress());
 		}
 		if (this.methodTrainingData != null) {
-			sb.append('\n' + leftPadding + "It has a MethodTrainingData associated to it: " + this.methodTrainingData.getAddress());
+			sb.append(AttributedString.NEWLINE);
+			sb.append(leftPadding + "It has a MethodTrainingData associated to it: " + this.methodTrainingData.getAddress());
 		}
 		if (!this.compileTrainingData.isEmpty()) {
-			sb.append('\n' + leftPadding + "It has " + this.compileTrainingData.size() + "CompileTrainingData " +
+			sb.append(AttributedString.NEWLINE);
+			sb.append(leftPadding + "It has " + this.compileTrainingData.size() + "CompileTrainingData " +
 					"elements available.");
 		} else {
-			sb.append('\n' + leftPadding + "It has no CompileTrainingData elements available.");
+			sb.append(AttributedString.NEWLINE);
+			sb.append(leftPadding + "It has no CompileTrainingData elements available.");
 		}
-		return sb.toString();
+		return sb.toAttributedString();
 	}
 
 	private void procesParameters(final String identifier, final Information information) {

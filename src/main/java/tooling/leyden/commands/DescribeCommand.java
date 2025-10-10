@@ -1,5 +1,8 @@
 package tooling.leyden.commands;
 
+import org.jline.utils.AttributedString;
+import org.jline.utils.AttributedStringBuilder;
+import org.jline.utils.AttributedStyle;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import tooling.leyden.aotcache.Element;
@@ -32,39 +35,54 @@ class DescribeCommand implements Runnable {
 		List<Element> elements = parent.getInformation().getElements(parameters.getName(), parameters.packageName,
 				parameters.excludePackageName, parameters.showArrays, parameters.useNotCached, parameters.types);
 
+		AttributedStringBuilder sb = new AttributedStringBuilder();
 		if (!elements.isEmpty()) {
 			elements.forEach(e -> {
 				var leftPadding = "|  ";
-				parent.getOut().println("-----");
-				parent.getOut().println(e.getDescription(leftPadding));
+				sb.append("-----");
+				sb.append(AttributedString.NEWLINE);
+				sb.append(e.getDescription(leftPadding));
+				sb.append(AttributedString.NEWLINE);
 				if(verbose) {
 					if (e instanceof ReferencingElement re) {
 						if (!re.getReferences().isEmpty()) {
-							parent.getOut().println(leftPadding + "Elements referenced from this element: ");
-							parent.getOut().println(leftPadding + "  _____");
-							re.getReferences().forEach(refer -> parent.getOut().println(leftPadding + "  | " + refer.toString()));
-							parent.getOut().println(leftPadding + "  _____");
+							sb.append(leftPadding + "Elements referenced from this element: ");
+							sb.append(AttributedString.NEWLINE);
+							sb.append(leftPadding + "  _____");
+							sb.append(AttributedString.NEWLINE);
+							re.getReferences().forEach(refer -> sb.append(leftPadding + "  | " + refer.toString() +
+											"\n"));
+							sb.append(leftPadding + "  _____");
+							sb.append(AttributedString.NEWLINE);
 						} else {
-							parent.getOut().println(leftPadding + "There are no elements referenced from this element.");
+							sb.append(leftPadding + "There are no elements referenced from this element.");
+							sb.append(AttributedString.NEWLINE);
 						}
 					}
 
 					var referring = getElementsReferencingThisOne(e);
 					if (!referring.isEmpty()) {
-						parent.getOut().println(leftPadding + "Elements that refer to this element: ");
-						parent.getOut().println(leftPadding + "  _____");
-						referring.forEach(refer -> parent.getOut().println(leftPadding + "  | " + refer.toString()));
-						parent.getOut().println(leftPadding + "  _____");
+						sb.append(leftPadding + "Elements that refer to this element: ");
+						sb.append(AttributedString.NEWLINE);
+						sb.append(leftPadding + "  _____");
+						sb.append(AttributedString.NEWLINE);
+						referring.forEach(refer -> sb.append(leftPadding + "  | " + refer.toString() + "\n"));
+						sb.append(leftPadding + "  _____");
+						sb.append(AttributedString.NEWLINE);
 					} else {
-						parent.getOut().println(leftPadding + "There are no other elements of the cache that refer " +
+						sb.append(leftPadding + "There are no other elements of the cache that refer " +
 								"to this element.");
+						sb.append(AttributedString.NEWLINE);
 					}
 				}
-				parent.getOut().println("-----");
+				sb.append("-----");
+				sb.append(AttributedString.NEWLINE);
 			});
 		} else {
-			parent.getOut().println("ERROR: Element not found. Try looking for it with ls.");
+			sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.RED));
+			sb.append("ERROR: Element not found. Try looking for it with ls.");
 		}
+		sb.toAttributedString().println(parent.getTerminal());
 	}
 
 	public List<Element> getElementsReferencingThisOne(Element element) {

@@ -1,5 +1,9 @@
 package tooling.leyden.aotcache;
 
+import org.jline.utils.AttributedString;
+import org.jline.utils.AttributedStringBuilder;
+import org.jline.utils.AttributedStyle;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -67,19 +71,18 @@ public class ClassObject extends ReferencingElement {
 	}
 
 	@Override
-	public String getDescription(String leftPadding) {
-		StringBuilder sb =
-				new StringBuilder(super.getDescription(leftPadding));
+	public AttributedString getDescription(String leftPadding) {
+		AttributedStringBuilder sb = new AttributedStringBuilder();
+		sb.append(super.getDescription(leftPadding));
 		if (!this.getMethods().isEmpty()) {
-			sb.append('\n' + leftPadding + "This class has the following methods:");
-			sb.append('\n' + leftPadding + "   ______");
-			var methodPadding = leftPadding + "   | ";
-			for (MethodObject method : this.getMethods()) {
-				sb.append('\n' + methodPadding + method.getKey());
-			}
-			sb.append('\n' + methodPadding + "______");
+			sb.append(AttributedString.NEWLINE);
+			sb.append(leftPadding + "This class has ");
+			sb.style(AttributedStyle.DEFAULT.bold());
+			sb.append(Integer.toString(this.getMethods().size()));
+			sb.style(AttributedStyle.DEFAULT);
+			sb.append(" methods.");
 		}
-		return sb.toString();
+		return sb.toAttributedString();
 	}
 
 }
