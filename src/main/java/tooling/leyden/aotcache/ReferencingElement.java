@@ -37,16 +37,10 @@ public class ReferencingElement extends Element {
 
 	@Override
 	public String getDescription(String leftPadding) {
-		StringBuilder sb =
-				new StringBuilder(super.getDescription(leftPadding));
+		StringBuilder sb = new StringBuilder(super.getDescription(leftPadding));
 
 		if (!this.getReferences().isEmpty()) {
-			sb.append('\n' + leftPadding + "This element refers to :");
-			for (Element e : getReferences()) {
-				sb.append('\n' + leftPadding + " > " + e);
-			}
-		} else {
-			sb.append('\n' + leftPadding + "Couldn't determine which elements does this link/refer to.");
+			sb.append('\n' + leftPadding + "This element refers to " + getReferences().size() + " other elements.");
 		}
 
 		return sb.toString();

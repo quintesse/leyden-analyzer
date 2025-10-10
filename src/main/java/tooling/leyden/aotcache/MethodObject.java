@@ -9,10 +9,14 @@ import java.util.List;
 public class MethodObject extends ReferencingElement {
 
 	private ClassObject classObject;
-	private String compilationLevel = "unknown";
-	private String name;
+	private MethodObject constMethod;
+	private Element methodData;
+	private Element methodCounters;
+	private Element methodTrainingData;
+	private List<Element> compileTrainingData = new ArrayList<>();
+
 	private String returnType;
-	private Boolean constMethod = false;
+	private Boolean isConstMethod = false;
 	private List<String> parameters = new ArrayList<>();
 
 	public MethodObject() {
@@ -43,6 +47,46 @@ public class MethodObject extends ReferencingElement {
 		addReference(classObject);
 	}
 
+	public MethodObject getConstMethod() {
+		return constMethod;
+	}
+
+	public void setConstMethod(MethodObject constMethod) {
+		this.constMethod = constMethod;
+	}
+
+	public Element getMethodData() {
+		return methodData;
+	}
+
+	public void setMethodData(Element methodData) {
+		this.methodData = methodData;
+	}
+
+	public Element getMethodCounters() {
+		return methodCounters;
+	}
+
+	public void setMethodCounters(Element methodCounters) {
+		this.methodCounters = methodCounters;
+	}
+
+	public Element getMethodTrainingData() {
+		return methodTrainingData;
+	}
+
+	public void setMethodTrainingData(Element methodTrainingData) {
+		this.methodTrainingData = methodTrainingData;
+	}
+
+	public List<Element> getCompileTrainingData() {
+		return compileTrainingData;
+	}
+
+	public void addCompileTrainingData(Element compileTrainingData) {
+		this.compileTrainingData.add(compileTrainingData);
+	}
+
 	public void addParameter(Element parameter) {
 		this.parameters.add(parameter.getKey());
 		addReference(parameter);
@@ -54,20 +98,12 @@ public class MethodObject extends ReferencingElement {
 		this.parameters.add(parameter);
 	}
 
-	public String getCompilationLevel() {
-		return compilationLevel;
-	}
-
-	public void setCompilationLevel(String compilationLevel) {
-		this.compilationLevel = compilationLevel;
-	}
-
 	public Boolean isConstMethod() {
-		return constMethod;
+		return isConstMethod;
 	}
 
-	public void setConstMethod(Boolean constMethod) {
-		this.constMethod = constMethod;
+	public void setIsConstMethod(Boolean isConstMethod) {
+		this.isConstMethod = isConstMethod;
 	}
 
 	public String getReturnType() {
@@ -76,14 +112,6 @@ public class MethodObject extends ReferencingElement {
 
 	public void setReturnType(String returnType) {
 		this.returnType = returnType;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
 	}
 
 	@Override
@@ -101,13 +129,31 @@ public class MethodObject extends ReferencingElement {
 	@Override
 	public String getDescription(String leftPadding) {
 		StringBuilder sb = new StringBuilder(super.getDescription(leftPadding));
-		sb.append('\n' + leftPadding + "Compilation level " + compilationLevel + ".");
-		if (classObject != null) {
-			sb.append('\n' + leftPadding + "Belongs to the class " + getClassObject().getKey());
+		sb.append('\n' + leftPadding + "Belongs to the class " + getClassObject().getKey());
+
+		if (!this.parameters.isEmpty()) {
+			sb.append('\n' + leftPadding + "Accepts the following parameters:");
+			parameters.forEach(p -> sb.append('\n' + leftPadding + " - " + p));
+		} else {
+			sb.append('\n' + leftPadding + "It has no parameters.");
 		}
-		;
 		if (getReturnType() != null) {
 			sb.append('\n' + leftPadding + "Returns " + getReturnType() + ".");
+		}
+		if (this.methodCounters != null) {
+			sb.append('\n' + leftPadding + "It has a MethodCounters associated to it: " + this.methodCounters.getAddress());
+		}
+		if (this.methodData != null) {
+			sb.append('\n' + leftPadding + "It has a MethodData associated to it: " + this.methodData.getAddress());
+		}
+		if (this.methodTrainingData != null) {
+			sb.append('\n' + leftPadding + "It has a MethodTrainingData associated to it: " + this.methodTrainingData.getAddress());
+		}
+		if (!this.compileTrainingData.isEmpty()) {
+			sb.append('\n' + leftPadding + "It has " + this.compileTrainingData.size() + "CompileTrainingData " +
+					"elements available.");
+		} else {
+			sb.append('\n' + leftPadding + "It has no CompileTrainingData elements available.");
 		}
 		return sb.toString();
 	}

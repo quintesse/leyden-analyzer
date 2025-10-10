@@ -62,7 +62,7 @@ public class AOTMapParser implements Consumer<String> {
 			} else if (type.equalsIgnoreCase("ConstMethod")) {
 //					 0x0000000804990600: @@ ConstMethod       88 void jdk.internal.access.SharedSecrets.setJavaNetHttpCookieAccess(jdk.internal.access.JavaNetHttpCookieAccess)
 				element = processMethod(identifier, thisSource, type);
-				((MethodObject) element).setConstMethod(true);
+				((MethodObject) element).setIsConstMethod(true);
 				var methods = this.information.getElements(identifier, null, null, true, false, "Method");
 				if (!methods.isEmpty()) {
 					((MethodObject) element).addReference(methods.getFirst());
@@ -73,7 +73,7 @@ public class AOTMapParser implements Consumer<String> {
 //					0x0000000801e3c048: @@ Symbol            24 jdk/jfr/Event
 //					0x0000000801e3c060: @@ Symbol            8 [Z
 				element = processReferencingElement(new ReferencingElement(), identifier, content);
-			}  else if (type.equalsIgnoreCase("MethodCounters")
+			} else if (type.equalsIgnoreCase("MethodCounters")
 //					0x0000000801e4c280: @@ MethodCounters    64
 //					0x0000000801e4c280:   0000000800001800 0000000000000002 0000000801e4c228 0000000801e4c280   ................(...............
 //					0x0000000801e4c2a0:   0000000000000000 000000fe00000000 00000000000007fe 0000000000000000   ................................
@@ -82,7 +82,7 @@ public class AOTMapParser implements Consumer<String> {
 //					0x0000000801f5fb68: @@ MethodData        296 void java.lang.Long.<init>(long)
 //					0x0000000801f6b328: @@ MethodData        328 int jdk.internal.util.ArraysSupport.hashCode(int, short[], int, int)
 //					0x0000000801f6f848: @@ MethodData        584 void java.util.ImmutableCollections$Set12.<init>(java.lang.Object, java.lang.Object)
-				element = processMethodDataAndCounter(content, identifier, address);
+				element = processMethodDataAndCounter(content, identifier, address, type);
 			} else if (type.equalsIgnoreCase("ConstantPoolCache")) {
 //					0x0000000800ec7408: @@ ConstantPoolCache 64 javax.naming.spi.ObjectFactory
 				element = processReferencingElement(new ConstantPoolObject(true), identifier, content);
@@ -92,12 +92,12 @@ public class AOTMapParser implements Consumer<String> {
 //					0x0000000801bc7e40: @@ KlassTrainingData 40 java.util.logging.LogManager
 //					0x0000000801bc8968: @@ KlassTrainingData 40 java.lang.invoke.MethodHandleImpl$IntrinsicMethodHandle
 //					0x0000000801bcb1a8: @@ KlassTrainingData 40 java.lang.classfile.AttributeMapper$AttributeStability
-				element = processKlassTrainingData(new ReferencingElement(), identifier);
+				element = processKlassTrainingData(new ReferencingElement(), identifier, address);
 			} else if (type.equalsIgnoreCase("MethodTrainingData")) {
 //					0x0000000801bc7e40: @@ KlassTrainingData 40 java.util.logging.LogManager
 //					0x0000000801bc8968: @@ KlassTrainingData 40 java.lang.invoke.MethodHandleImpl$IntrinsicMethodHandle
 //					0x0000000801bcb1a8: @@ KlassTrainingData 40 java.lang.classfile.AttributeMapper$AttributeStability
-				element = processMethodTrainingData(new ReferencingElement(), identifier);
+				element = processMethodTrainingData(new ReferencingElement(), identifier, address);
 			} else if (type.startsWith("TypeArray")
 //					0x0000000800001d80: @@ TypeArrayU1       600
 //					0x000000080074cc50: @@ TypeArrayOther    800
@@ -161,15 +161,23 @@ public class AOTMapParser implements Consumer<String> {
 		}
 	}
 
-	private Element processMethodDataAndCounter(String content, String identifier, String address) {
+	private Element processMethodDataAndCounter(String content, String identifier, String address, String type) {
 		ReferencingElement result = new ReferencingElement();
 		if (!identifier.isBlank()) {
 			result.setName(identifier);
+			MethodObject method;
 			var methods = this.information.getElements(identifier, null, null, true, false, "Method");
 			if (!methods.isEmpty()) {
-				result.addReference(methods.getFirst());
+				method = (MethodObject) methods.getFirst();
 			} else {
-				result.addReference(new MethodObject(identifier, "Referenced by '" + content + "'", false, this.information));
+				method = new MethodObject(identifier, "Referenced by '" + content + "'", false, this.information);
+			}
+			result.addReference(method);
+
+			if (type.equalsIgnoreCase("MethodData")) {
+				method.setMethodData(result);
+			} else {
+				method.setMethodCounters(result);
 			}
 		} else {
 			result.setName(address);
@@ -183,44 +191,51 @@ public class AOTMapParser implements Consumer<String> {
 		return e;
 	}
 
-	private Element processKlassTrainingData(ReferencingElement e, String identifier) {
+	private Element processKlassTrainingData(ReferencingElement e, String identifier, String address) {
 		//0x0000000801bb4950: @@ KlassTrainingData 40 java.nio.file.Files$AcceptAllFilter
 		//0x0000000801bbd700: @@ KlassTrainingData 40 sun.util.calendar.ZoneInfo
 
 		//Looking for the Class
-		var classes = this.information.getElements(identifier, null, null, true, true,"Class");
-		if (classes.isEmpty()){
-			if (!identifier.isBlank()) {
-				ClassObject classObject = new ClassObject(identifier);
-				e.getReferences().add(classObject);
-				this.information.addExternalElement(classObject, "Referenced from a KlassTrainingData.");
+		if (!identifier.isBlank()) {
+			var classes = this.information.getElements(identifier, null, null, true, true, "Class");
+			if (classes.isEmpty()) {
+				if (!identifier.isBlank()) {
+					ClassObject classObject = new ClassObject(identifier);
+					e.getReferences().add(classObject);
+					this.information.addExternalElement(classObject, "Referenced from a KlassTrainingData.");
+				}
+			} else {
+				e.getReferences().add(classes.getFirst());
 			}
-		} else {
-			e.getReferences().add(classes.getFirst());
-		}
 
-		e.setName(identifier);
+			e.setName(identifier);
+		} else {
+			e.setName(address);
+		}
 
 		return e;
 	}
 
-	private Element processMethodTrainingData(ReferencingElement e, String identifier) {
+	private Element processMethodTrainingData(ReferencingElement e, String identifier, String address) {
 		//0x0000000801c4d7a8: @@ MethodTrainingData 96 void java.util.concurrent.atomic.AtomicLong.lazySet(long)
 
 		//Looking for the Method
-		var methods = this.information.getElements(identifier, null, null, true, true,"Method");
-		if (methods.isEmpty()){
-			if (!identifier.isBlank()) {
-				String source = "Referenced from a MethodTrainingData.";
-				MethodObject method = new MethodObject(identifier, source, true, this.information);
-				e.getReferences().add(method);
+		if (!identifier.isBlank()) {
+			var methods = this.information.getElements(identifier, null, null, true, true, "Method");
+			MethodObject method;
+			if (methods.isEmpty()) {
+				String source = "Referenced from a MethodTrainingData: " + address;
+				method = new MethodObject(identifier, source, true, this.information);
 				this.information.addExternalElement(method, source);
+			} else {
+				method = (MethodObject) methods.getFirst();
 			}
+			e.getReferences().add(method);
+			method.setMethodTrainingData(e);
+			e.setName(identifier);
 		} else {
-			e.getReferences().add(methods.getFirst());
+			e.setName(address);
 		}
-
-		e.setName(identifier);
 
 		return e;
 	}
@@ -228,7 +243,7 @@ public class AOTMapParser implements Consumer<String> {
 	private Element processClass(String identifier, String thisSource) {
 		// 0x000000080082d490: @@ Class             760 java.lang.StackFrameInfo
 		// It could have been already loaded
-		for (Element element : this.information.getElements(identifier, null, null, true, true,"Class")) {
+		for (Element element : this.information.getElements(identifier, null, null, true, true, "Class")) {
 			element.getSources().add(thisSource);
 			return element;
 		}
@@ -238,11 +253,10 @@ public class AOTMapParser implements Consumer<String> {
 			//Lambda class, link to main outer class
 			String parent = identifier.substring(0, identifier.indexOf("$$"));
 			final var parentClass = this.information.getElements(parent, null, null, true, false, "Class");
-			if (parentClass.isEmpty()){
+			if (parentClass.isEmpty()) {
 				ClassObject parentObject = new ClassObject(parent);
 				information.addExternalElement(parentObject, "Referenced from a Class element in " + thisSource);
-			}
-			else {
+			} else {
 				classObject.getReferences().add(parentClass.getFirst());
 			}
 		}
@@ -298,7 +312,7 @@ public class AOTMapParser implements Consumer<String> {
 
 		//Now try to locate the class itself
 		if (!objectName.isBlank()) {
-			List<Element> elements = this.information.getElements(objectName, null, null, true, false,  "Class");
+			List<Element> elements = this.information.getElements(objectName, null, null, true, false, "Class");
 			if (!elements.isEmpty()) {
 				elements.forEach(e -> element.addReference(e));
 			} else {
