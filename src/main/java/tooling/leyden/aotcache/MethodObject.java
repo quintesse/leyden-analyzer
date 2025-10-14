@@ -13,20 +13,21 @@ import java.util.List;
 public class MethodObject extends ReferencingElement {
 
 	private ClassObject classObject;
-	private MethodObject constMethod;
+	private BasicObject constMethod;
 	private Element methodData;
 	private Element methodCounters;
 	private Element methodTrainingData;
 	private List<Element> compileTrainingData = new ArrayList<>();
 
 	private String returnType;
-	private Boolean isConstMethod = false;
 	private List<String> parameters = new ArrayList<>();
 
 	public MethodObject() {
+		this.setType("Method");
 	}
 
 	public MethodObject(String identifier, String thisSource, Boolean useNotCached, Information information) {
+		this.setType("Method");
 		String qualifiedName = identifier.substring(identifier.indexOf(" ") + 1);
 		if (qualifiedName.contains("(")) {
 			qualifiedName = qualifiedName.substring(0, qualifiedName.indexOf("("));
@@ -38,10 +39,6 @@ public class MethodObject extends ReferencingElement {
 		this.procesParameters(identifier, information);
 	}
 
-	public String getType() {
-		return (isConstMethod() ? "Const" : "") + "Method";
-	}
-
 	public ClassObject getClassObject() {
 		return classObject;
 	}
@@ -51,11 +48,11 @@ public class MethodObject extends ReferencingElement {
 		addReference(classObject);
 	}
 
-	public MethodObject getConstMethod() {
+	public BasicObject getConstMethod() {
 		return constMethod;
 	}
 
-	public void setConstMethod(MethodObject constMethod) {
+	public void setConstMethod(BasicObject constMethod) {
 		this.constMethod = constMethod;
 	}
 
@@ -102,14 +99,6 @@ public class MethodObject extends ReferencingElement {
 		this.parameters.add(parameter);
 	}
 
-	public Boolean isConstMethod() {
-		return isConstMethod;
-	}
-
-	public void setIsConstMethod(Boolean isConstMethod) {
-		this.isConstMethod = isConstMethod;
-	}
-
 	public String getReturnType() {
 		return returnType == null ? "void" : returnType;
 	}
@@ -139,7 +128,7 @@ public class MethodObject extends ReferencingElement {
 		sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.CYAN));
 		sb.style(AttributedStyle.DEFAULT.bold());
 		if (this.getClassObject() != null && this.getClassObject().getAddress() != null) {
-			sb.append(" (address: " + this.getClassObject().getAddress() + ")");
+			sb.append(" (address: " + this.getClassObject().getAddress() + ") ");
 		}
 		sb.append(getClassObject().getKey());
 		sb.style(AttributedStyle.DEFAULT);
@@ -156,6 +145,7 @@ public class MethodObject extends ReferencingElement {
 			sb.append(AttributedString.NEWLINE);
 			sb.append(leftPadding + "Returns " + getReturnType() + ".");
 		}
+
 		if (this.methodCounters != null) {
 			sb.append(AttributedString.NEWLINE);
 			sb.append(leftPadding + "It has a MethodCounters associated to it: " + this.methodCounters.getAddress());

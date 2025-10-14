@@ -58,15 +58,10 @@ public class AOTMapParser implements Consumer<String> {
 //					0x0000000800831250: @@ Method            88 void java.lang.management.MemoryUsage.<init>(javax.management.openmbean.CompositeData)
 // 					0x000000080082ac80: @@ Method            88 char example.Class.example(long)
 //				 	0x0000000800773ea0: @@ Method            88 boolean java.lang.Object.equals(java.lang.Object)
-				element = processMethod(identifier, thisSource, type);
+				element = processMethod(identifier, thisSource);
 			} else if (type.equalsIgnoreCase("ConstMethod")) {
 //					 0x0000000804990600: @@ ConstMethod       88 void jdk.internal.access.SharedSecrets.setJavaNetHttpCookieAccess(jdk.internal.access.JavaNetHttpCookieAccess)
-				element = processMethod(identifier, thisSource, type);
-				((MethodObject) element).setIsConstMethod(true);
-				var methods = this.information.getElements(identifier, null, null, true, false, "Method");
-				if (!methods.isEmpty()) {
-					((MethodObject) element).addReference(methods.getFirst());
-				}
+				element = processConstMethod(identifier);
 			} else if (type.equalsIgnoreCase("Symbol")) {
 //					0x0000000801e3c000: @@ Symbol            40 [Ljdk/internal/vm/FillerElement;
 //					0x0000000801e3c028: @@ Symbol            32 jdk/internal/event/Event
@@ -264,12 +259,35 @@ public class AOTMapParser implements Consumer<String> {
 		return classObject;
 	}
 
-	private Element processMethod(String identifier, String thisSource, String type) {
+	private Element processMethod(String identifier, String thisSource) {
 		// It could have been already loaded
-		for (Element element : this.information.getElements(identifier, null, null, true, false, type)) {
+		for (Element element : this.information.getElements(identifier, null, null, true, false, "Method")) {
 			return element;
 		}
 		return new MethodObject(identifier, thisSource, false, this.information);
+	}
+
+	private Element processConstMethod(String identifier) {
+		// It could have been already loaded
+		for (Element element : this.information.getElements(identifier, null, null, true, false, "ConstMethod")) {
+			return element;
+		}
+
+		BasicObject constMethod = new BasicObject(identifier);
+
+		//Which Method do we belong to?
+		boolean methodExists = false;
+		for (Element element : this.information.getElements(identifier, null, null, true, false, "Method")) {
+			((MethodObject) element).setConstMethod(constMethod);
+			methodExists = true;
+		}
+		if (!methodExists) {
+			MethodObject method = new MethodObject(identifier, "Referenced by ConstMethod in AOT Cache", true, this.information);
+			method.setConstMethod(constMethod);
+			this.information.addExternalElement(method, "Referenced by ConstMethod in AOT Cache");
+		}
+
+		return constMethod;
 	}
 
 	private void fillReferencedElement(final String identifier, final ReferencingElement element,
@@ -368,7 +386,7 @@ public class AOTMapParser implements Consumer<String> {
 		//if it refers to a method, let's search for it
 		if (objectName.indexOf("$$") > 0) {
 			objectName = objectName.replace("$$", ".");
-			for (Element e : this.information.getElements(objectName, null, null, true, false, "Method", "ConstMethod")) {
+			for (Element e : this.information.getElements(objectName, null, null, true, false, "Method")) {
 				element.addReference(e);
 			}
 			return true;
