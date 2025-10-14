@@ -6,6 +6,7 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import tooling.leyden.aotcache.Configuration;
 import tooling.leyden.aotcache.Information;
+import tooling.leyden.aotcache.ReferencingElement;
 import tooling.leyden.commands.autocomplete.InfoCommandTypes;
 
 import java.text.NumberFormat;
@@ -129,8 +130,11 @@ class InfoCommand implements Runnable {
 					.println(parent.getTerminal());
 		} else {
 
-			Integer trainingData =
-				parent.getInformation().getElements(null, null, null, true, false, "KlassTrainingData").size();
+			Long trainingData =
+				parent.getInformation().getElements(null, null, null, true, false, "KlassTrainingData")
+						//Remove the training data that is not linked to anything
+						.parallelStream().filter(ktd -> !((ReferencingElement) ktd).getReferences().isEmpty())
+			 			.count();
 
 			(new AttributedString("Classes in AOT Cache: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
 			(new AttributedString(intFormat.format(classes), greenFormat)).println(parent.getTerminal());
@@ -148,12 +152,18 @@ class InfoCommand implements Runnable {
 			(new AttributedString("Methods information is missing. Please, load an aot map.", redFormat))
 					.println(parent.getTerminal());
 		} else {
-			Integer methodCounters =
-					parent.getInformation().getElements(null, null, null, true, false, "MethodCounters").size();
-			Integer methodData =
-					parent.getInformation().getElements(null, null, null, true, false, "MethodData").size();
-			Integer methodTrainingData =
-					parent.getInformation().getElements(null, null, null, true, false, "MethodTrainingData").size();
+			Long methodCounters =
+					parent.getInformation().getElements(null, null, null, true, false, "MethodCounters")						//Remove the training data that is not linked to anything
+							.parallelStream().filter(ktd -> !((ReferencingElement) ktd).getReferences().isEmpty())
+							.count();
+			Long methodData =
+					parent.getInformation().getElements(null, null, null, true, false, "MethodData")						//Remove the training data that is not linked to anything
+							.parallelStream().filter(ktd -> !((ReferencingElement) ktd).getReferences().isEmpty())
+							.count();
+			Long methodTrainingData =
+					parent.getInformation().getElements(null, null, null, true, false, "MethodTrainingData")						//Remove the training data that is not linked to anything
+							.parallelStream().filter(ktd -> !((ReferencingElement) ktd).getReferences().isEmpty())
+							.count();
 
 			(new AttributedString("Methods in AOT Cache: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
 			(new AttributedString(intFormat.format(methods), greenFormat)).println(parent.getTerminal());
