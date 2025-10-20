@@ -127,45 +127,77 @@ public class MethodObject extends ReferencingElement {
 		sb.append(super.getDescription(leftPadding));
 		sb.append(AttributedString.NEWLINE);
 		sb.append(leftPadding + "Belongs to the class ");
-		sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.CYAN));
+		sb.style(AttributedStyle.DEFAULT.bold());
 		if (this.getClassObject() != null && this.getClassObject().getAddress() != null) {
 			sb.append(" (address: " + this.getClassObject().getAddress() + ") ");
 		}
+		sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.CYAN));
 		sb.append(getClassObject().getKey());
 		sb.style(AttributedStyle.DEFAULT);
 
-		if (!this.parameters.isEmpty()) {
-			sb.append(AttributedString.NEWLINE);
-			sb.append(leftPadding + "Accepts the following parameters:");
-			parameters.forEach(p -> sb.append('\n' + leftPadding + " - " + p));
-		} else {
-			sb.append(AttributedString.NEWLINE);
-			sb.append(leftPadding + "It has no parameters.");
-		}
-		if (getReturnType() != null) {
-			sb.append(AttributedString.NEWLINE);
-			sb.append(leftPadding + "Returns " + getReturnType() + ".");
-		}
-
 		if (this.methodCounters != null) {
 			sb.append(AttributedString.NEWLINE);
-			sb.append(leftPadding + "It has a MethodCounters associated to it: " + this.methodCounters.getAddress());
-		}
-		if (this.methodData != null) {
-			sb.append(AttributedString.NEWLINE);
-			sb.append(leftPadding + "It has a MethodData associated to it: " + this.methodData.getAddress());
-		}
-		if (this.methodTrainingData != null) {
-			sb.append(AttributedString.NEWLINE);
-			sb.append(leftPadding + "It has a MethodTrainingData associated to it: " + this.methodTrainingData.getAddress());
-		}
-		if (!this.compileTrainingData.isEmpty()) {
-			sb.append(AttributedString.NEWLINE);
-			sb.append(leftPadding + "It has " + this.compileTrainingData.size() + "CompileTrainingData " +
-					"elements available.");
+			sb.append(leftPadding + "It has a ");
+			sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.GREEN));
+			sb.append("MethodCounters");
+			sb.style(AttributedStyle.DEFAULT);
+			sb.append(" associated to it: ");
+			sb.style(AttributedStyle.DEFAULT.bold());
+			sb.append(this.methodCounters.getAddress());
+			sb.style(AttributedStyle.DEFAULT);
+			sb.append(", which means it was called at least once during training run.");
+			sb.style(AttributedStyle.DEFAULT);
 		} else {
 			sb.append(AttributedString.NEWLINE);
-			sb.append(leftPadding + "It has no CompileTrainingData elements available.");
+			sb.append(leftPadding);
+			sb.style(AttributedStyle.DEFAULT.bold());
+			sb.append("This method doesn't seem to have been called during training run.");
+			sb.style(AttributedStyle.DEFAULT);
+		}
+
+		if (!this.compileTrainingData.isEmpty()) {
+			sb.append(AttributedString.NEWLINE);
+			sb.append(leftPadding + "It has ");
+			sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.GREEN));
+			sb.append("CompileTrainingData");
+			sb.style(AttributedStyle.DEFAULT);
+			sb.append(" associated to it on level:");
+			sb.style(AttributedStyle.DEFAULT.bold());
+			for (Integer level : this.compileTrainingData.keySet()) {
+				sb.append(" " + level);
+			}
+			sb.style(AttributedStyle.DEFAULT);
+		} else {
+			sb.append(AttributedString.NEWLINE);
+			sb.append(leftPadding + "It has no ");
+			sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.RED));
+			sb.append("CompileTrainingData");
+			sb.style(AttributedStyle.DEFAULT);
+			sb.append(" associated to it.");
+		}
+
+		if (this.methodData != null) {
+			sb.append(AttributedString.NEWLINE);
+			sb.append(leftPadding + "It has a ");
+			sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.GREEN));
+			sb.append("MethodData");
+			sb.style(AttributedStyle.DEFAULT);
+			sb.append(" associated to it: ");
+			sb.style(AttributedStyle.DEFAULT.bold());
+			sb.append(this.methodData.getAddress());
+			sb.style(AttributedStyle.DEFAULT);
+		}
+
+		if (this.methodTrainingData != null) {
+			sb.append(AttributedString.NEWLINE);
+			sb.append(leftPadding + "It has a ");
+			sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.GREEN));
+			sb.append("MethodTrainingData");
+			sb.style(AttributedStyle.DEFAULT);
+			sb.append(" associated to it: ");
+			sb.style(AttributedStyle.DEFAULT.bold());
+			sb.append(this.methodTrainingData.getAddress());
+			sb.style(AttributedStyle.DEFAULT);
 		}
 		return sb.toAttributedString();
 	}
