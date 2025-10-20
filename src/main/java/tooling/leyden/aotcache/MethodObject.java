@@ -128,7 +128,6 @@ public class MethodObject extends ReferencingElement {
 		sb.append(AttributedString.NEWLINE);
 		sb.append(leftPadding + "Belongs to the class ");
 		sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.CYAN));
-		sb.style(AttributedStyle.DEFAULT.bold());
 		if (this.getClassObject() != null && this.getClassObject().getAddress() != null) {
 			sb.append(" (address: " + this.getClassObject().getAddress() + ") ");
 		}
