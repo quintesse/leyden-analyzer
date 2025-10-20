@@ -6,13 +6,19 @@ import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import tooling.leyden.aotcache.Configuration;
 import tooling.leyden.aotcache.ConstantPoolObject;
+import tooling.leyden.aotcache.Element;
 import tooling.leyden.aotcache.Information;
+import tooling.leyden.aotcache.MethodObject;
 import tooling.leyden.aotcache.ReferencingElement;
 import tooling.leyden.commands.autocomplete.InfoCommandTypes;
 
+import java.lang.reflect.Method;
 import java.text.NumberFormat;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 @Command(name = "info", mixinStandardHelpOptions = true,
 		version = "1.0",
@@ -77,8 +83,7 @@ class InfoCommand implements Runnable {
 		var extLambdas = Double.valueOf(stats.getValue("[LOG] Lambda Methods not loaded from AOT Cache", -1).toString());
 		var classes = Double.valueOf(stats.getValue("[LOG] Classes loaded from AOT Cache", -1).toString());
 		var lambdas = Double.valueOf(stats.getValue("[LOG] Lambda Methods loaded from AOT Cache", -1).toString());
-		Integer methods =
-				parent.getInformation().getElements(null, null, null, true, false, "Method").size();
+		final var methods = parent.getInformation().getElements(null, null, null, true, false, "Method");
 
 
 		(new AttributedString("RUN SUMMARY: ", blueFormat)).println(parent.getTerminal());
@@ -98,8 +103,8 @@ class InfoCommand implements Runnable {
 			printPercentages(intFormat, lambdas, percentFormat, extLambdas, greenFormat, redFormat);
 
 
-			if (methods > 0) {
-				printPercentage("  -> Portion of methods that are lambda: ", methods.doubleValue(), percentFormat,
+			if (methods.size() > 0) {
+				printPercentage("  -> Portion of methods that are lambda: ", (double) methods.size(), percentFormat,
 						intFormat,
 						greenFormat, lambdas + extLambdas);
 			}
@@ -132,10 +137,10 @@ class InfoCommand implements Runnable {
 		} else {
 
 			Long trainingData =
-				parent.getInformation().getElements(null, null, null, true, false, "KlassTrainingData")
-						//Remove the training data that is not linked to anything
-						.parallelStream().filter(ktd -> !((ReferencingElement) ktd).getReferences().isEmpty())
-			 			.count();
+					parent.getInformation().getElements(null, null, null, true, false, "KlassTrainingData")
+							//Remove the training data that is not linked to anything
+							.parallelStream().filter(ktd -> !((ReferencingElement) ktd).getReferences().isEmpty())
+							.count();
 
 			(new AttributedString("Classes in AOT Cache: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
 			(new AttributedString(intFormat.format(classes), greenFormat)).println(parent.getTerminal());
@@ -146,73 +151,77 @@ class InfoCommand implements Runnable {
 					"Object").size()), greenFormat)).println(parent.getTerminal());
 		}
 
-		Integer constMethods =
-				parent.getInformation().getElements(null, null, null, true, false, "ConstMethod").size();
+		Long methodCounters =
+				parent.getInformation().getElements(null, null, null, true, false, "MethodCounters")                        //Remove the training data that is not linked to anything
+						.parallelStream().filter(ktd -> !((ReferencingElement) ktd).getReferences().isEmpty())
+						.count();
 
-		if (constMethods < 1) {
-			(new AttributedString("Methods information is missing. Please, load an aot map.", redFormat))
+		if (methodCounters < 1) {
+			(new AttributedString("Method training information is missing. Please, load an aot map.", redFormat))
 					.println(parent.getTerminal());
 		} else {
-			Long methodCounters =
-					parent.getInformation().getElements(null, null, null, true, false, "MethodCounters")						//Remove the training data that is not linked to anything
-							.parallelStream().filter(ktd -> !((ReferencingElement) ktd).getReferences().isEmpty())
-							.count();
 			Long methodData =
-					parent.getInformation().getElements(null, null, null, true, false, "MethodData")						//Remove the training data that is not linked to anything
+					parent.getInformation().getElements(null, null, null, true, false, "MethodData")                        //Remove the training data that is not linked to anything
 							.parallelStream().filter(ktd -> !((ReferencingElement) ktd).getReferences().isEmpty())
 							.count();
 			Long methodTrainingData =
-					parent.getInformation().getElements(null, null, null, true, false, "MethodTrainingData")						//Remove the training data that is not linked to anything
+					parent.getInformation().getElements(null, null, null, true, false, "MethodTrainingData")                        //Remove the training data that is not linked to anything
 							.parallelStream().filter(ktd -> !((ReferencingElement) ktd).getReferences().isEmpty())
 							.count();
 
 			(new AttributedString("Methods in AOT Cache: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
-			(new AttributedString(intFormat.format(methods), greenFormat)).println(parent.getTerminal());
+			(new AttributedString(intFormat.format(methods.size()), greenFormat)).println(parent.getTerminal());
 
-			printPercentage("  -> ConstMethods: ", methods.doubleValue(), percentFormat, intFormat, greenFormat,
-					constMethods.doubleValue());
-			printPercentage("  -> MethodCounters: ", methods.doubleValue(), percentFormat, intFormat, greenFormat,
+			printPercentage("  -> MethodCounters: ", (double) methods.size(), percentFormat, intFormat, greenFormat,
 					methodCounters.doubleValue());
-			printPercentage("  -> MethodData: ", methods.doubleValue(), percentFormat, intFormat, greenFormat,
+			printPercentage("  -> MethodData: ", (double) methods.size(), percentFormat, intFormat, greenFormat,
 					methodData.doubleValue());
-			printPercentage("  -> MethodTrainingData: ", methods.doubleValue(), percentFormat, intFormat, greenFormat,
+			printPercentage("  -> MethodTrainingData: ", (double) methods.size(), percentFormat, intFormat, greenFormat,
 					methodTrainingData.doubleValue());
+
+			Map<Integer, Integer> compilationLevels = new HashMap<>();
+			for (Element e : methods) {
+				MethodObject method = (MethodObject) e;
+				for (Map.Entry<Integer, Element> entry : method.getCompileTrainingData().entrySet()) {
+					compilationLevels.putIfAbsent(entry.getKey(), 0);
+					compilationLevels.replace(entry.getKey(), compilationLevels.get(entry.getKey()) + 1);
+				}
+			}
+
+			(new AttributedString("  -> CompileTrainingData: ",
+					AttributedStyle.DEFAULT)).println(parent.getTerminal());
+			for (Integer level : compilationLevels.keySet()) {
+				printPercentage("      -> Level " + level + ": ", (double) methods.size(), percentFormat, intFormat,
+						greenFormat, Double.valueOf(compilationLevels.get(level)));
+			}
 		}
 
 
-		(new AttributedString("Symbol: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
-		(new AttributedString(intFormat.format(
-				parent.getInformation().getElements(null, null, null, true, false, "Symbol").size()), greenFormat)).println(parent.getTerminal());
+//		(new AttributedString("Symbol: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
+//		(new AttributedString(intFormat.format(
+//				parent.getInformation().getElements(null, null, null, true, false, "Symbol").size()), greenFormat)).println(parent.getTerminal());
 
-		Integer constantPool =
-				parent.getInformation().getElements(null, null, null, true, false, "ConstantPool").size();
-
-		if (constantPool > 0) {
-			Long constantPoolCache =
-					parent.getInformation().getElements(null, null, null, true, false, "ConstantPool")
-							.parallelStream().filter(cp -> ((ConstantPoolObject)cp).getConstantPoolCacheAddress() != null)
-							.count();
-
-			(new AttributedString("ConstantPool: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
-			(new AttributedString(intFormat.format(constantPool), greenFormat)).println(parent.getTerminal());
-			printPercentage("  -> ConstantPoolCache: ", constantPool.doubleValue(), percentFormat, intFormat,
-					greenFormat,
-					constantPoolCache.doubleValue());
-		} else {
-			(new AttributedString("ConstantPool information is missing. Please, load an aot map.", redFormat))
-					.println(parent.getTerminal());
-		}
+//		Integer constantPool =
+//				parent.getInformation().getElements(null, null, null, true, false, "ConstantPool").size();
+//
+//		if (constantPool > 0) {
+//			(new AttributedString("ConstantPool elements: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
+//			(new AttributedString(intFormat.format(constantPool), greenFormat)).println(parent.getTerminal());
+//		} else {
+//			(new AttributedString("ConstantPool information is missing. Please, load an aot map.", redFormat))
+//					.println(parent.getTerminal());
+//		}
 
 
-		(new AttributedString("Type Arrays: ", AttributedStyle.DEFAULT)).println(parent.getTerminal());
-		parent.getInformation().getAllTypes().stream().filter(t -> t.startsWith("TypeArray")).sorted().forEachOrdered(type -> {
-			(new AttributedString("  -> " + type + ": ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
-			(new AttributedString(
-					intFormat.format(
-							parent.getInformation()
-									.getElements(null, null, null, true, false, type)
-									.size()), greenFormat)).println(parent.getTerminal());
-		});
+//		(new AttributedString("Type Arrays: ", AttributedStyle.DEFAULT)).println(parent.getTerminal());
+//		parent.getInformation().getAllTypes().stream().filter(t -> t.startsWith("TypeArray")).sorted().forEachOrdered(type -> {
+//			(new AttributedString("  -> " + type + ": ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
+//			(new AttributedString(
+//					intFormat.format(
+//							parent.getInformation()
+//									.getElements(null, null, null, true, false, type)
+//									.size()), greenFormat)).println(parent.getTerminal());
+//		});
 
 
 		(new AttributedString("Adapters: ", AttributedStyle.DEFAULT)).println(parent.getTerminal());
@@ -233,10 +242,10 @@ class InfoCommand implements Runnable {
 		(new AttributedString(intFormat.format(
 				parent.getInformation().getElements(null, null, null, true, false, "RecordComponent").size()), greenFormat)).println(parent.getTerminal());
 
-		(new AttributedString("Annotations: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
-		(new AttributedString(intFormat.format(
-				parent.getInformation().getElements(null, null, null, true, false, "Annotations").size()),
-				greenFormat)).println(parent.getTerminal());
+//		(new AttributedString("Annotations: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
+//		(new AttributedString(intFormat.format(
+//				parent.getInformation().getElements(null, null, null, true, false, "Annotations").size()),
+//				greenFormat)).println(parent.getTerminal());
 
 
 		(new AttributedString("Misc Data: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
