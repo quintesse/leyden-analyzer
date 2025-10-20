@@ -88,8 +88,10 @@ public class ClassObject extends ReferencingElement {
 			sb.append(leftPadding + "This class has ");
 			sb.style(AttributedStyle.DEFAULT.bold());
 			sb.append(Integer.toString(this.getMethods().size()));
+			sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.YELLOW));
+			sb.append(" Methods");
 			sb.style(AttributedStyle.DEFAULT);
-			sb.append(" methods, of which");
+			sb.append(", of which");
 
 			int trained = 0;
 			for (MethodObject method : this.getMethods()) {
@@ -109,10 +111,7 @@ public class ClassObject extends ReferencingElement {
 			sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.GREEN));
 			sb.append("KlassTrainingData");
 			sb.style(AttributedStyle.DEFAULT);
-			sb.append(" associated to it: ");
-			sb.style(AttributedStyle.DEFAULT.bold());
-			sb.append(this.klassTrainingData.getAddress());
-			sb.style(AttributedStyle.DEFAULT);
+			sb.append(" associated to it.");
 		}
 
 		return sb.toAttributedString();

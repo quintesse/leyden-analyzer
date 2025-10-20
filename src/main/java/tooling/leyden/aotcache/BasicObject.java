@@ -10,15 +10,10 @@ import java.util.random.RandomGenerator;
  */
  public class BasicObject extends Element {
 	private String key;
-	private Random random = new Random();
 
 	@Override
 	public String getKey() {
 		return key;
-	}
-
-	public BasicObject() {
-		key = String.valueOf(random.nextInt());
 	}
 
 	public BasicObject(String key) {

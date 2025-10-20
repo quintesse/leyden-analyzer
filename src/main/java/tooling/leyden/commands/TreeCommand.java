@@ -1,6 +1,7 @@
 package tooling.leyden.commands;
 
 import org.jline.utils.AttributedString;
+import org.jline.utils.AttributedStringBuilder;
 import org.jline.utils.AttributedStyle;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
@@ -55,11 +56,13 @@ class TreeCommand implements Runnable {
 
 		if (!elements.isEmpty()) {
 			elements.forEach(e -> {
-				parent.getOut().println("+── [" + e.getType() + "] " + e.getKey());
+				(new AttributedString("+ ")).print(parent.getTerminal());
+				e.toAttributedString().println(parent.getTerminal());
 				printReferrals(e, "  ", new ArrayList<>(List.of(e)), 0);
 			});
 		} else {
-			parent.getOut().println("ERROR: Element not found. Try looking for it with ls.");
+			(new AttributedString("ERROR: Element not found. Try looking for it with ls.",
+					AttributedStyle.DEFAULT.foreground(AttributedStyle.RED).bold())).println(parent.getTerminal());
 		}
 	}
 
@@ -67,28 +70,28 @@ class TreeCommand implements Runnable {
 		if (level > this.level || (max > 0 &&  travelled.size() > max))
 			return;
 		level++;
-		var referring = getElementsReferencingThisOne(root);
+
 		boolean isFirst = true;
-		for (Element refer : referring) {
-			var style = AttributedStyle.DEFAULT.bold();
-			if (travelled.contains(refer)) {
-				style = AttributedStyle.DEFAULT.italic().foreground(AttributedStyle.BLUE);
-			}
+		for (Element refer : getElementsReferencingThisOne(root)) {
+			AttributedStringBuilder asb = new AttributedStringBuilder();
 
 			if (isFirst) {
-				parent.getOut().println(leftPadding.substring(0, leftPadding.length() - 1) + '\\');
-				AttributedString attributedString = new AttributedString(
-						leftPadding + "+── " + " [" + refer.getType() + "] " + refer.getKey(),
-						style);
-				attributedString.println(parent.getTerminal());
-				parent.getTerminal().flush();
+				asb.append(leftPadding.substring(0, leftPadding.length() - 1) + '\\');
+				asb.append(AttributedString.NEWLINE);
 			} else {
-				AttributedString attributedString = new AttributedString(
-						leftPadding + "├── " + " [" + refer.getType() + "] " + refer.getKey(),
-						style);
-				attributedString.println(parent.getTerminal());
-				parent.getTerminal().flush();
+				asb.append(leftPadding + '|');
+				asb.append(AttributedString.NEWLINE);
 			}
+
+			if (travelled.contains(refer)) {
+				asb.style(AttributedStyle.DEFAULT.bold().italic().foreground(AttributedStyle.BLUE));
+				asb.append(leftPadding + "- ");
+			} else {
+				asb.append(leftPadding + "+ ");
+			}
+
+			asb.append(refer.toAttributedString());
+			asb.toAttributedString().println(parent.getTerminal());
 
 			if (!travelled.contains(refer)) {
 				printReferrals(refer, leftPadding + "  ", travelled, level);
@@ -100,6 +103,7 @@ class TreeCommand implements Runnable {
 				break;
 			}
 		}
+		parent.getTerminal().flush();
 	}
 
 	private List<Element> getElementsReferencingThisOne(Element element) {

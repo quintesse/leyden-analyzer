@@ -127,10 +127,6 @@ public class MethodObject extends ReferencingElement {
 		sb.append(super.getDescription(leftPadding));
 		sb.append(AttributedString.NEWLINE);
 		sb.append(leftPadding + "Belongs to the class ");
-		sb.style(AttributedStyle.DEFAULT.bold());
-		if (this.getClassObject() != null && this.getClassObject().getAddress() != null) {
-			sb.append(" (address: " + this.getClassObject().getAddress() + ") ");
-		}
 		sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.CYAN));
 		sb.append(getClassObject().getKey());
 		sb.style(AttributedStyle.DEFAULT);
@@ -141,11 +137,7 @@ public class MethodObject extends ReferencingElement {
 			sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.GREEN));
 			sb.append("MethodCounters");
 			sb.style(AttributedStyle.DEFAULT);
-			sb.append(" associated to it: ");
-			sb.style(AttributedStyle.DEFAULT.bold());
-			sb.append(this.methodCounters.getAddress());
-			sb.style(AttributedStyle.DEFAULT);
-			sb.append(", which means it was called at least once during training run.");
+			sb.append(" associated to it, which means it was called at least once during training run.");
 			sb.style(AttributedStyle.DEFAULT);
 		} else {
 			sb.append(AttributedString.NEWLINE);
@@ -182,10 +174,7 @@ public class MethodObject extends ReferencingElement {
 			sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.GREEN));
 			sb.append("MethodData");
 			sb.style(AttributedStyle.DEFAULT);
-			sb.append(" associated to it: ");
-			sb.style(AttributedStyle.DEFAULT.bold());
-			sb.append(this.methodData.getAddress());
-			sb.style(AttributedStyle.DEFAULT);
+			sb.append(" associated to it.");
 		}
 
 		if (this.methodTrainingData != null) {
@@ -194,10 +183,7 @@ public class MethodObject extends ReferencingElement {
 			sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.GREEN));
 			sb.append("MethodTrainingData");
 			sb.style(AttributedStyle.DEFAULT);
-			sb.append(" associated to it: ");
-			sb.style(AttributedStyle.DEFAULT.bold());
-			sb.append(this.methodTrainingData.getAddress());
-			sb.style(AttributedStyle.DEFAULT);
+			sb.append(" associated to it.");
 		}
 		return sb.toAttributedString();
 	}

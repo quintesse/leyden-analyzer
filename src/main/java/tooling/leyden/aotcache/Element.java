@@ -47,8 +47,9 @@ public abstract class Element {
 	public AttributedString getDescription(String leftPadding) {
 
 		AttributedStringBuilder sb = new AttributedStringBuilder();
-		sb.style(AttributedStyle.DEFAULT.bold());
-		sb.append(leftPadding + getType());
+		sb.append(leftPadding);
+		sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.YELLOW));
+		sb.append(getType());
 		sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.CYAN));
 		sb.append(" " + getKey());
 		sb.style(AttributedStyle.DEFAULT);
@@ -63,9 +64,15 @@ public abstract class Element {
 		sb.append(getSize().toString());
 		sb.style(AttributedStyle.DEFAULT);
 		sb.append(".");
-		sb.append('\n' + leftPadding + "This information comes from: ");
-		sb.style(AttributedStyle.DEFAULT.italic());
-		getSources().forEach( s -> sb.append('\n' + leftPadding + "  > " + s));
+		sb.append(AttributedString.NEWLINE);
+		sb.append(leftPadding + "This information comes from: ");
+		getSources().forEach( s -> {
+			sb.style(AttributedStyle.DEFAULT);
+			sb.append(AttributedString.NEWLINE);
+			sb.append(leftPadding);
+			sb.style(AttributedStyle.DEFAULT.italic());
+			sb.append("  > " + s);
+		});
 		sb.style(AttributedStyle.DEFAULT);
 		return sb.toAttributedString();
 	}
@@ -122,9 +129,13 @@ public abstract class Element {
 		this.address = address;
 	}
 
-	@Override
-	public String toString() {
-		return getType() + " -> " + getKey();
+	public AttributedString toAttributedString() {
+		AttributedStringBuilder sb = new AttributedStringBuilder();
+		sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.YELLOW));
+		sb.append("[" + getType() + "] ");
+		sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.CYAN));
+		sb.append(getKey());
+		return sb.toAttributedString();
 	}
 
 	@Override

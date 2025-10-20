@@ -3,8 +3,11 @@ package tooling.leyden.commands;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import tooling.leyden.aotcache.ClassObject;
+import tooling.leyden.aotcache.Element;
 import tooling.leyden.aotcache.MethodObject;
 
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Command(name = "ls", mixinStandardHelpOptions = true,
@@ -29,7 +32,13 @@ class ListCommand implements Runnable {
 	public void run() {
 
 		if (trained) {
-			parameters.types = new String[] {"Class", "Method"};
+			if (parameters.types == null) {
+				parameters.types = new String[]{"Class", "Method"};
+			} else {
+				parameters.types = Arrays.stream(parameters.types)
+						.filter(t -> t.equalsIgnoreCase("Class") || t.equalsIgnoreCase("Method"))
+						.toArray(String[]::new);
+			}
 		}
 
 		var elements =
@@ -49,9 +58,10 @@ class ListCommand implements Runnable {
 		}
 
 		final var counter = new AtomicInteger();
+		elements = elements.sorted(Comparator.comparing(Element::getKey).thenComparing(Element::getType));
 		elements = elements.peek(item -> counter.incrementAndGet());
 
-		elements.forEach(element -> parent.getOut().println("  > " + element.toString()));
+		elements.forEach(element -> element.toAttributedString().println(parent.getTerminal()));
 		parent.getOut().println("Found " + counter.get() + " elements.");
 	}
 }
