@@ -43,6 +43,12 @@ class TreeCommand implements Runnable {
 	protected Integer max;
 
 	public void run() {
+		if (parameters.types == null) {
+			parameters.types = new String[]
+					{"Class", "Method", "CompileTrainingData", "KlassTrainingData",
+							"MethodCounters", "MethodData", "MethodTrainingData"};
+		}
+
 		List<Element> elements = parent.getInformation().getElements(parameters.getName(), parameters.packageName,
 				parameters.excludePackageName,
 				parameters.showArrays, parameters.useNotCached, parameters.types);
