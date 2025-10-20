@@ -304,4 +304,50 @@ class AOTCacheParserTest extends DefaultTest {
 		}
 	}
 
+
+	@Test
+	void acceptCompileTrainingData() {
+		final var loadFile = new LoadFileCommand();
+		loadFile.setParent(getDefaultCommand());
+		final var aotCache = loadFile.getParent().getInformation();
+		AOTMapParser aotCacheParser = new AOTMapParser(loadFile);
+
+		aotCacheParser.accept("0x00000008007cd538: @@ Class             1448 java.util.concurrent.ConcurrentHashMap");
+		aotCacheParser.accept("0x00000008019d8e00: @@ MethodTrainingData 96 int java.util.concurrent.ConcurrentHashMap.spread(int)");
+		aotCacheParser.accept("0x0000000801cb2218: @@ MethodCounters    64 int java.util.concurrent.ConcurrentHashMap.spread(int)");
+		aotCacheParser.accept("0x0000000801cb2258: @@ Method            88 int java.util.concurrent.ConcurrentHashMap.spread(int)");
+		aotCacheParser.accept("0x0000000801cb22b0: @@ MethodData        248 int java.util.concurrent.ConcurrentHashMap.spread(int)");
+		aotCacheParser.accept("0x0000000801cb23a8: @@ MethodCounters    64 int java.util.concurrent.ConcurrentHashMap.spread(int)");
+		aotCacheParser.accept("0x0000000801cb23e8: @@ CompileTrainingData 80 4 int java.util.concurrent.ConcurrentHashMap.spread(int)");
+		aotCacheParser.accept("0x0000000801cb2438: @@ CompileTrainingData 80 3 int java.util.concurrent.ConcurrentHashMap.spread(int)");
+		aotCacheParser.accept("0x000000080471b9c8: @@ ConstMethod       88 int java.util.concurrent.ConcurrentHashMap.spread(int)");
+
+		var compileTrainingData = aotCache.getElements(null, null, null, false, false, "CompileTrainingData");
+		assertEquals(2, compileTrainingData.size());
+
+		MethodObject method = (MethodObject) aotCache.getElements("int java.util.concurrent.ConcurrentHashMap.spread(int)", null, null, false, false, "Method").getFirst();
+		assertEquals(2, method.getCompileTrainingData().size());
+		assertNotNull(method.getCompileTrainingData().get(3));
+		assertNotNull(method.getCompileTrainingData().get(4));
+
+		for (Element e : compileTrainingData) {
+			ReferencingElement re = (ReferencingElement) e;
+			assertEquals(1, re.getReferences().size());
+			assertEquals(method, re.getReferences().getFirst());
+		}
+
+		//Now check we don't break on empty class name
+		aotCache.clear();
+
+		aotCacheParser.accept("0x0000000801cb2438: @@ CompileTrainingData 80");
+
+		var trainingData = aotCache.getElements(null, null, null, true, true, "CompileTrainingData");
+		assertEquals(1, trainingData.size());
+
+		for (Element e : trainingData) {
+			ReferencingElement re = (ReferencingElement) e;
+			assertEquals(0, re.getReferences().size());
+		}
+	}
+
 }

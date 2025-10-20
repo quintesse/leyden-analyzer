@@ -94,6 +94,11 @@ public class AOTMapParser implements Consumer<String> {
 //					0x0000000801bc8968: @@ KlassTrainingData 40 java.lang.invoke.MethodHandleImpl$IntrinsicMethodHandle
 //					0x0000000801bcb1a8: @@ KlassTrainingData 40 java.lang.classfile.AttributeMapper$AttributeStability
 				element = processMethodTrainingData(new ReferencingElement(), identifier, address);
+			} else if (type.equalsIgnoreCase("CompileTrainingData")) {
+//					0x0000000801cd54b8: @@ CompileTrainingData 80 4 void java.lang.ref.Reference.reachabilityFence(java.lang.Object)
+//					0x0000000801cd5508: @@ CompileTrainingData 80 3 void java.lang.ref.Reference.reachabilityFence(java.lang.Object)
+//					0x0000000801cd5558: @@ CompileTrainingData 80 3 java.lang.AbstractStringBuilder java.lang.AbstractStringBuilder.append(java.lang.String)
+				element = processCompileTrainingData(new ReferencingElement(), identifier, address);
 			} else if (type.startsWith("TypeArray")
 //					0x0000000800001d80: @@ TypeArrayU1       600
 //					0x000000080074cc50: @@ TypeArrayOther    800
@@ -111,10 +116,6 @@ public class AOTMapParser implements Consumer<String> {
 					|| type.equalsIgnoreCase("Annotations")
 //					0x0000000802bf50f0: @@ Annotations       32
 //					0x0000000802bf50f0:   0000000802b719a0 0000000000000000 0000000000000000 0000000000000000   ................................
-					|| type.endsWith("TrainingData")
-//					0x0000000801d5e050: @@ MethodTrainingData 96
-//					0x0000000801d5e050:   0000000800001bd0 0000000000000000 0000000801d5e028 0000000000000000   ................(...............
-//					0x0000000800a45f58: @@ CompileTrainingData 80
 			) {
 				element = new BasicObject(identifier.isBlank() ? address : identifier);
 			} else if (type.equalsIgnoreCase("Misc")) {
@@ -260,6 +261,36 @@ public class AOTMapParser implements Consumer<String> {
 			e.getReferences().add(method);
 			method.setMethodTrainingData(e);
 			e.setName(identifier);
+		} else {
+			e.setName(address);
+		}
+
+		return e;
+	}
+
+
+
+	private Element processCompileTrainingData(ReferencingElement e, String content, String address) {
+		// 0x0000000801a41200: @@ CompileTrainingData 80 3 org.apache.logging.log4j.spi.LoggerContext org.apache.logging.log4j.LogManager.getContext(boolean)
+
+		content = content.trim();
+
+		//Looking for the Method
+		if (!content.isBlank()) {
+			Integer level = Integer.valueOf(content.substring(0, 1));
+			String identifier = content.substring(2);
+			var methods = this.information.getElements(identifier, null, null, true, true, "Method");
+			MethodObject method;
+			if (methods.isEmpty()) {
+				String source = "Referenced from a CompiledTrainingData: " + address;
+				method = new MethodObject(identifier, source, true, this.information);
+				this.information.addExternalElement(method, source);
+			} else {
+				method = (MethodObject) methods.getFirst();
+			}
+			e.getReferences().add(method);
+			method.getCompileTrainingData().put(level, e);
+			e.setName(content);
 		} else {
 			e.setName(address);
 		}

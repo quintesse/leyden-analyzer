@@ -5,7 +5,9 @@ import org.jline.utils.AttributedStringBuilder;
 import org.jline.utils.AttributedStyle;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * This class represents a method inside the AOT Cache.
@@ -17,7 +19,7 @@ public class MethodObject extends ReferencingElement {
 	private Element methodData;
 	private Element methodCounters;
 	private Element methodTrainingData;
-	private List<Element> compileTrainingData = new ArrayList<>();
+	private Map<Integer, Element> compileTrainingData = new HashMap<>();
 
 	private String returnType;
 	private List<String> parameters = new ArrayList<>();
@@ -80,12 +82,12 @@ public class MethodObject extends ReferencingElement {
 		this.methodTrainingData = methodTrainingData;
 	}
 
-	public List<Element> getCompileTrainingData() {
+	public Map<Integer, Element> getCompileTrainingData() {
 		return compileTrainingData;
 	}
 
-	public void addCompileTrainingData(Element compileTrainingData) {
-		this.compileTrainingData.add(compileTrainingData);
+	public void addCompileTrainingData(Integer level, Element compileTrainingData) {
+		this.compileTrainingData.put(level, compileTrainingData);
 	}
 
 	public void addParameter(Element parameter) {
