@@ -4,18 +4,16 @@ package tooling.leyden.aotcache;
  * This element represents an Object of the ConstantPool(Cache) inside the AOT Cache.
  */
 public class ConstantPoolObject extends ReferencingElement {
-	private Boolean cache = false;
+	private String constantPoolCacheAddress;
 
-	public ConstantPoolObject(Boolean cache) {
-		this.cache = cache;
+	public ConstantPoolObject() {
 	}
 
-	public Boolean getCache() {
-		return cache;
+	public String getConstantPoolCacheAddress() {
+		return constantPoolCacheAddress;
 	}
 
-	public String getType() {
-		return "ConstantPool" + (this.cache ? "Cache" : "");
+	public void setConstantPoolCacheAddress(String constantPoolCacheAddress) {
+		this.constantPoolCacheAddress = constantPoolCacheAddress;
 	}
-
 }

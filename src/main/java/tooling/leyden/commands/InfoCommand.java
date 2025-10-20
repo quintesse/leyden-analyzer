@@ -5,6 +5,7 @@ import org.jline.utils.AttributedStyle;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import tooling.leyden.aotcache.Configuration;
+import tooling.leyden.aotcache.ConstantPoolObject;
 import tooling.leyden.aotcache.Information;
 import tooling.leyden.aotcache.ReferencingElement;
 import tooling.leyden.commands.autocomplete.InfoCommandTypes;
@@ -187,8 +188,10 @@ class InfoCommand implements Runnable {
 				parent.getInformation().getElements(null, null, null, true, false, "ConstantPool").size();
 
 		if (constantPool > 0) {
-			Integer constantPoolCache =
-					parent.getInformation().getElements(null, null, null, true, false, "ConstantPoolCache").size();
+			Long constantPoolCache =
+					parent.getInformation().getElements(null, null, null, true, false, "ConstantPool")
+							.parallelStream().filter(cp -> ((ConstantPoolObject)cp).getConstantPoolCacheAddress() != null)
+							.count();
 
 			(new AttributedString("ConstantPool: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
 			(new AttributedString(intFormat.format(constantPool), greenFormat)).println(parent.getTerminal());

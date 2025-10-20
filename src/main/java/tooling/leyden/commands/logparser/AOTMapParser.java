@@ -80,9 +80,10 @@ public class AOTMapParser implements Consumer<String> {
 				element = processMethodDataAndCounter(content, identifier, address, type);
 			} else if (type.equalsIgnoreCase("ConstantPoolCache")) {
 //					0x0000000800ec7408: @@ ConstantPoolCache 64 javax.naming.spi.ObjectFactory
-				element = processReferencingElement(new ConstantPoolObject(true), identifier, content);
+				element = processConstantPoolCache(identifier, content, address);
+				type = "ConstantPool";
 			} else if (type.equalsIgnoreCase("ConstantPool")) {
-				element = processReferencingElement(new ConstantPoolObject(false), identifier, content);
+				element = processConstantPool(identifier, content);
 			} else if (type.equalsIgnoreCase("KlassTrainingData")) {
 //					0x0000000801bc7e40: @@ KlassTrainingData 40 java.util.logging.LogManager
 //					0x0000000801bc8968: @@ KlassTrainingData 40 java.lang.invoke.MethodHandleImpl$IntrinsicMethodHandle
@@ -179,6 +180,37 @@ public class AOTMapParser implements Consumer<String> {
 		}
 		return result;
 	}
+
+	private Element processConstantPoolCache(String identifier, String content, String address) {
+		//Look for an existing constant pool object
+		//Usually we get the ConstantPoolCache before the ConstantPool
+		//So this should not find anything
+		ConstantPoolObject e = null;
+		var cps = this.information.getElements(identifier, null, null, true, true, "ConstantPool");
+		for (Element cp : cps) {
+			e = (ConstantPoolObject) cp;
+			break;
+		}
+
+		//If not found, create it
+		if (e == null) {
+			e = (ConstantPoolObject) processConstantPool(identifier, content);
+			this.information.addExternalElement(e, "Referenced by a ConstantPoolCache.");
+		}
+
+		//And assign the ConstantPoolCache address to the element
+		e.setConstantPoolCacheAddress(address);
+		return e;
+	}
+
+	private Element processConstantPool(String identifier, String content) {
+		var cps = this.information.getElements(identifier, null, null, true, true, "ConstantPool");
+		for (Element cp : cps) {
+			return processReferencingElement((ReferencingElement) cp, identifier, content);
+		}
+		return processReferencingElement(new ConstantPoolObject(), identifier, content);
+	}
+
 
 	private Element processReferencingElement(ReferencingElement e, String identifier, String content) {
 		e.setName(identifier);

@@ -41,7 +41,6 @@ class AOTCacheParserTest extends DefaultTest {
 
 		assertEquals(655, aotCache.getElements(null, null, null, true, false, "Symbol").size());
 		assertEquals(114, aotCache.getElements(null, null, null, true, false, "ConstantPool").size());
-		assertEquals(192, aotCache.getElements(null, null, null, true, false, "ConstantPoolCache").size());
 		assertEquals(494 + 5, aotCache.getElements(null, null, null, true, true, "Class").size());
 		assertEquals(5927, aotCache.getElements(null, null, null, true, false, "Method").size());
 		assertEquals(1385, aotCache.getElements(null, null, null, true, false, "ConstMethod").size());
@@ -144,6 +143,7 @@ class AOTCacheParserTest extends DefaultTest {
 		aotCacheParser.accept("0x0000000802093e38: @@ Symbol            72 (Lsun/util/locale/BaseLocale;)Ljava/util/List<Ljava/util/Locale;>;");
 
 		aotCacheParser.accept("0x0000000802ff83e8: @@ ConstantPool      2456 sun.util.locale.BaseLocale");
+		aotCacheParser.accept("0x0000000802f88a70: @@ ConstantPool      400 sun.util.locale.BaseLocale$1");
 
 		aotCacheParser.accept("0x00000000ffe06dc0: @@ Object (0xffe06dc0) [Lsun.util.locale.BaseLocale; length: 19");
 		aotCacheParser.accept("0x00000000ffe06e20: @@ Object (0xffe06e20) sun.util.locale.BaseLocale");
@@ -154,13 +154,13 @@ class AOTCacheParserTest extends DefaultTest {
 		aotCacheParser.accept("0x00000000ffefd1e8: @@ Object (0xffefd1e8) java.lang.Class Lsun/util/locale/BaseLocale;");
 		aotCacheParser.accept("0x00000000ffefd288: @@ Object (0xffefd288) java.lang.Class [Lsun/util/locale/BaseLocale;");
 
-		assertEquals(1, aotCache.getElements(null, null, null, true, false, "ConstantPool").size());
-		assertEquals(2, aotCache.getElements(null, null, null, true, false, "ConstantPoolCache").size());
+		assertEquals(2, aotCache.getElements(null, null, null, true, false, "ConstantPool").size());
+		assertEquals(0, aotCache.getElements(null, null, null, true, false, "ConstantPoolCache").size());
 		assertEquals(19, aotCache.getElements(null, null, null, true, false, "Symbol").size());
 		assertEquals(8, aotCache.getElements(null, null, null, true, false, "Object").size());
 
 		for (Element e : aotCache.getElements(null, null, null, true, false,
-				"Object", "ConstantPoolCache", "ConstantPool")) {
+				"Object", "ConstantPool")) {
 			assertTrue(e instanceof ReferencingElement);
 			ReferencingElement re = (ReferencingElement) e;
 			assertNotEquals(0, re.getReferences().size(), e + " should have a reference");
@@ -168,7 +168,7 @@ class AOTCacheParserTest extends DefaultTest {
 
 		assertEquals(3 + 1, aotCache.getElements(null, null, null, true, false, "Class").size());
 
-		assertEquals(1 + 2 + 19 + 8 + 3 + 1, aotCache.getAll().size());
+		assertEquals(2 + 19 + 8 + 3 + 1, aotCache.getAll().size());
 
 	}
 
@@ -224,7 +224,9 @@ class AOTCacheParserTest extends DefaultTest {
 
 		assertEquals(3, elements.size());
 		for (Element e : elements) {
-			assertTrue(((ReferencingElement) e).getReferences().contains(method));
+			if (e instanceof ReferencingElement re) {
+				assertTrue(re.getReferences().contains(method));
+			}
 		}
 	}
 
