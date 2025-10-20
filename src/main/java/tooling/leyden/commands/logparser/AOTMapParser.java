@@ -227,13 +227,13 @@ public class AOTMapParser implements Consumer<String> {
 		if (!identifier.isBlank()) {
 			var classes = this.information.getElements(identifier, null, null, true, true, "Class");
 			if (classes.isEmpty()) {
-				if (!identifier.isBlank()) {
-					ClassObject classObject = new ClassObject(identifier);
-					e.getReferences().add(classObject);
-					this.information.addExternalElement(classObject, "Referenced from a KlassTrainingData.");
-				}
+				ClassObject classObject = new ClassObject(identifier);
+				classObject.setKlassTrainingData(e);
+				e.getReferences().add(classObject);
+				this.information.addExternalElement(classObject, "Referenced from a KlassTrainingData.");
 			} else {
 				e.getReferences().add(classes.getFirst());
+				((ClassObject) classes.getFirst()).setKlassTrainingData(e);
 			}
 
 			e.setName(identifier);
@@ -269,7 +269,6 @@ public class AOTMapParser implements Consumer<String> {
 	}
 
 
-
 	private Element processCompileTrainingData(ReferencingElement e, String content, String address) {
 		// 0x0000000801a41200: @@ CompileTrainingData 80 3 org.apache.logging.log4j.spi.LoggerContext org.apache.logging.log4j.LogManager.getContext(boolean)
 
@@ -289,7 +288,7 @@ public class AOTMapParser implements Consumer<String> {
 				method = (MethodObject) methods.getFirst();
 			}
 			e.getReferences().add(method);
-			method.getCompileTrainingData().put(level, e);
+			method.addCompileTrainingData(level, e);
 			e.setName(content);
 		} else {
 			e.setName(address);

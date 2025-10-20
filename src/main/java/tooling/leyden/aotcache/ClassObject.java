@@ -17,6 +17,7 @@ public class ClassObject extends ReferencingElement {
 	private String packageName;
 	private Set<MethodObject> methods = new HashSet<>();
 	private String arrayPrefix = "";
+	private Element klassTrainingData;
 
 	public ClassObject(String identifier) {
 		this.setName(identifier.substring(identifier.lastIndexOf(".") + 1));
@@ -46,6 +47,14 @@ public class ClassObject extends ReferencingElement {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public Element getKlassTrainingData() {
+		return klassTrainingData;
+	}
+
+	public void setKlassTrainingData(Element klassTrainingData) {
+		this.klassTrainingData = klassTrainingData;
 	}
 
 	public void setPackageName(String packageName) {
@@ -80,8 +89,32 @@ public class ClassObject extends ReferencingElement {
 			sb.style(AttributedStyle.DEFAULT.bold());
 			sb.append(Integer.toString(this.getMethods().size()));
 			sb.style(AttributedStyle.DEFAULT);
-			sb.append(" methods.");
+			sb.append(" methods, of which");
+
+			int trained = 0;
+			for (MethodObject method : this.getMethods()) {
+				if (method.getMethodCounters() != null) {
+					trained++;
+				}
+			}
+			sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.GREEN));
+			sb.append(" " + trained);
+			sb.style(AttributedStyle.DEFAULT);
+			sb.append(" have been trained.");
 		}
+
+		if (this.klassTrainingData != null) {
+			sb.append(AttributedString.NEWLINE);
+			sb.append(leftPadding + "It has a ");
+			sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.GREEN));
+			sb.append("KlassTrainingData");
+			sb.style(AttributedStyle.DEFAULT);
+			sb.append(" associated to it: ");
+			sb.style(AttributedStyle.DEFAULT.bold());
+			sb.append(this.klassTrainingData.getAddress());
+			sb.style(AttributedStyle.DEFAULT);
+		}
+
 		return sb.toAttributedString();
 	}
 
