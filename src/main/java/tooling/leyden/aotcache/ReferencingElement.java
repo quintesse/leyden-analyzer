@@ -4,6 +4,7 @@ package tooling.leyden.aotcache;
 import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStringBuilder;
 
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -36,6 +37,7 @@ public class ReferencingElement extends Element {
 		if (!this.references.contains(reference)) {
 			this.references.add(reference);
 		}
+		this.references.sort(Comparator.comparing(Element::getType));
 	}
 
 	@Override

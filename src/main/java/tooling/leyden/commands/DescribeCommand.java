@@ -10,6 +10,7 @@ import tooling.leyden.aotcache.ReferencingElement;
 import tooling.leyden.commands.autocomplete.Packages;
 
 import java.sql.Ref;
+import java.util.Comparator;
 import java.util.List;
 
 @Command(name = "describe", mixinStandardHelpOptions = true,
@@ -50,8 +51,11 @@ class DescribeCommand implements Runnable {
 							sb.append(AttributedString.NEWLINE);
 							sb.append(leftPadding + "  _____");
 							sb.append(AttributedString.NEWLINE);
-							re.getReferences().forEach(refer -> sb.append(leftPadding + "  | " + refer.toString() +
-											"\n"));
+							re.getReferences().forEach(refer -> {
+								sb.append(leftPadding + "  | ");
+								sb.append(refer.toAttributedString());
+								sb.append(AttributedString.NEWLINE);
+							});
 							sb.append(leftPadding + "  _____");
 							sb.append(AttributedString.NEWLINE);
 						} else {
@@ -66,7 +70,11 @@ class DescribeCommand implements Runnable {
 						sb.append(AttributedString.NEWLINE);
 						sb.append(leftPadding + "  _____");
 						sb.append(AttributedString.NEWLINE);
-						referring.forEach(refer -> sb.append(leftPadding + "  | " + refer.toString() + "\n"));
+						referring.forEach(refer -> {
+							sb.append(leftPadding + "  | ");
+							sb.append(refer.toAttributedString());
+							sb.append(AttributedString.NEWLINE);
+						});
 						sb.append(leftPadding + "  _____");
 						sb.append(AttributedString.NEWLINE);
 					} else {
@@ -89,8 +97,7 @@ class DescribeCommand implements Runnable {
 		return parent.getInformation().getAll().parallelStream()
 				.filter(e -> (e instanceof ReferencingElement))
 				.filter(e -> ((ReferencingElement) e).getReferences().contains(element))
+				.sorted(Comparator.comparing(Element::getType))
 				.toList();
 	}
-
-
 }
