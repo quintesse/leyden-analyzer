@@ -24,23 +24,12 @@ class ListCommand implements Runnable {
 
 	@CommandLine.Option(names = {"--trained"},
 			description = {"Only displays elements with training information.",
-					"This may restrict the types of elements shown, regardless of what was passed as parameters."},
+					"This may restrict the types of elements shown, along with what was passed as parameters."},
 			defaultValue = "false",
 			arity = "0..1")
 	protected Boolean trained;
 
 	public void run() {
-
-		if (trained) {
-			if (parameters.types == null) {
-				parameters.types = new String[]{"Class", "Method"};
-			} else {
-				parameters.types = Arrays.stream(parameters.types)
-						.filter(t -> t.equalsIgnoreCase("Class") || t.equalsIgnoreCase("Method"))
-						.toArray(String[]::new);
-			}
-		}
-
 		var elements =
 				parent.getInformation().getElements(parameters.getName(), parameters.packageName,
 						parameters.excludePackageName, parameters.showArrays, parameters.useNotCached,
@@ -49,7 +38,7 @@ class ListCommand implements Runnable {
 		if (trained) {
 			elements = elements.filter(e -> {
 				if (e instanceof MethodObject method) {
-					return method.getMethodCounters() != null;
+					return method.getMethodTrainingData() != null;
 				} else if (e instanceof ClassObject classObject) {
 					return classObject.getKlassTrainingData() != null;
 				}
