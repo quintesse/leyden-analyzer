@@ -59,6 +59,17 @@ class WarningCommand implements Runnable {
 		parent.getOut().println("Found " + wa.size() + " warnings.");
 	}
 
+	@Command(mixinStandardHelpOptions = true,
+			version = "1.0",
+			subcommands = {CommandLine.HelpCommand.class},
+			description = {"Mark a warning as safe, clearing it from the list of warnings.",
+					"You can't recover it afterwards without doing a new check or loading the log file."})
+	public void rm(@CommandLine.Parameters(paramLabel = "<id>",
+			description = "warning to clear") String id) {
+		parent.getInformation().getAutoWarnings().removeIf(w -> w.getId().equalsIgnoreCase(id));
+		parent.getInformation().getWarnings().removeIf(w -> w.getId().equalsIgnoreCase(id));
+	}
+
 
 	@Command(mixinStandardHelpOptions = true,
 			version = "1.0",

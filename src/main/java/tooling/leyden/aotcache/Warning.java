@@ -4,10 +4,15 @@ import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStringBuilder;
 import org.jline.utils.AttributedStyle;
 
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * This class represents errors in storing or loading elements to/from the cache.
  */
 public class Warning {
+
+	private String id;
 
 	private WarningType type;
 
@@ -21,15 +26,19 @@ public class Warning {
 	 */
 	private AttributedString message;
 
+	private static AtomicInteger idGenerator = new AtomicInteger();
+
 	public Warning(Element e, AttributedString message, WarningType type) {
 		this.element = e;
 		this.type = type;
 		this.message = message;
+		this.setId(idGenerator.getAndIncrement());
 	}
 
 	public Warning(Element element, String description, WarningType type) {
 		this.element = element;
 		this.type = type;
+		this.setId(idGenerator.getAndIncrement());
 
 		AttributedStringBuilder sb = new AttributedStringBuilder();
 
@@ -58,8 +67,12 @@ public class Warning {
 		this.message = sb.toAttributedString();
 	}
 
-	public String getIdentifier() {
-		return this.element.getKey();
+	public String getId() {
+		return id;
+	}
+
+	public void setId(Integer id) {
+		this.id = String.format("%03d", id);
 	}
 
 	public WarningType getType() {
@@ -69,8 +82,11 @@ public class Warning {
 	public AttributedString getDescription() {
 
 		AttributedStringBuilder sb = new AttributedStringBuilder();
-		sb.append("[");
 		sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.CYAN));
+		sb.append(this.getId());
+		sb.style(AttributedStyle.DEFAULT);
+		sb.append(" [");
+		sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.YELLOW));
 		sb.append(this.type.name());
 		sb.style(AttributedStyle.DEFAULT);
 		sb.append("] ");
