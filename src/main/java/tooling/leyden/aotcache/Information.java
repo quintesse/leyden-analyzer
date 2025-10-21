@@ -92,7 +92,7 @@ public class Information {
 		return classes.getOrDefault(name, List.of());
 	}
 
-	public List<Element> getElements(String key, String[] packageName, String[] excludePackageName,
+	public Stream<Element> getElements(String key, String[] packageName, String[] excludePackageName,
 									 Boolean includeArrays, Boolean includeExternalElements, String... type) {
 
 		if (key != null && !key.isBlank() && type != null && type.length > 0) {
@@ -109,7 +109,7 @@ public class Information {
 					}
 				}
 			}
-			return result;
+			return result.parallelStream();
 		}
 
 		var tmp = new HashSet<Map.Entry<Key, Element>>();
@@ -127,7 +127,7 @@ public class Information {
 				result.map(keyElementEntry -> keyElementEntry.getValue()));
 	}
 
-	public static List<Element> filterByParams(String[] packageName,
+	public static Stream<Element> filterByParams(String[] packageName,
 																 String[] excludePackageName,
 																 Boolean addArrays,
 																 String[] type,
@@ -187,7 +187,7 @@ public class Information {
 				return true;
 			});
 		}
-		return result.toList();
+		return result;
 	}
 
 	public List<Warning> getWarnings() {

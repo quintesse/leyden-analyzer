@@ -52,7 +52,7 @@ class TreeCommand implements Runnable {
 
 		List<Element> elements = parent.getInformation().getElements(parameters.getName(), parameters.packageName,
 				parameters.excludePackageName,
-				parameters.showArrays, parameters.useNotCached, parameters.types);
+				parameters.showArrays, parameters.useNotCached, parameters.types).toList();
 
 		if (!elements.isEmpty()) {
 			elements.forEach(e -> {
@@ -110,17 +110,17 @@ class TreeCommand implements Runnable {
 		var referenced = new ArrayList<Element>();
 
 		if (element instanceof ReferencingElement re) {
-			referenced.addAll(filter(re.getReferences().parallelStream()));
+			referenced.addAll(filter(re.getReferences().parallelStream()).toList());
 		}
 		referenced.addAll(filter(parent.getInformation().getAll().parallelStream()
 				.filter(e -> (e instanceof ReferencingElement))
-				.filter(e -> ((ReferencingElement) e).getReferences().contains(element))));
+				.filter(e -> ((ReferencingElement) e).getReferences().contains(element))).toList());
 
 		return referenced;
 	}
 
 	//Delegate on Information for filtering
-	private List<Element> filter(Stream<Element> elements) {
+	private Stream<Element> filter(Stream<Element> elements) {
 		return Information.filterByParams(parameters.packageName, parameters.excludePackageName, parameters.showArrays,
 				parameters.types, elements);
 	}

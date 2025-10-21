@@ -39,11 +39,11 @@ class AOTCacheParserTest extends DefaultTest {
 			assertEquals(1, e.getSources().size(), "We shouldn't have more than one source here " + e.getSources().stream().reduce((s, s2) -> s + ", " + s2));
 		});
 
-		assertEquals(655, aotCache.getElements(null, null, null, true, false, "Symbol").size());
-		assertEquals(114, aotCache.getElements(null, null, null, true, false, "ConstantPool").size());
-		assertEquals(494 + 5, aotCache.getElements(null, null, null, true, true, "Class").size());
-		assertEquals(5927, aotCache.getElements(null, null, null, true, false, "Method").size());
-		assertEquals(1385, aotCache.getElements(null, null, null, true, false, "ConstMethod").size());
+		assertEquals(655, aotCache.getElements(null, null, null, true, false, "Symbol").count());
+		assertEquals(114, aotCache.getElements(null, null, null, true, false, "ConstantPool").count());
+		assertEquals(494 + 5, aotCache.getElements(null, null, null, true, true, "Class").count());
+		assertEquals(5927, aotCache.getElements(null, null, null, true, false, "Method").count());
+		assertEquals(1385, aotCache.getElements(null, null, null, true, false, "ConstMethod").count());
 	}
 
 	@Test
@@ -64,8 +64,8 @@ class AOTCacheParserTest extends DefaultTest {
 		aotCacheParser.accept("0x00000000fff62900: @@ Object (0xfff62900) java.lang.Float");
 
 		assertEquals(5, aotCache.getAll().size());
-		final var objects = aotCache.getElements(null, null, null, true, false, "Object");
-		assertEquals(3, objects.size());
+		final var objects = aotCache.getElements(null, null, null, true, false, "Object").toList();
+		assertEquals(3, aotCache.getElements(null, null, null, true, false, "Object").count());
 		for (Element e : objects) {
 			assertTrue(e instanceof ReferencingElement);
 			ReferencingElement re = (ReferencingElement) e;
@@ -91,9 +91,9 @@ class AOTCacheParserTest extends DefaultTest {
 		aotCacheParser.accept("0x00000008028dbaf0: @@ Symbol            48 InvalidAlgorithmParameterException.java");
 
 		assertEquals(2, aotCache.getAll().size());
-		assertEquals(1, aotCache.getElements(null, null, null, true, false, "Symbol").size());
-		assertEquals(1, aotCache.getElements(null, null, null, true, false, "Class").size());
-		for (Element e : aotCache.getElements(null, null, null, true, false, "Symbol")) {
+		assertEquals(1, aotCache.getElements(null, null, null, true, false, "Symbol").count());
+		assertEquals(1, aotCache.getElements(null, null, null, true, false, "Class").count());
+		for (Element e : aotCache.getElements(null, null, null, true, false, "Symbol").toList()) {
 			assertTrue(e instanceof ReferencingElement);
 			ReferencingElement re = (ReferencingElement) e;
 			assertNotEquals(0, re.getReferences().size());
@@ -154,19 +154,19 @@ class AOTCacheParserTest extends DefaultTest {
 		aotCacheParser.accept("0x00000000ffefd1e8: @@ Object (0xffefd1e8) java.lang.Class Lsun/util/locale/BaseLocale;");
 		aotCacheParser.accept("0x00000000ffefd288: @@ Object (0xffefd288) java.lang.Class [Lsun/util/locale/BaseLocale;");
 
-		assertEquals(2, aotCache.getElements(null, null, null, true, false, "ConstantPool").size());
-		assertEquals(0, aotCache.getElements(null, null, null, true, false, "ConstantPoolCache").size());
-		assertEquals(19, aotCache.getElements(null, null, null, true, false, "Symbol").size());
-		assertEquals(8, aotCache.getElements(null, null, null, true, false, "Object").size());
+		assertEquals(2, aotCache.getElements(null, null, null, true, false, "ConstantPool").count());
+		assertEquals(0, aotCache.getElements(null, null, null, true, false, "ConstantPoolCache").count());
+		assertEquals(19, aotCache.getElements(null, null, null, true, false, "Symbol").count());
+		assertEquals(8, aotCache.getElements(null, null, null, true, false, "Object").count());
 
 		for (Element e : aotCache.getElements(null, null, null, true, false,
-				"Object", "ConstantPool")) {
+				"Object", "ConstantPool").toList()) {
 			assertTrue(e instanceof ReferencingElement);
 			ReferencingElement re = (ReferencingElement) e;
 			assertNotEquals(0, re.getReferences().size(), e + " should have a reference");
 		}
 
-		assertEquals(3 + 1, aotCache.getElements(null, null, null, true, false, "Class").size());
+		assertEquals(3 + 1, aotCache.getElements(null, null, null, true, false, "Class").count());
 
 		assertEquals(2 + 19 + 8 + 3 + 1, aotCache.getAll().size());
 
@@ -202,25 +202,25 @@ class AOTCacheParserTest extends DefaultTest {
 		aotCacheParser.accept("0x0000000801f89840: @@ MethodCounters    64 java.util.Optional java.lang.VersionProps.optionalOf(java.lang.String)");
 		aotCacheParser.accept("0x0000000801f898d8: @@ MethodCounters    64 java.util.List java.lang.VersionProps.parseVersionNumbers(java.lang.String)");
 
-		var elements = aotCache.getElements(null, null, null, true, false, "MethodData");
+		var elements = aotCache.getElements(null, null, null, true, false, "MethodData").toList();
 		assertEquals(9, elements.size());
 		for (Element e : elements) {
 			assertTrue(((ReferencingElement) e).getReferences().size() > 0);
 		}
 
-		elements = aotCache.getElements(null, null, null, true, false, "MethodCounters");
+		elements = aotCache.getElements(null, null, null, true, false, "MethodCounters").toList();
 		assertEquals(7, elements.size());
 		for (Element e : elements) {
 			assertTrue(((ReferencingElement) e).getReferences().size() > 0);
 		}
 
 		elements = aotCache.getElements("void jdk.internal.misc.CDS.keepAlive(java.lang.Object)",
-				null, null, true, false, "Method");
+				null, null, true, false, "Method").toList();
 		var method = elements.getFirst();
 		assertNotNull(method.getClass());
 		assertEquals("jdk.internal.misc.CDS", ((MethodObject) method).getClassObject().getKey());
 		elements = aotCache.getElements("void jdk.internal.misc.CDS.keepAlive(java.lang.Object)",
-				null, null, true, false, "ConstMethod", "MethodData", "MethodCounters");
+				null, null, true, false, "ConstMethod", "MethodData", "MethodCounters").toList();
 
 		assertEquals(3, elements.size());
 		for (Element e : elements) {
@@ -242,13 +242,13 @@ class AOTCacheParserTest extends DefaultTest {
 		aotCacheParser.accept("0x00000008019c1b48: @@ Method            88 void sun.security.pkcs11.SunPKCS11$$Lambda/0x8000000cf.<init>()");
 		aotCacheParser.accept("0x00000008019c1be0: @@ Method            88 java.lang.Object sun.security.pkcs11.SunPKCS11$$Lambda/0x8000000cf.apply(java.lang.Object)");
 
-		var sunPKCS = aotCache.getElements("sun.security.pkcs11.SunPKCS11", null, null, false, false, "Class");
-		var lambdaClass = aotCache.getElements("sun.security.pkcs11.SunPKCS11$$Lambda/0x8000000cf", null, null, false, false, "Class");
+		var sunPKCS = aotCache.getElements("sun.security.pkcs11.SunPKCS11", null, null, false, false, "Class").toList();
+		var lambdaClass = aotCache.getElements("sun.security.pkcs11.SunPKCS11$$Lambda/0x8000000cf", null, null, false, false, "Class").toList();
 		assertFalse(lambdaClass.isEmpty());
 		ReferencingElement lambda = (ReferencingElement) lambdaClass.getFirst();
 		assertEquals(1, lambda.getReferences().size());
 		assertEquals(lambda.getReferences().getFirst(), sunPKCS.getFirst());
-		var methods = aotCache.getElements(null, null, null, false, false, "Method");
+		var methods = aotCache.getElements(null, null, null, false, false, "Method").toList();
 		for (Element method : methods) {
 			assertEquals(lambda, ((MethodObject) method).getClassObject());
 		}
@@ -268,7 +268,7 @@ class AOTCacheParserTest extends DefaultTest {
 		aotCacheParser.accept("0x0000000800b5b3a8: @@ Method            88 org.apache.logging.log4j.spi.LoggerContext org.apache.logging.log4j.LogManager.getContext(boolean)");
 		aotCacheParser.accept("0x0000000801a23fc8: @@ MethodTrainingData 96 org.apache.logging.log4j.spi.LoggerContext org.apache.logging.log4j.LogManager.getContext(boolean)");
 
-		var klassTrainingData = aotCache.getElements(null, null, null, false, false, "KlassTrainingData");
+		var klassTrainingData = aotCache.getElements(null, null, null, false, false, "KlassTrainingData").toList();
 		assertEquals(2, klassTrainingData.size());
 
 		for (Element e : klassTrainingData) {
@@ -279,7 +279,7 @@ class AOTCacheParserTest extends DefaultTest {
 			assertEquals(classObj.getKey(), re.getKey());
 		}
 
-		var methodTrainingData = aotCache.getElements(null, null, null, false, false, "MethodTrainingData");
+		var methodTrainingData = aotCache.getElements(null, null, null, false, false, "MethodTrainingData").toList();
 		assertEquals(1, methodTrainingData.size());
 
 		for (Element e : methodTrainingData) {
@@ -295,7 +295,7 @@ class AOTCacheParserTest extends DefaultTest {
 		aotCacheParser.accept("0x0000000801cd0518: @@ MethodTrainingData 96");
 
 		var trainingData = aotCache.getElements(null, null, null, false, false, "MethodTrainingData",
-				"KlassTrainingData");
+				"KlassTrainingData").toList();
 		assertEquals(2, trainingData.size());
 
 		for (Element e : trainingData) {
@@ -322,10 +322,13 @@ class AOTCacheParserTest extends DefaultTest {
 		aotCacheParser.accept("0x0000000801cb2438: @@ CompileTrainingData 80 3 int java.util.concurrent.ConcurrentHashMap.spread(int)");
 		aotCacheParser.accept("0x000000080471b9c8: @@ ConstMethod       88 int java.util.concurrent.ConcurrentHashMap.spread(int)");
 
-		var compileTrainingData = aotCache.getElements(null, null, null, false, false, "CompileTrainingData");
+		var compileTrainingData = aotCache.getElements(null, null, null, false, false, "CompileTrainingData").toList();
 		assertEquals(2, compileTrainingData.size());
 
-		MethodObject method = (MethodObject) aotCache.getElements("int java.util.concurrent.ConcurrentHashMap.spread(int)", null, null, false, false, "Method").getFirst();
+		MethodObject method =
+				(MethodObject) aotCache.getElements("int java.util.concurrent.ConcurrentHashMap.spread(int)",
+								null, null, false, false, "Method")
+				.findAny().get();
 		assertEquals(2, method.getCompileTrainingData().size());
 		assertNotNull(method.getCompileTrainingData().get(3));
 		assertNotNull(method.getCompileTrainingData().get(4));
@@ -341,7 +344,7 @@ class AOTCacheParserTest extends DefaultTest {
 
 		aotCacheParser.accept("0x0000000801cb2438: @@ CompileTrainingData 80");
 
-		var trainingData = aotCache.getElements(null, null, null, true, true, "CompileTrainingData");
+		var trainingData = aotCache.getElements(null, null, null, true, true, "CompileTrainingData").toList();
 		assertEquals(1, trainingData.size());
 
 		for (Element e : trainingData) {

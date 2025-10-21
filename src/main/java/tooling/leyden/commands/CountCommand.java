@@ -23,7 +23,7 @@ class CountCommand implements Runnable {
 
 	public void run() {
 		Stream<Element> elements = parent.getInformation().getElements(parameters.getName(), parameters.packageName,
-				parameters.excludePackageName, parameters.showArrays, parameters.useNotCached, parameters.types).stream();
+				parameters.excludePackageName, parameters.showArrays, parameters.useNotCached, parameters.types);
 		final var counts = new HashMap<String, AtomicInteger>();
 
 		elements.forEach(item -> {

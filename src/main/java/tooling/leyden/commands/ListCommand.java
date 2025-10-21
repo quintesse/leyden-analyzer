@@ -33,7 +33,7 @@ class ListCommand implements Runnable {
 		var elements =
 				parent.getInformation().getElements(parameters.getName(), parameters.packageName,
 						parameters.excludePackageName, parameters.showArrays, parameters.useNotCached,
-						parameters.types).stream();
+						parameters.types);
 
 		if (trained) {
 			elements = elements.filter(e -> {

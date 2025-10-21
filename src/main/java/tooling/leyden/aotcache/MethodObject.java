@@ -198,15 +198,16 @@ public class MethodObject extends ReferencingElement {
 				.split(", ");
 		for (String parameter : parameters) {
 			if (!parameter.isBlank()) {
-				var classes = information.getElements(parameter, null, null, true, true, "Class").stream().toList();
+				var classes = information.getElements(parameter, null, null, true, true, "Class").toList();
 				classes.forEach(this::addParameter);
 				if (classes.isEmpty()) {
 					this.addParameter(parameter);
 					//Maybe it was an array:
 					if (parameter.endsWith("[]")) {
 						parameter = parameter.substring(0, parameter.length() - 2);
-						classes = information.getElements(parameter, null, null, true, true, "Class").stream().toList();
-						classes.forEach(this::addParameter);
+						information
+								.getElements(parameter, null, null, true, true, "Class")
+								.forEachOrdered(this::addReference);
 					}
 				}
 			}
@@ -214,7 +215,7 @@ public class MethodObject extends ReferencingElement {
 	}
 
 	private void fillClass(String thisSource, String className, Information information, Boolean useNotCached) {
-		List<Element> objects = information.getElements(className, null, null, true, useNotCached, "Class");
+		List<Element> objects = information.getElements(className, null, null, true, useNotCached, "Class").toList();
 		if (objects.isEmpty()) {
 			ClassObject classObject = new ClassObject(className);
 			classObject.addMethod(this);

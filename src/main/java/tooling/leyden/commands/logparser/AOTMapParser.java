@@ -163,7 +163,7 @@ public class AOTMapParser implements Consumer<String> {
 		if (!identifier.isBlank()) {
 			result.setName(identifier);
 			MethodObject method;
-			var methods = this.information.getElements(identifier, null, null, true, false, "Method");
+			var methods = this.information.getElements(identifier, null, null, true, false, "Method").toList();
 			if (!methods.isEmpty()) {
 				method = (MethodObject) methods.getFirst();
 			} else {
@@ -187,10 +187,9 @@ public class AOTMapParser implements Consumer<String> {
 		//Usually we get the ConstantPoolCache before the ConstantPool
 		//So this should not find anything
 		ConstantPoolObject e = null;
-		var cps = this.information.getElements(identifier, null, null, true, true, "ConstantPool");
-		for (Element cp : cps) {
-			e = (ConstantPoolObject) cp;
-			break;
+		var cp = this.information.getElements(identifier, null, null, true, true, "ConstantPool").findAny();
+		if (cp.isPresent()) {
+			e = (ConstantPoolObject) cp.get();
 		}
 
 		//If not found, create it
@@ -205,9 +204,9 @@ public class AOTMapParser implements Consumer<String> {
 	}
 
 	private Element processConstantPool(String identifier, String content) {
-		var cps = this.information.getElements(identifier, null, null, true, true, "ConstantPool");
-		for (Element cp : cps) {
-			return processReferencingElement((ReferencingElement) cp, identifier, content);
+		var cp = this.information.getElements(identifier, null, null, true, true, "ConstantPool").findAny();
+		if (cp.isPresent()) {
+			return processReferencingElement((ReferencingElement) cp.get(), identifier, content);
 		}
 		return processReferencingElement(new ConstantPoolObject(), identifier, content);
 	}
@@ -225,15 +224,15 @@ public class AOTMapParser implements Consumer<String> {
 
 		//Looking for the Class
 		if (!identifier.isBlank()) {
-			var classes = this.information.getElements(identifier, null, null, true, true, "Class");
-			if (classes.isEmpty()) {
+			var classs = this.information.getElements(identifier, null, null, true, true, "Class").findAny();
+			if (classs.isEmpty()) {
 				ClassObject classObject = new ClassObject(identifier);
 				classObject.setKlassTrainingData(e);
 				e.getReferences().add(classObject);
 				this.information.addExternalElement(classObject, "Referenced from a KlassTrainingData.");
 			} else {
-				e.getReferences().add(classes.getFirst());
-				((ClassObject) classes.getFirst()).setKlassTrainingData(e);
+				e.getReferences().add(classs.get());
+				((ClassObject) classs.get()).setKlassTrainingData(e);
 			}
 
 			e.setName(identifier);
@@ -249,14 +248,14 @@ public class AOTMapParser implements Consumer<String> {
 
 		//Looking for the Method
 		if (!identifier.isBlank()) {
-			var methods = this.information.getElements(identifier, null, null, true, true, "Method");
+			var methods = this.information.getElements(identifier, null, null, true, true, "Method").findAny();
 			MethodObject method;
 			if (methods.isEmpty()) {
 				String source = "Referenced from a MethodTrainingData: " + address;
 				method = new MethodObject(identifier, source, true, this.information);
 				this.information.addExternalElement(method, source);
 			} else {
-				method = (MethodObject) methods.getFirst();
+				method = (MethodObject) methods.get();
 			}
 			e.getReferences().add(method);
 			method.setMethodTrainingData(e);
@@ -278,14 +277,14 @@ public class AOTMapParser implements Consumer<String> {
 		if (!content.isBlank()) {
 			Integer level = Integer.valueOf(content.substring(0, 1));
 			String identifier = content.substring(2);
-			var methods = this.information.getElements(identifier, null, null, true, true, "Method");
+			var methods = this.information.getElements(identifier, null, null, true, true, "Method").findAny();
 			MethodObject method;
 			if (methods.isEmpty()) {
 				String source = "Referenced from a CompiledTrainingData: " + address;
 				method = new MethodObject(identifier, source, true, this.information);
 				this.information.addExternalElement(method, source);
 			} else {
-				method = (MethodObject) methods.getFirst();
+				method = (MethodObject) methods.get();
 			}
 			e.getReferences().add(method);
 			method.addCompileTrainingData(level, e);
@@ -300,21 +299,23 @@ public class AOTMapParser implements Consumer<String> {
 	private Element processClass(String identifier, String thisSource) {
 		// 0x000000080082d490: @@ Class             760 java.lang.StackFrameInfo
 		// It could have been already loaded
-		for (Element element : this.information.getElements(identifier, null, null, true, true, "Class")) {
-			element.getSources().add(thisSource);
-			return element;
+
+		var classs = this.information.getElements(identifier, null, null, true, true, "Class").findAny();
+		if (classs.isPresent()) {
+			classs.get().getSources().add(thisSource);
+			return classs.get();
 		}
 		ClassObject classObject = new ClassObject(identifier);
 
 		if (identifier.contains("$$")) {
 			//Lambda class, link to main outer class
 			String parent = identifier.substring(0, identifier.indexOf("$$"));
-			final var parentClass = this.information.getElements(parent, null, null, true, false, "Class");
+			final var parentClass = this.information.getElements(parent, null, null, true, false, "Class").findAny();
 			if (parentClass.isEmpty()) {
 				ClassObject parentObject = new ClassObject(parent);
 				information.addExternalElement(parentObject, "Referenced from a Class element in " + thisSource);
 			} else {
-				classObject.getReferences().add(parentClass.getFirst());
+				classObject.getReferences().add(parentClass.get());
 			}
 		}
 
@@ -323,27 +324,28 @@ public class AOTMapParser implements Consumer<String> {
 
 	private Element processMethod(String identifier, String thisSource) {
 		// It could have been already loaded
-		for (Element element : this.information.getElements(identifier, null, null, true, false, "Method")) {
-			return element;
+		var e = this.information.getElements(identifier, null, null, true, false, "Method").findAny();
+		if (e.isPresent()) {
+			e.get().addSource(thisSource);
+			return e.get();
 		}
 		return new MethodObject(identifier, thisSource, false, this.information);
 	}
 
 	private Element processConstMethod(String identifier) {
 		// It could have been already loaded
-		for (Element element : this.information.getElements(identifier, null, null, true, false, "ConstMethod")) {
-			return element;
+		var e = this.information.getElements(identifier, null, null, true, false, "ConstMethod").findAny();
+		if (e.isPresent()) {
+			return e.get();
 		}
 
 		BasicObject constMethod = new BasicObject(identifier);
 
 		//Which Method do we belong to?
-		boolean methodExists = false;
-		for (Element element : this.information.getElements(identifier, null, null, true, false, "Method")) {
-			((MethodObject) element).setConstMethod(constMethod);
-			methodExists = true;
-		}
-		if (!methodExists) {
+		var mop= this.information.getElements(identifier, null, null, true, false, "Method").findAny();
+		if (mop.isPresent()) {
+			((MethodObject) mop.get()).setConstMethod(constMethod);
+		} else {
 			MethodObject method = new MethodObject(identifier, "Referenced by ConstMethod in AOT Cache", true, this.information);
 			method.setConstMethod(constMethod);
 			this.information.addExternalElement(method, "Referenced by ConstMethod in AOT Cache");
@@ -381,10 +383,8 @@ public class AOTMapParser implements Consumer<String> {
 		if (objectName.trim().startsWith("java.lang.Class ")) {
 			//Coming from an Object, we are looking to reference the java.lang.Class
 			//and the class that that java.lang.Class refers itself
-			for (Element e : this.information.getElements("java.lang.Class", new String[]{"java.lang"}, null, true, false,
-					"Class")) {
-				element.addReference(e);
-			}
+			this.information.getElements("java.lang.Class", new String[]{"java.lang"}, null, true, false,
+					"Class").forEach(element::addReference);
 
 			//Now look for the class itself
 			objectName = objectName.substring(16).trim();
@@ -392,36 +392,30 @@ public class AOTMapParser implements Consumer<String> {
 
 		//Now try to locate the class itself
 		if (!objectName.isBlank()) {
-			List<Element> elements = this.information.getElements(objectName, null, null, true, false, "Class");
+			List<Element> elements = this.information.getElements(objectName, null, null, true, false, "Class").toList();
 			if (!elements.isEmpty()) {
 				elements.forEach(e -> element.addReference(e));
 			} else {
 				//Maybe we are looking for a Symbol
-				for (Element e : this.information.getElements(
-						objectName.replaceAll("\\.", "/"), null, null, true, false,
-						"Symbol")) {
-					element.addReference(e);
-				}
+				this.information.getElements(objectName.replaceAll("\\.", "/"),
+						null, null, true, false,"Symbol")
+						.forEach(element::addReference);
 			}
 		}
 	}
 
 	private boolean literalString(ReferencingElement element, String objectName) {
 		if (objectName.trim().startsWith("java.lang.String ")) {
-			for (Element e : this.information.getElements("java.lang.String", new String[]{"java.lang"}, null, true, false,
-					"Class")) {
-				element.addReference(e);
-			}
+			this.information.getElements("java.lang.String", new String[]{"java.lang"}, null, true, false,
+					"Class").forEach(element::addReference);
+
 			//Coming from an Object, we are looking to reference a Symbol
 			if (objectName.length() > 18) {
 				//avoid empty strings
 				final var name = objectName.substring(18, objectName.length() - 1);
 				if (!name.isBlank()) {
-					for (Element e : this.information.getElements(
-							name, null, null, true, false,
-							"Symbol")) {
-						element.addReference(e);
-					}
+					this.information.getElements(name, null, null, true, false,"Symbol")
+							.forEach(element::addReference);
 				}
 			}
 			return true;
@@ -448,9 +442,8 @@ public class AOTMapParser implements Consumer<String> {
 		//if it refers to a method, let's search for it
 		if (objectName.indexOf("$$") > 0) {
 			objectName = objectName.replace("$$", ".");
-			for (Element e : this.information.getElements(objectName, null, null, true, false, "Method")) {
-				element.addReference(e);
-			}
+			this.information.getElements(objectName, null, null, true, false, "Method")
+					.forEach(element::addReference);
 			return true;
 		}
 		return false;

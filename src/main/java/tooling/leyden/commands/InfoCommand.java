@@ -83,8 +83,7 @@ class InfoCommand implements Runnable {
 		var extLambdas = Double.valueOf(stats.getValue("[LOG] Lambda Methods not loaded from AOT Cache", -1).toString());
 		var classes = Double.valueOf(stats.getValue("[LOG] Classes loaded from AOT Cache", -1).toString());
 		var lambdas = Double.valueOf(stats.getValue("[LOG] Lambda Methods loaded from AOT Cache", -1).toString());
-		final var methods = parent.getInformation().getElements(null, null, null, true, false, "Method");
-
+		final double methodsSize = parent.getInformation().getElements(null, null, null, true, false, "Method").count();
 
 		(new AttributedString("RUN SUMMARY: ", blueFormat)).println(parent.getTerminal());
 		if (extClasses < 0) {
@@ -92,7 +91,7 @@ class InfoCommand implements Runnable {
 					"Loading app information is missing. Please, load a log that represents the loading of the app using the AOT Cache.",
 					redFormat))
 					.println(parent.getTerminal());
-			classes = (double) parent.getInformation().getElements(null, null, null, true, false, "Class").size();
+			classes = (double) parent.getInformation().getElements(null, null, null, true, false, "Class").count();
 		} else {
 			(new AttributedString("Classes loaded: ", AttributedStyle.DEFAULT)).println(parent.getTerminal());
 			printPercentages(intFormat, classes, percentFormat, extClasses, greenFormat, redFormat);
@@ -103,8 +102,8 @@ class InfoCommand implements Runnable {
 			printPercentages(intFormat, lambdas, percentFormat, extLambdas, greenFormat, redFormat);
 
 
-			if (methods.size() > 0) {
-				printPercentage("  -> Portion of methods that are lambda: ", (double) methods.size(), percentFormat,
+			if (methodsSize > 0) {
+				printPercentage("  -> Portion of methods that are lambda: ", methodsSize, percentFormat,
 						intFormat,
 						greenFormat, lambdas + extLambdas);
 			}
@@ -139,7 +138,7 @@ class InfoCommand implements Runnable {
 			Long trainingData =
 					parent.getInformation().getElements(null, null, null, true, false, "KlassTrainingData")
 							//Remove the training data that is not linked to anything
-							.parallelStream().filter(ktd -> !((ReferencingElement) ktd).getReferences().isEmpty())
+							.filter(ktd -> !((ReferencingElement) ktd).getReferences().isEmpty())
 							.count();
 
 			(new AttributedString("Classes in AOT Cache: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
@@ -148,12 +147,12 @@ class InfoCommand implements Runnable {
 					trainingData.doubleValue());
 			(new AttributedString("Objects in AOT Cache: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
 			(new AttributedString(intFormat.format(parent.getInformation().getElements(null, null, null, true, false,
-					"Object").size()), greenFormat)).println(parent.getTerminal());
+					"Object").count()), greenFormat)).println(parent.getTerminal());
 		}
 
 		Long methodCounters =
 				parent.getInformation().getElements(null, null, null, true, false, "MethodCounters")                        //Remove the training data that is not linked to anything
-						.parallelStream().filter(ktd -> !((ReferencingElement) ktd).getReferences().isEmpty())
+						.filter(ktd -> !((ReferencingElement) ktd).getReferences().isEmpty())
 						.count();
 
 		if (methodCounters < 1) {
@@ -162,36 +161,37 @@ class InfoCommand implements Runnable {
 		} else {
 			Long methodData =
 					parent.getInformation().getElements(null, null, null, true, false, "MethodData")                        //Remove the training data that is not linked to anything
-							.parallelStream().filter(ktd -> !((ReferencingElement) ktd).getReferences().isEmpty())
+							.filter(ktd -> !((ReferencingElement) ktd).getReferences().isEmpty())
 							.count();
 			Long methodTrainingData =
 					parent.getInformation().getElements(null, null, null, true, false, "MethodTrainingData")                        //Remove the training data that is not linked to anything
-							.parallelStream().filter(ktd -> !((ReferencingElement) ktd).getReferences().isEmpty())
+							.filter(ktd -> !((ReferencingElement) ktd).getReferences().isEmpty())
 							.count();
 
 			(new AttributedString("Methods in AOT Cache: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
-			(new AttributedString(intFormat.format(methods.size()), greenFormat)).println(parent.getTerminal());
+			(new AttributedString(intFormat.format(methodsSize), greenFormat)).println(parent.getTerminal());
 
-			printPercentage("  -> MethodCounters: ", (double) methods.size(), percentFormat, intFormat, greenFormat,
+			printPercentage("  -> MethodCounters: ", methodsSize, percentFormat, intFormat, greenFormat,
 					methodCounters.doubleValue());
-			printPercentage("  -> MethodData: ", (double) methods.size(), percentFormat, intFormat, greenFormat,
+			printPercentage("  -> MethodData: ", methodsSize, percentFormat, intFormat, greenFormat,
 					methodData.doubleValue());
-			printPercentage("  -> MethodTrainingData: ", (double) methods.size(), percentFormat, intFormat, greenFormat,
+			printPercentage("  -> MethodTrainingData: ", methodsSize, percentFormat, intFormat, greenFormat,
 					methodTrainingData.doubleValue());
 
 			Map<Integer, Integer> compilationLevels = new HashMap<>();
-			for (Element e : methods) {
-				MethodObject method = (MethodObject) e;
-				for (Map.Entry<Integer, Element> entry : method.getCompileTrainingData().entrySet()) {
-					compilationLevels.putIfAbsent(entry.getKey(), 0);
-					compilationLevels.replace(entry.getKey(), compilationLevels.get(entry.getKey()) + 1);
-				}
-			}
+			parent.getInformation().getElements(null, null, null, true, false, "Method")
+					.forEach(e -> {
+						MethodObject method = (MethodObject) e;
+						for (Map.Entry<Integer, Element> entry : method.getCompileTrainingData().entrySet()) {
+							compilationLevels.putIfAbsent(entry.getKey(), 0);
+							compilationLevels.replace(entry.getKey(), compilationLevels.get(entry.getKey()) + 1);
+						}
+					});
 
 			(new AttributedString("  -> CompileTrainingData: ",
 					AttributedStyle.DEFAULT)).println(parent.getTerminal());
 			for (Integer level : compilationLevels.keySet()) {
-				printPercentage("      -> Level " + level + ": ", (double) methods.size(), percentFormat, intFormat,
+				printPercentage("      -> Level " + level + ": ", methodsSize, percentFormat, intFormat,
 						greenFormat, Double.valueOf(compilationLevels.get(level)));
 			}
 		}
@@ -230,17 +230,17 @@ class InfoCommand implements Runnable {
 				intFormat.format(
 						parent.getInformation()
 								.getElements(null, null, null, true, false, "AdapterFingerPrint")
-								.size()), greenFormat)).println(parent.getTerminal());
+								.count()), greenFormat)).println(parent.getTerminal());
 		(new AttributedString("  -> AdapterHandlerEntry: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
 		(new AttributedString(
 				intFormat.format(
 						parent.getInformation()
 								.getElements(null, null, null, true, false, "AdapterHandlerEntry")
-								.size()), greenFormat)).println(parent.getTerminal());
+								.count()), greenFormat)).println(parent.getTerminal());
 
 		(new AttributedString("RecordComponent: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
 		(new AttributedString(intFormat.format(
-				parent.getInformation().getElements(null, null, null, true, false, "RecordComponent").size()), greenFormat)).println(parent.getTerminal());
+				parent.getInformation().getElements(null, null, null, true, false, "RecordComponent").count()), greenFormat)).println(parent.getTerminal());
 
 //		(new AttributedString("Annotations: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
 //		(new AttributedString(intFormat.format(
@@ -251,7 +251,7 @@ class InfoCommand implements Runnable {
 		(new AttributedString("Misc Data: ", AttributedStyle.DEFAULT)).print(parent.getTerminal());
 		(new AttributedString(intFormat.format(parent.getInformation()
 				.getElements(null, null, null, true, false, "Misc-data")
-				.size()), greenFormat)).println(parent.getTerminal());
+				.count()), greenFormat)).println(parent.getTerminal());
 
 	}
 

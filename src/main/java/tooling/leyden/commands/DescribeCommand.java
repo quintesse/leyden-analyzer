@@ -32,8 +32,8 @@ class DescribeCommand implements Runnable {
 	private CommonParameters parameters;
 
 	public void run() {
-		List<Element> elements = parent.getInformation().getElements(parameters.getName(), parameters.packageName,
-				parameters.excludePackageName, parameters.showArrays, parameters.useNotCached, parameters.types);
+		var elements = parent.getInformation().getElements(parameters.getName(), parameters.packageName,
+				parameters.excludePackageName, parameters.showArrays, parameters.useNotCached, parameters.types).toList();
 
 		AttributedStringBuilder sb = new AttributedStringBuilder();
 		if (!elements.isEmpty()) {

@@ -55,14 +55,14 @@ public class LogParser implements Consumer<String> {
 						//This is a lambda
 						this.information.getStatistics().incrementValue("[LOG] Lambda Methods loaded from AOT Cache");
 					}
-					var classes = information.getElements(className, null, null, true, true, "Class");
+					var classes = information.getElements(className, null, null, true, true, "Class").findAny();
 					if (classes.isEmpty()) {
 						//WARNING: this should be covered by the aot map file
 						//we are assuming no aot map file was loaded at this point
 						//so we create a basic placeholder
 						e = new ClassObject(className);
 					} else {
-						e = classes.getFirst();
+						e = classes.get();
 					}
 					this.information.getStatistics().incrementValue("[LOG] Classes loaded from AOT Cache");
 					information.addAOTCacheElement(e, thisSource);
@@ -293,23 +293,23 @@ public class LogParser implements Consumer<String> {
 		Element element = null;
 		if (className.contains("$$")) {
 
-			var elements = information.getElements(className.replace("$$", "."), null, null, true, true, "Method");
-			if (!elements.isEmpty()) {
-				element = elements.getFirst();
+			var elements = information.getElements(className.replace("$$", "."), null, null, true, true, "Method").findAny();
+			if (elements.isPresent()) {
+				element = elements.get();
 			} else {
 				elements = information.getElements(className.substring(0, className.indexOf("$$")), null, null, true,
-						true, "Class");
-				if (!elements.isEmpty()) {
-					element = elements.getFirst();
+						true, "Class").findAny();
+				if (elements.isPresent()) {
+					element = elements.get();
 				} else {
 					element = new MethodObject();
 					((MethodObject) element).setName(className);
 				}
 			}
 		} else {
-			var elements = information.getElements(className, null, null, true, true, "Class");
-			if (!elements.isEmpty()) {
-				element = elements.getFirst();
+			var elements = information.getElements(className, null, null, true, true, "Class").findAny();
+			if (elements.isPresent()) {
+				element = elements.get();
 			} else {
 				element = new ClassObject(className);
 			}
