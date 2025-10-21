@@ -122,6 +122,16 @@ public class MethodObject extends ReferencingElement {
 	}
 
 	@Override
+	public boolean isTrained() {
+		return this.getMethodTrainingData() != null;
+	}
+
+	@Override
+	public boolean isTraineable() {
+		return true;
+	}
+
+	@Override
 	public AttributedString getDescription(String leftPadding) {
 		AttributedStringBuilder sb = new AttributedStringBuilder();
 		sb.append(super.getDescription(leftPadding));
@@ -145,6 +155,9 @@ public class MethodObject extends ReferencingElement {
 			sb.style(AttributedStyle.DEFAULT.bold());
 			sb.append("This method doesn't seem to have been called during training run.");
 			sb.style(AttributedStyle.DEFAULT);
+			sb.append(AttributedString.NEWLINE);
+			sb.append(leftPadding + "If you think this method should be part of the training, make sure your " +
+					"training run use it repeatedly as it would on a production run.");
 		}
 
 		if (!this.compileTrainingData.isEmpty()) {
@@ -181,6 +194,13 @@ public class MethodObject extends ReferencingElement {
 			sb.append(AttributedString.NEWLINE);
 			sb.append(leftPadding + "It has a ");
 			sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.GREEN));
+			sb.append("MethodTrainingData");
+			sb.style(AttributedStyle.DEFAULT);
+			sb.append(" associated to it.");
+		} else {
+			sb.append(AttributedString.NEWLINE);
+			sb.append(leftPadding + "It has no ");
+			sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.RED));
 			sb.append("MethodTrainingData");
 			sb.style(AttributedStyle.DEFAULT);
 			sb.append(" associated to it.");

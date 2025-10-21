@@ -36,14 +36,7 @@ class ListCommand implements Runnable {
 						parameters.types);
 
 		if (trained) {
-			elements = elements.filter(e -> {
-				if (e instanceof MethodObject method) {
-					return method.getMethodTrainingData() != null;
-				} else if (e instanceof ClassObject classObject) {
-					return classObject.getKlassTrainingData() != null;
-				}
-				return false;
-			});
+			elements = elements.filter(e -> e.isTraineable() && e.isTrained());
 		}
 
 		final var counter = new AtomicInteger();

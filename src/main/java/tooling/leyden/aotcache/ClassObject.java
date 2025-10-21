@@ -80,9 +80,20 @@ public class ClassObject extends ReferencingElement {
 	}
 
 	@Override
+	public boolean isTrained() {
+		return this.getKlassTrainingData() != null;
+	}
+
+	@Override
+	public boolean isTraineable() {
+		return true;
+	}
+
+	@Override
 	public AttributedString getDescription(String leftPadding) {
 		AttributedStringBuilder sb = new AttributedStringBuilder();
 		sb.append(super.getDescription(leftPadding));
+		int trained = 0;
 		if (!this.getMethods().isEmpty()) {
 			sb.append(AttributedString.NEWLINE);
 			sb.append(leftPadding + "This class has ");
@@ -93,7 +104,6 @@ public class ClassObject extends ReferencingElement {
 			sb.style(AttributedStyle.DEFAULT);
 			sb.append(", of which");
 
-			int trained = 0;
 			for (MethodObject method : this.getMethods()) {
 				if (method.getMethodCounters() != null) {
 					trained++;
@@ -104,14 +114,22 @@ public class ClassObject extends ReferencingElement {
 			sb.style(AttributedStyle.DEFAULT);
 			sb.append(" have been trained.");
 		}
+		sb.append(AttributedString.NEWLINE);
 
 		if (this.klassTrainingData != null) {
-			sb.append(AttributedString.NEWLINE);
 			sb.append(leftPadding + "It has a ");
 			sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.GREEN));
 			sb.append("KlassTrainingData");
 			sb.style(AttributedStyle.DEFAULT);
 			sb.append(" associated to it.");
+		} else {
+			sb.style(AttributedStyle.DEFAULT.bold());
+			sb.append(leftPadding + "This class doesn't seem to have training data. ");
+			sb.style(AttributedStyle.DEFAULT);
+			if (trained == 0) {
+				sb.append("If you think this class and its methods should be part of the training, make sure your " +
+						"training run use them.");
+			}
 		}
 
 		return sb.toAttributedString();

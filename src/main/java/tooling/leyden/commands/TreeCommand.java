@@ -94,11 +94,11 @@ class TreeCommand implements Runnable {
 			asb.toAttributedString().println(parent.getTerminal());
 
 			if (!travelled.contains(refer)) {
+				travelled.add(refer);
 				printReferrals(refer, leftPadding + "  ", travelled, level);
 			}
 			isFirst = false;
 
-			travelled.add(refer);
 			if (max > 0 && travelled.size() > max) {
 				break;
 			}

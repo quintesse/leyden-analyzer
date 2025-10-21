@@ -129,8 +129,26 @@ public abstract class Element {
 		this.address = address;
 	}
 
+	public boolean isTrained() {
+		return false;
+	}
+
+	public boolean isTraineable() {
+		return false;
+	}
+
 	public AttributedString toAttributedString() {
 		AttributedStringBuilder sb = new AttributedStringBuilder();
+
+		if (isTraineable()) {
+			if (isTrained()) {
+				sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.GREEN));
+				sb.append("[Trained]");
+			} else {
+				sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.RED));
+				sb.append("[Untrained]");
+			}
+		}
 		sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.YELLOW));
 		sb.append("[" + getType() + "] ");
 		sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.CYAN));
