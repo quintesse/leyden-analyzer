@@ -5,11 +5,13 @@ import org.jline.utils.AttributedStringBuilder;
 import org.jline.utils.AttributedStyle;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
+import tooling.leyden.aotcache.ClassObject;
 import tooling.leyden.aotcache.Information;
 import tooling.leyden.aotcache.Element;
 import tooling.leyden.aotcache.ReferencingElement;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -45,9 +47,7 @@ class TreeCommand implements Runnable {
 
 	public void run() {
 		if (parameters.types == null) {
-			parameters.types = new String[]
-					{"Class", "Method", "CompileTrainingData", "KlassTrainingData",
-							"MethodCounters", "MethodData", "MethodTrainingData"};
+			parameters.types = new String[] {"Class", "Method", "Object"};
 		}
 
 		List<Element> elements = parent.getInformation().getElements(parameters.getName(), parameters.packageName,
@@ -109,13 +109,26 @@ class TreeCommand implements Runnable {
 	private List<Element> getElementsReferencingThisOne(Element element) {
 		var referenced = new ArrayList<Element>();
 
-		if (element instanceof ReferencingElement re) {
-			referenced.addAll(filter(re.getReferences().parallelStream()).toList());
+		if (element instanceof ClassObject classObject) {
+			if (Arrays.stream(parameters.types).anyMatch( t -> t.equalsIgnoreCase("Method"))) {
+				referenced.addAll(classObject.getMethods());
+			}
+			if (Arrays.stream(parameters.types).anyMatch(t -> t.equalsIgnoreCase("KlassTrainingData"))) {
+				referenced.add(classObject.getKlassTrainingData());
+			}
+			if (Arrays.stream(parameters.types).anyMatch(t -> t.equalsIgnoreCase("Object"))) {
+				referenced.addAll(filter(parent.getInformation().getAll().parallelStream()
+						.filter(e -> e.getType().equalsIgnoreCase("Object"))
+						.filter(e -> ((ReferencingElement) e).getReferences().contains(element))).toList());
+			}
+		} else {
+			if (element instanceof ReferencingElement re) {
+				referenced.addAll(filter(re.getReferences().parallelStream()).toList());
+			}
+			referenced.addAll(filter(parent.getInformation().getAll().parallelStream()
+					.filter(e -> (e instanceof ReferencingElement))
+					.filter(e -> ((ReferencingElement) e).getReferences().contains(element))).toList());
 		}
-		referenced.addAll(filter(parent.getInformation().getAll().parallelStream()
-				.filter(e -> (e instanceof ReferencingElement))
-				.filter(e -> ((ReferencingElement) e).getReferences().contains(element))).toList());
-
 		return referenced;
 	}
 
