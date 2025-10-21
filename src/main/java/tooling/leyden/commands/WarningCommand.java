@@ -14,11 +14,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Command(name = "warning", mixinStandardHelpOptions = true,
 		version = "1.0",
@@ -80,15 +77,16 @@ class WarningCommand implements Runnable {
 					"The auto-detected issues may or may not be problematic.",
 					"It is up to the developer to decide that."
 			})
-	public void check() {
+	public void check(@CommandLine.Parameters(paramLabel = "<limit>", defaultValue = "10",
+			description = "limit number of incidents per type found") Integer limit) {
 
 		parent.getOut().println("Trying to detect problems...");
 
 		List<Warning> warnings = parent.getInformation().getAutoWarnings();
 		warnings.clear();
 
-		warnings.addAll(getTopTenPackagesNotCached());
-		warnings.addAll(getTopTenPackagesUsedAndNotTrained());
+		warnings.addAll(getTopPackagesNotCached(limit));
+		warnings.addAll(getTopPackagesUsedAndNotTrained(limit));
 
 		printWarnings();
 		parent.getOut().println("The auto-detected issues may or may not be problematic.");
@@ -96,28 +94,28 @@ class WarningCommand implements Runnable {
 	}
 
 	// Get top ten packages with most methods called but not trained
-	private List<Warning> getTopTenPackagesUsedAndNotTrained() {
+	protected List<Warning> getTopPackagesUsedAndNotTrained(Integer limit) {
 		var result = new ArrayList<Warning>();
 		var packages = new HashMap<String, Integer>();
 
 		parent.getInformation().getElements(null, null, excludedPackages, false, false, "Method")
 				.map(MethodObject.class::cast)
 				.filter(e -> e.getMethodCounters() != null)
-				.filter(e -> !e.isTrained())
+				.filter(e ->  e.getMethodTrainingData() == null || e.getCompileTrainingData().isEmpty())
 				.forEach(method -> {
 					final var classObject = method.getClassObject();
 					addToPackageList(classObject, packages);
 				});
 
-		String warningString = " methods that were called during training run but lack full training (don't have " +
+		String warningString = " methods that were called during training run but lack full training (don't have" +
 				" some of the TrainingData objects associated to them).";
-		getTopTenPackages(packages, warningString, result);
+		getTopPackages(packages, warningString, result, limit);
 
 		return result;
 	}
 
 	// Get top ten packages with most classes not cached
-	private List<Warning> getTopTenPackagesNotCached() {
+	private List<Warning> getTopPackagesNotCached(Integer limit) {
 		var result = new ArrayList<Warning>();
 		var packages = new HashMap<String, Integer>();
 
@@ -129,13 +127,14 @@ class WarningCommand implements Runnable {
 			}
 		}
 
-		getTopTenPackages(packages, " classes loaded and not cached.", result);
+		getTopPackages(packages, " classes loaded and not cached.", result, limit);
 
 		return result;
 	}
 
-	private static void getTopTenPackages(HashMap<String, Integer> packages, String warningString, ArrayList<Warning> result) {
-		packages.entrySet().stream().sorted((e1, e2) -> e2.getValue() - e1.getValue()).limit(10)
+	private static void getTopPackages(HashMap<String, Integer> packages, String warningString,
+									   ArrayList<Warning> result, Integer limit) {
+		packages.entrySet().stream().sorted((e1, e2) -> e2.getValue() - e1.getValue()).limit(limit)
 				.forEach(entry -> {
 					AttributedStringBuilder sb = new AttributedStringBuilder();
 					sb.append("Package '");
