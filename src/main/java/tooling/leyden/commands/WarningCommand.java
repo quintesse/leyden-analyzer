@@ -12,6 +12,7 @@ import tooling.leyden.aotcache.WarningType;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -46,14 +47,14 @@ class WarningCommand implements Runnable {
 	}
 
 	private void printWarnings() {
-		Set<Warning> wa = new HashSet<>();
+		List<Warning> wa = new ArrayList<>();
 		wa.addAll(parent.getInformation().getWarnings());
 		wa.addAll(parent.getInformation().getAutoWarnings());
 		if (types != null && types.length > 0) {
-			wa = wa.parallelStream().filter(
-							warning -> Arrays.stream(types).anyMatch(t -> t.equalsIgnoreCase(warning.getType().name())))
-					.collect(Collectors.toSet());
+			wa.removeIf(warning -> Arrays.stream(types).anyMatch(t -> t.equalsIgnoreCase(warning.getType().name())));
 		}
+
+		wa.sort(Comparator.comparing(Warning::getId));
 
 		wa.forEach(element -> element.getDescription().println(parent.getTerminal()));
 
@@ -102,14 +103,14 @@ class WarningCommand implements Runnable {
 		parent.getInformation().getElements(null, null, excludedPackages, false, false, "Method")
 				.map(MethodObject.class::cast)
 				.filter(e -> e.getMethodCounters() != null)
-				.filter(e -> e.getMethodTrainingData() == null || e.getCompileTrainingData().isEmpty())
+				.filter(e -> !e.isTrained())
 				.forEach(method -> {
 					final var classObject = method.getClassObject();
 					addToPackageList(classObject, packages);
 				});
 
-		String warningString = " methods that were called during training run but lack proper training (don't have " +
-				"TrainingData objects associated to them).";
+		String warningString = " methods that were called during training run but lack full training (don't have " +
+				" some of the TrainingData objects associated to them).";
 		getTopTenPackages(packages, warningString, result);
 
 		return result;

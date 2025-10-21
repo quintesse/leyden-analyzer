@@ -123,7 +123,8 @@ public class MethodObject extends ReferencingElement {
 
 	@Override
 	public boolean isTrained() {
-		return this.getMethodTrainingData() != null;
+		return this.getMethodTrainingData() != null
+				|| !this.getCompileTrainingData().isEmpty();
 	}
 
 	@Override

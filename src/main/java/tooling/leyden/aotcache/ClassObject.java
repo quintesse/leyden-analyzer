@@ -94,6 +94,7 @@ public class ClassObject extends ReferencingElement {
 		AttributedStringBuilder sb = new AttributedStringBuilder();
 		sb.append(super.getDescription(leftPadding));
 		int trained = 0;
+		int run = 0;
 		if (!this.getMethods().isEmpty()) {
 			sb.append(AttributedString.NEWLINE);
 			sb.append(leftPadding + "This class has ");
@@ -106,9 +107,15 @@ public class ClassObject extends ReferencingElement {
 
 			for (MethodObject method : this.getMethods()) {
 				if (method.getMethodCounters() != null) {
+					run++;
+				} if (method.isTrained()) {
 					trained++;
 				}
 			}
+			sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.GREEN));
+			sb.append(" " + run);
+			sb.style(AttributedStyle.DEFAULT);
+			sb.append(" have been run and");
 			sb.style(AttributedStyle.DEFAULT.bold().foreground(AttributedStyle.GREEN));
 			sb.append(" " + trained);
 			sb.style(AttributedStyle.DEFAULT);
