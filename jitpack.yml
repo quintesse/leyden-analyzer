@@ -1,5 +1,0 @@
-before_install:
-  - sdk install java 21-tem
-  - sdk use java 21-tem
-install:
-  - ./mvnw clean install -DskipTests -Dquarkus.package.jar.type=uber-jar
