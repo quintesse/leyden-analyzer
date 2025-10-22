@@ -37,12 +37,8 @@ class InfoCommand implements Runnable {
 	private String[] whatToShow;
 
 	public void run() {
-		if (shouldShow(InfoCommandTypes.Types.Allocation.name()))
-			print(InfoCommandTypes.Types.Allocation.name(), parent.getInformation().getAllocation());
 		if (shouldShow(InfoCommandTypes.Types.Configuration.name()))
 			print(InfoCommandTypes.Types.Configuration.name(), parent.getInformation().getConfiguration());
-		if (shouldShow(InfoCommandTypes.Types.Statistics.name()))
-			print(InfoCommandTypes.Types.Statistics.name(), parent.getInformation().getStatistics());
 		if (shouldShow(InfoCommandTypes.Types.Summary.name())) {
 			printSummary();
 		}
@@ -80,9 +76,12 @@ class InfoCommand implements Runnable {
 
 		//Get information from log
 		var extClasses = Double.valueOf(stats.getValue("[LOG] Classes not loaded from AOT Cache", -1).toString());
-		var extLambdas = Double.valueOf(stats.getValue("[LOG] Lambda Methods not loaded from AOT Cache", -1).toString());
+		var extLambdas = Double.valueOf(stats.getValue("[LOG] Lambda Methods not loaded from AOT Cache", 0).toString());
 		var classes = Double.valueOf(stats.getValue("[LOG] Classes loaded from AOT Cache", -1).toString());
-		var lambdas = Double.valueOf(stats.getValue("[LOG] Lambda Methods loaded from AOT Cache", -1).toString());
+		if (classes < 0) {
+			classes = (double) parent.getInformation().getElements(null, null, null, true, false, "Class").count();
+		}
+		var lambdas = Double.valueOf(stats.getValue("[LOG] Lambda Methods loaded from AOT Cache", 0).toString());
 		final double methodsSize = parent.getInformation().getElements(null, null, null, true, false, "Method").count();
 
 		(new AttributedString("RUN SUMMARY: ", blueFormat)).println(parent.getTerminal());
@@ -91,7 +90,6 @@ class InfoCommand implements Runnable {
 					"Loading app information is missing. Please, load a log that represents the loading of the app using the AOT Cache.",
 					redFormat))
 					.println(parent.getTerminal());
-			classes = (double) parent.getInformation().getElements(null, null, null, true, false, "Class").count();
 		} else {
 			(new AttributedString("Classes loaded: ", AttributedStyle.DEFAULT)).println(parent.getTerminal());
 			printPercentages(intFormat, classes, percentFormat, extClasses, greenFormat, redFormat);

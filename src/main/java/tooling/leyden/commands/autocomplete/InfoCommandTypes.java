@@ -8,9 +8,7 @@ import java.util.List;
 public class InfoCommandTypes implements Iterable<String> {
 
 	public enum Types {
-		Allocation,
 		Configuration,
-		Statistics,
 		Summary;
 	}
 
