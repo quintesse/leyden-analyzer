@@ -20,6 +20,15 @@ You might need to be patient because it uses [JitPack](https://jitpack.io) to bu
 
 The analyzer uses [picocli](https://picocli.info) and [JLine](https://github.com/jline/jline3) to run.
 
+## Colors
+
+This tool uses a lot of colors to make reading and understanding of the content easier. As a general guide, this is their meaning:
+
+ * `#00FF00` Green: Good, as expected, you can ignore it.
+ * `#FF0000` Red: Warning, bad, note this.
+ * `#999900` Yellow: Type of asset. Typically, it can be Method, Class, TrainingData,...
+ * `#00CCC0` Blue: Identifier for a Class, Method, Warning,...
+
 ## How to use it
 
 There is a `help` command:
@@ -45,7 +54,6 @@ Commands:
   help        Display help information about the specified command.
 
 Press Ctrl-D to exit.
-
 ```
 
 ### Load some information
@@ -106,6 +114,9 @@ Loading log files gives a better overview of why things are (or are not) in the 
 > **Do not mix logs and caches from different runs.**
 > 
 > That will lead to inconsistent and wrong analysis.
+> If you mix production and training runs, there's no way
+> we can distinguish if an issue happened during the 
+> creation of the cache or during the loading of the cache.
 
 You may mix logs and aot map files from the same training or production run. Then, the information will complement each other. It is recommended to load first the AOT cache map so when processing the log we already have the details about the elements inside the cache.
 
@@ -119,255 +130,148 @@ The `info` command is very useful to get a general idea of what is happening in 
 > info
 RUN SUMMARY: 
 Classes loaded: 
-  -> Cached:9.163 (97,28 %)
-  -> Not Cached:256 (2,72 %)
-Methods loaded: 
-  -> Cached:38.560 (96,09 %)
-  -> Not Cached:1.571 (3,91 %)
-Lambda Methods (4,37 % of total methods) loaded: 
-  -> Cached:197 (11,24 %)
-  -> Not Cached:1.556 (88,76 %)
-Code Entries: 493
-  -> Adapters: 493 (100,00 %)
-  -> Shared Blobs: 0 (0,00 %)
-  -> C1 Blobs: 0 (0,00 %)
-  -> C2 Blobs: 0 (0,00 %)
-AOT code cache size: 598432 bytes
+  -> Cached:2.791 (18,41 %)
+  -> Not Cached:12.372 (81,59 %)
+Lambda Methods loaded: 
+  -> Cached:0 (-0,00 %)
+  -> Not Cached:1.934 (100,00 %)
+  -> Portion of methods that are lambda: 1.933 (1,59 %)
 AOT CACHE SUMMARY: 
-Classes in AOT Cache: 9.163
-Methods in AOT Cache: 38.560
-  -> ConstMethods size: 38.362 (99,49 %)
-  -> MethodCounters size: 0 (0,00 %)
-  -> MethodData size: 0 (0,00 %)
-ConstantPool: 3.066
-  -> ConstantPoolCache: 3.066 (100,00 %)
+Classes in AOT Cache: 2.791
+  -> KlassTrainingData: 964 (34,54 %)
+Objects in AOT Cache: 50.709
+Methods in AOT Cache: 121.387
+  -> MethodCounters: 6.509 (5,36 %)
+  -> MethodData: 4.133 (3,40 %)
+  -> MethodTrainingData: 4.661 (3,84 %)
+  -> CompileTrainingData: 
+      -> Level 1: 475 (0,39 %)
+      -> Level 3: 2.780 (2,29 %)
+      -> Level 4: 554 (0,46 %)
+Adapters: 
+  -> AdapterFingerPrint: 493
+  -> AdapterHandlerEntry: 493
+RecordComponent: 134
+Misc Data: 2
 ```
 
-### Listing elements (and errors!) detected
+### Listing assets
 
-We have the `ls` command to list errors and what we know is on the cache. Most options in all the commands are autocompletable, so you can use `tab` to understand what to fill in there.
-
-```bash
-> ls help
-
-Usage:
-
- ls [-hV] [-i[=<id>]] [--useArrays[=<showArrays>]] [--useNotCached
-    [=<useNotCached>]] [-epn[=<exclude>[,<exclude>...]...]]... [-pn
-    [=<packageName>[,<packageName>...]...]]... [-t[=<type>[,<type>...]...]]...
-    [COMMAND]
-
-Description:
-
-List what is on the cache. By default, it lists everything on the cache.
-
-Options:
-
-      -epn, --excludePackageName[=<exclude>[,<exclude>...]...]
-                            Exclude the elements inside this package.
-                            Note that some elements don't belong to any
-                              particular package.
-  -h, --help                Show this help message and exit.
-  -i, --identifier[=<id>]   The object identifier. If it is a class, use the
-                              full qualified name.
-      -pn, --packageName[=<packageName>[,<packageName>...]...]
-                            Restrict the command to elements inside this
-                              package.
-                            Note that some elements don't belong to any
-                              particular package
-  -t, --type[=<type>[,<type>...]...]
-                            Restrict the command to this type of element
-      --useArrays[=<showArrays>]
-                            Use array classes if true. True by default.
-      --useNotCached[=<useNotCached>]
-                            Use elements that are used in your app but were not
-                              in the AOT Cache. False by default.
-  -V, --version             Print version information and exit.
-
-Commands:
-
-  help  Display help information about the specified command.
-```
+We have the `ls` command to list what we know is on the cache. Most options in all the commands are autocompletable, so you can use `tab` to understand what to fill in there.
 
 ```bash
 > ls 
 [....]
-  > Symbol -> Ljdk/internal/misc/TerminatingThreadLocal<[Lsun/nio/fs/NativeBuffer;>;
-  > TypeArrayOther -> 0x0000000800754aa8
-  > Object -> (0xffd86a88) java.lang.String "M05"
-  > Symbol -> setNormalizedYear
-  > Class -> org.infinispan.configuration.cache.GroupsConfiguration
-  > Symbol -> java/time/chrono/ThaiBuddhistChronology
-  > Method -> void java.util.ArrayList$ArrayListSpliterator.forEachRemaining(java.util.function.Consumer)
-  > ConstMethod -> boolean java.util.regex.CharPredicates.lambda$PUNCTUATION$0(int)
-  > Method -> void jdk.internal.platform.CgroupSubsystemFactory.<init>()
-  > Symbol -> jdk/internal/vm/vector/VectorSupport$VectorBlendOp
-  > Object -> (0xffd4ac78) java.util.concurrent.ConcurrentHashMap$Node
-  > ConstMethod -> java.util.List java.time.chrono.IsoChronology.eras()
-  > Symbol -> Method javax/crypto/SecretKey.getEncoded()[B is abstract
-  > TypeArrayU8 -> 0x0000000803e93be8
-  > TypeArrayU1 -> 0x0000000802ad86a0
-  > Method -> java.io.FileDescriptor sun.nio.ch.Net.serverSocket()
-  > ConstMethod -> boolean java.io.ObjectStreamClass.classNamesEqual(java.lang.String, java.lang.String)
-  > Class -> io.netty.util.concurrent.FutureListener
-  > TypeArrayU1 -> 0x00000008028aac38
-  > TypeArrayU1 -> 0x0000000802b17450
-  > Object -> (0xffe7f538) [I length: 18
-Found 260732 elements.
+[Symbol] (Ljava/lang/classfile/ClassFileElement;)Ljava/lang/classfile/ClassFileBuilder;
+[Symbol] (Ljava/lang/classfile/ClassFileElement;)V
+[Symbol] (Ljava/lang/classfile/ClassFileTransform;Ljava/lang/classfile/ClassFileBuilder;)Ljdk/internal/classfile/impl/
+TransformImpl$ResolvedTransform;
+[ConstMethod] void org.infinispan.remoting.transport.jgroups.JGroupsMetricsManagerImpl.lambda$stop$1(org.infinispan.re
+moting.transport.jgroups.JGroupsMetricsManagerImpl$ClusterMetrics)
+[Untrained][Method] void org.infinispan.remoting.transport.jgroups.JGroupsMetricsManagerImpl.lambda$stop$1(org.infinis
+pan.remoting.transport.jgroups.JGroupsMetricsManagerImpl$ClusterMetrics)
+[ConstMethod] void org.infinispan.remoting.transport.jgroups.JGroupsMetricsManagerImpl.onChannelConnected(org.jgroups.
+JChannel, boolean)
+[Untrained][Method] void org.infinispan.remoting.transport.jgroups.JGroupsMetricsManagerImpl.onChannelConnected(org.jg
+roups.JChannel, boolean)
+Found 685694 elements.
 ```
 
 We can filter by type of element and package (the parameters are auto-completable with suggestions):
 ```bash
 > ls -t=ConstantPool -pn=sun.util.locale
-  > ConstantPool -> sun.util.locale.BaseLocale
-  > ConstantPool -> sun.util.locale.BaseLocale$1
-  > ConstantPool -> sun.util.locale.provider.BaseLocaleDataMetaInfo
-Found 3 elements.
+[...]
+[ConstantPool] sun.util.locale.provider.NumberFormatProviderImpl
+[ConstantPool] sun.util.locale.provider.LocaleProviderAdapter$Type
+[ConstantPool] sun.util.locale.provider.LocaleProviderAdapter$$Lambda/0x800000099
+[ConstantPool] sun.util.locale.provider.LocaleResources$ResourceReference
+Found 32 elements.
 ```
+### Search for warnings
 
-We can also explore the potential errors/warnings/incidents:
+We can also explore the potential errors/warnings/incidents. They may have been loaded from a log file or they can be auto-detected.
 
 ```bash
-> warning 
-[...]
-  > Element 'org.infinispan.remoting.transport.jgroups.JGroupsTransport' of type 'Class' couldn't be stored into the A
-OTcache because: 'nest host class org/infinispan/remoting/transport/jgroups/JGroupsTransport is excluded'
-  > Element 'jdk.proxy1.$Proxy0' of type 'Class' couldn't be stored into the AOTcache because: 'Unsupported location'
-  > [Unknown]: 'Preload Warning: Verification failed for org.apache.logging.log4j.core.async.AsyncLoggerContext'
-  > [StoringIntoAOTCache]: 'JVM_StartThread() ignored: jdk.internal.misc.InnocuousThread'
-  > Element 'org.infinispan.remoting.transport.jgroups.JGroupsTransport' of type 'Class' couldn't be stored into the A
-OTcache because: 'nest host class org/infinispan/remoting/transport/jgroups/JGroupsTransport is excluded'
-Found 42 warnings.
+> warning
+000 [Unknown] Preload Warning: Verification failed for org.infinispan.remoting.transport.jgroups.JGroupsRaftManager
+001 [Unknown] Preload Warning: Verification failed for org.apache.logging.log4j.core.async.AsyncLoggerContext
+002 [StoringIntoAOTCache] Element 'org.apache.logging.log4j.core.async.AsyncLoggerContext' of type 'Class' couldn't be
+ stored into the AOTcache because: Failed verification
+003 [StoringIntoAOTCache] Element 'org.infinispan.remoting.transport.jgroups.JGroupsRaftManager' of type 'Class' could
+n't be stored into the AOTcache because: Failed verification
+Found 4 warnings.
 ```
 
-TODO: Add suggestions on how to solve these errors/warnings. Maybe on the `describe` command?
+If you want to auto-detect issues, you can run the command `warning check <n>` limiting the search for each type of warning to `n`, which will show the `n`-most relevant warnings.
+
+```bash
+> warning check 3
+Trying to detect problems...
+000 [Unknown] Preload Warning: Verification failed for org.infinispan.remoting.transport.jgroups.JGroupsRaftManager
+001 [Unknown] Preload Warning: Verification failed for org.apache.logging.log4j.core.async.AsyncLoggerContext
+002 [StoringIntoAOTCache] Element 'org.apache.logging.log4j.core.async.AsyncLoggerContext' of type 'Class' couldn't be
+stored into the AOTcache because: Failed verification
+003 [StoringIntoAOTCache] Element 'org.infinispan.remoting.transport.jgroups.JGroupsRaftManager' of type 'Class' could
+n't be stored into the AOTcache because: Failed verification
+024 [Training] Package 'org.apache.logging' contains 763 classes loaded and not cached.
+025 [Training] Package 'io.reactivex.rxjava3' contains 724 classes loaded and not cached.
+026 [Training] Package 'org.infinispan.server' contains 528 classes loaded and not cached.
+027 [Training] Package 'org.infinispan.protostream' contains 42 methods that were called during training run but lack
+full training (don't have some of the TrainingData objects associated to them).
+028 [Training] Package 'io.reactivex.rxjava3' contains 30 methods that were called during training run but lack full t
+raining (don't have some of the TrainingData objects associated to them).
+029 [Training] Package 'org.apache.logging' contains 20 methods that were called during training run but lack full tra
+ining (don't have some of the TrainingData objects associated to them).
+Found 10 warnings.
+The auto-detected issues may or may not be problematic.
+It is up to the developer to decide that.
+``````
+
+> **The auto-detected issues may or may not be problematic. It is up to the developer to decide that.**
+
+You can clean up the list by using the `warning rm <id>` command. 
 
 ### Looking for details
 
-To explore a bit more about what is on stored on the cache, we can use the command `describe`.
-
-```bash
-> describe help
-
-Usage:
-
- describe [-hV] [-i[=<id>]] [--useArrays[=<showArrays>]] [--useNotCached
-          [=<useNotCached>]] [-epn[=<exclude>[,<exclude>...]...]]... [-pn
-          [=<packageName>[,<packageName>...]...]]... [-t[=<type>[,
-          <type>...]...]]... [COMMAND]
-
-Description:
-
-Describe an object, showing all related info.
-
-Options:
-
-      -epn, --excludePackageName[=<exclude>[,<exclude>...]...]
-                            Exclude the elements inside this package.
-                            Note that some elements don't belong to any
-                              particular package.
-  -h, --help                Show this help message and exit.
-  -i, --identifier[=<id>]   The object identifier. If it is a class, use the
-                              full qualified name.
-      -pn, --packageName[=<packageName>[,<packageName>...]...]
-                            Restrict the command to elements inside this
-                              package.
-                            Note that some elements don't belong to any
-                              particular package
-  -t, --type[=<type>[,<type>...]...]
-                            Restrict the command to this type of element
-      --useArrays[=<showArrays>]
-                            Use array classes if true. True by default.
-      --useNotCached[=<useNotCached>]
-                            Use elements that are used in your app but were not
-                              in the AOT Cache. False by default.
-  -V, --version             Print version information and exit.
-
-Commands:
-
-  help  Display help information about the specified command.
-```
+To explore a bit more about what is on stored on the cache, we can use the command `describe`. 
 
 Depending on if it was loaded from one type of file or another, the details may vary:
 
 ```bash
 -----
-|  Class org.infinispan.server.loader.Loader on address 0x0000000800a58b58 with size 528.
+|  Class org.infinispan.server.loader.Loader on address 0x0000000800a59208 with size 528.
 |  This information comes from: 
 |    > AOT Map
-|  This class has the following methods:
-|     ______
-|     | void org.infinispan.server.loader.Loader.<init>()
-|     | void org.infinispan.server.loader.Loader.main(java.lang.String[], java.lang.String)
-|     | void org.infinispan.server.loader.Loader.run(java.lang.String[], java.lang.String, java.util.Properties)
-|     | java.lang.ClassLoader org.infinispan.server.loader.Loader.classLoaderFromPath(java.nio.file.Path, java.lang.Cl
-assLoader)
-|     | java.lang.String org.infinispan.server.loader.Loader.extractArtifactName(java.lang.String)
-|     | void org.infinispan.server.loader.Loader.<init>()
-|     | void org.infinispan.server.loader.Loader.main(java.lang.String[], java.lang.String)
-|     | void org.infinispan.server.loader.Loader.run(java.lang.String[], java.lang.String, java.util.Properties)
-|     | java.lang.ClassLoader org.infinispan.server.loader.Loader.classLoaderFromPath(java.nio.file.Path, java.lang.Cl
-assLoader)
-|     | java.lang.String org.infinispan.server.loader.Loader.extractArtifactName(java.lang.String)
-|     | ______
-|  There are other elements of the cache that link to this element: 
-|    _____
-|    | Method -> void org.infinispan.server.loader.Loader.run(java.lang.String[], java.lang.String, java.util.Properti
-es)
-|    | Method -> void org.infinispan.server.loader.Loader.<init>()
-|    | ConstantPoolCache -> org.infinispan.server.loader.Loader
-|    | Method -> void org.infinispan.server.loader.Loader.main(java.lang.String[], java.lang.String)
-|    | ConstMethod -> java.lang.ClassLoader org.infinispan.server.loader.Loader.classLoaderFromPath(java.nio.file.Path
-, java.lang.ClassLoader)
-|    | ConstMethod -> java.lang.String org.infinispan.server.loader.Loader.extractArtifactName(java.lang.String)
-|    | ConstMethod -> void org.infinispan.server.loader.Loader.run(java.lang.String[], java.lang.String, java.util.Pro
-perties)
-|    | ConstMethod -> void org.infinispan.server.loader.Loader.<init>()
-|    | Symbol -> Loader.java
-|    | Symbol -> org/infinispan/server/loader/Loader
-|    | ConstMethod -> void org.infinispan.server.loader.Loader.main(java.lang.String[], java.lang.String)
-|    | ConstantPool -> org.infinispan.server.loader.Loader
-|    | Method -> java.lang.String org.infinispan.server.loader.Loader.extractArtifactName(java.lang.String)
-|    | Method -> java.lang.ClassLoader org.infinispan.server.loader.Loader.classLoaderFromPath(java.nio.file.Path, jav
-a.lang.ClassLoader)
-|    _____
------
------
-|  ConstantPool org.infinispan.server.loader.Loader on address 0x0000000802f2cb48 with size 2824.
-|  This information comes from: 
-|    > AOT Map
-|  This element refers to :
-|   > Class -> org.infinispan.server.loader.Loader
------
-```
-
-If we don't ask to describe something coming from the AOTCache, the information is much more limited:
-
-```bash
-> describe -i=org.infinispan.configuration.cache.GroupsConfiguration
------
-|  Class org.infinispan.configuration.cache.GroupsConfiguration with size null.
-|  This information comes from: 
 |    > Java Log
-|  This class has the following methods:
-|     ______
-|     | null org.infinispan.configuration.cache.GroupsConfiguration.Lambda/0x8000000fa()
-|     | null org.infinispan.configuration.cache.GroupsConfiguration.Lambda/0x000000080601e710()
-|     | null org.infinispan.configuration.cache.GroupsConfiguration.Lambda/0x000000080501edb8()
-|     | ______
+|  This class has 5 Methods, of which 1 have been run and 1 have been trained.
+|  It has a KlassTrainingData associated to it.
 -----
 ```
 
-Or we can filter by type of element we want to explore:
+It has a verbose option to show a bit more info:
 
 ```bash
-> describe -i=org.infinispan.server.loader.Loader -t=ConstantPoolCache 
 -----
-|  ConstantPoolCache org.infinispan.server.loader.Loader on address 0x0000000800a58d68 with size 64.
+|  Class org.infinispan.server.loader.Loader on address 0x0000000800a59208 with size 528.
 |  This information comes from: 
 |    > AOT Map
-|  This element refers to :
-|   > Class -> org.infinispan.server.loader.Loader
+|    > Java Log
+|  This class has 5 Methods, of which 1 have been run and 1 have been trained.
+|  It has a KlassTrainingData associated to it.
+|  There are no elements referenced from this element.
+|  Elements that refer to this element: 
+|    _____
+|    | [ConstantPool] org.infinispan.server.loader.Loader
+|    | [KlassTrainingData] org.infinispan.server.loader.Loader
+|    | [Untrained][Method] void org.infinispan.server.loader.Loader.main(java.lang.String[])
+|    | [Untrained][Method] void org.infinispan.server.loader.Loader.<init>()
+|    | [Untrained][Method] void org.infinispan.server.loader.Loader.run(java.lang.String[], java.util.Properties)
+|    | [Untrained][Method] java.lang.ClassLoader org.infinispan.server.loader.Loader.classLoaderFromPath(java.nio.file
+.Path, java.lang.ClassLoader)
+|    | [Trained][Method] java.lang.String org.infinispan.server.loader.Loader.extractArtifactName(java.lang.String)
+|    | [Symbol] Loader.java
+|    | [Symbol] org/infinispan/server/loader/Loader
+|    _____
 -----
 ```
 
@@ -375,90 +279,35 @@ Or we can filter by type of element we want to explore:
 
 The `tree` command shows related elements. It can be used with the `describe` command to check details on elements inside the AOT Cache.
 
-```bash
-> tree help
-
-Usage:
-
- tree [-hV] [-i[=<id>]] [--useArrays[=<showArrays>]] [--useNotCached
-      [=<useNotCached>]] [-l[=<N>...]] [-max[=<N>...]] [-epn[=<exclude>[,
-      <exclude>...]...]]... [-pn[=<packageName>[,<packageName>...]...]]... [-t
-      [=<type>[,<type>...]...]]... [COMMAND]
-
-Description:
-
-Shows a tree with elements that are linked to the root.
-This means, elements that refer to/use the root element.,
-Blue italic elements have already been shown and will not be expanded.
-
-Options:
-
-      -epn, --excludePackageName[=<exclude>[,<exclude>...]...]
-                            Exclude the elements inside this package.
-                            Note that some elements don't belong to any
-                              particular package.
-  -h, --help                Show this help message and exit.
-  -i, --identifier[=<id>]   The object identifier. If it is a class, use the
-                              full qualified name.
-  -l, --level[=<N>...]      Maximum number of tree levels to display.
-      -max[=<N>...]         Maximum number of elements to display. By default,
-                              100. If using -1, it shows all elements. Note
-                              that on some cases this may mean showing
-                              thousands of elements.
-      -pn, --packageName[=<packageName>[,<packageName>...]...]
-                            Restrict the command to elements inside this
-                              package.
-                            Note that some elements don't belong to any
-                              particular package
-  -t, --type[=<type>[,<type>...]...]
-                            Restrict the command to this type of element
-      --useArrays[=<showArrays>]
-                            Use array classes if true. True by default.
-      --useNotCached[=<useNotCached>]
-                            Use elements that are used in your app but were not
-                              in the AOT Cache. False by default.
-  -V, --version             Print version information and exit.
-
-Commands:
-
-  help  Display help information about the specified command.
-
-```
-
 To avoid infinite loops and circular references, each element will be iterated over on the tree only once. Elements that have already appeared on the tree will be colored blue and will not have children.
 
 ```bash
-> tree sun.util.locale.BaseLocale
-+── [Class] sun.util.locale.BaseLocale
+> tree -i=org.infinispan.xsite.NoOpBackupSender --level=0
++ [Untrained][Class] org.infinispan.xsite.NoOpBackupSender
  \
-  +──  [Object] (0xffe070c0) sun.util.locale.BaseLocale
-  ├──  [Object] (0xffe071a0) sun.util.locale.BaseLocale
-  ├──  [Object] (0xffe06f00) sun.util.locale.BaseLocale
-  ├──  [Object] (0xffe07050) sun.util.locale.BaseLocale
-  ├──  [ConstantPool] sun.util.locale.BaseLocale
-  ├──  [Object] (0xffe07088) sun.util.locale.BaseLocale
-  ├──  [Object] (0xffe06e58) sun.util.locale.BaseLocale
-  ├──  [Object] (0xffe07018) sun.util.locale.BaseLocale
-  ├──  [Object] (0xffe07130) sun.util.locale.BaseLocale
-  ├──  [Object] (0xffe06e20) sun.util.locale.BaseLocale
-  ├──  [Object] (0xffe06fa8) sun.util.locale.BaseLocale
-  ├──  [ConstantPoolCache] sun.util.locale.BaseLocale
-  ├──  [Symbol] sun.util.locale.BaseLocale
-   \
-    +──  [Object] (0xffe94558) java.lang.String "sun.util.locale.BaseLocale"
-  ├──  [Object] (0xffe06f70) sun.util.locale.BaseLocale
-  ├──  [Symbol] sun/util/locale/BaseLocale
-  ├──  [Object] (0xffe06e90) sun.util.locale.BaseLocale
-  ├──  [Object] (0xffe06fe0) sun.util.locale.BaseLocale
-  ├──  [Object] (0xffe06ec8) sun.util.locale.BaseLocale
-  ├──  [Object] (0xffe071d8) sun.util.locale.BaseLocale
-  ├──  [Object] (0xffe07168) sun.util.locale.BaseLocale
-  ├──  [Object] (0xffe06f38) sun.util.locale.BaseLocale
-  ├──  [Object] (0xffe07210) sun.util.locale.BaseLocale
-  ├──  [Symbol] BaseLocale.java
-  ├──  [Object] (0xffe070f8) sun.util.locale.BaseLocale
-  ├──  [Method] sun.util.locale.BaseLocale.convertOldISOCodes
-
+  + [Untrained][Method] java.lang.String org.infinispan.xsite.NoOpBackupSender.toString()
+  |
+  + [Untrained][Method] org.infinispan.interceptors.InvocationStage org.infinispan.xsite.NoOpBackupSender.backupPrepar
+e(org.infinispan.commands.tx.PrepareCommand, org.infinispan.transaction.impl.AbstractCacheTransaction, jakarta.transac
+tion.Transaction)
+  |
+  + [Untrained][Method] org.infinispan.interceptors.InvocationStage org.infinispan.xsite.NoOpBackupSender.backupCommit
+(org.infinispan.commands.tx.CommitCommand, jakarta.transaction.Transaction)
+  |
+  + [Untrained][Method] org.infinispan.interceptors.InvocationStage org.infinispan.xsite.NoOpBackupSender.backupRollba
+ck(org.infinispan.commands.tx.RollbackCommand, jakarta.transaction.Transaction)
+  |
+  + [Untrained][Method] org.infinispan.interceptors.InvocationStage org.infinispan.xsite.NoOpBackupSender.backupWrite(
+org.infinispan.commands.write.WriteCommand, org.infinispan.commands.write.WriteCommand)
+  |
+  + [Untrained][Method] org.infinispan.interceptors.InvocationStage org.infinispan.xsite.NoOpBackupSender.backupClear(
+org.infinispan.commands.write.ClearCommand)
+  |
+  + [Untrained][Method] void org.infinispan.xsite.NoOpBackupSender.<init>()
+  |
+  + [Untrained][Method] void org.infinispan.xsite.NoOpBackupSender.<clinit>()
+  |
+  + [Trained][Method] org.infinispan.xsite.NoOpBackupSender org.infinispan.xsite.NoOpBackupSender.getInstance()
 ```
 
 ### Cleanup
