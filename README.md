@@ -291,7 +291,7 @@ Just `exit`.
 
 The following section contains examples on how to use this tool to improve your training runs and get better performance thanks to the AOT Cache in Java.
 
-### Detecting classes that should have been trained but were not trained
+### Detecting classes that should have been run but were not fully trained
 
 The title is self-explanatory.
 

@@ -4,7 +4,6 @@ import org.jline.utils.AttributedString;
 import org.jline.utils.AttributedStringBuilder;
 import org.jline.utils.AttributedStyle;
 
-import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -52,9 +51,9 @@ public class Warning {
 			sb.append(this.element.getType());
 			sb.style(AttributedStyle::boldOff);
 			sb.append("' couldn't be ");
-			if (this.type == WarningType.StoringIntoAOTCache) {
+			if (this.type == WarningType.CacheCreation) {
 				sb.append("stored into the AOTcache");
-			} else if (this.type == WarningType.LoadingFromAOTCache) {
+			} else if (this.type == WarningType.CacheLoad) {
 				sb.append("loaded from the AOTcache");
 			} else {
 				sb.append("processed");

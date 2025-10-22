@@ -16,6 +16,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 @Command(name = "warning", mixinStandardHelpOptions = true,
 		version = "1.0",
@@ -35,6 +36,14 @@ class WarningCommand implements Runnable {
 			completionCandidates = Types.class)
 	protected String[] types;
 
+	@CommandLine.Option(
+			names = {"-l", "--limit"},
+			arity = "0..1",
+			paramLabel = "<limit>",
+			description = "Limit number of incidents per type listed"
+	)
+	protected Integer limit;
+
 	// Packages that are usually not part of the user application
 	// so we skip them on our auto checks
 	private String[] excludedPackages = new String[]{"java", "jdk", "sun", "com.sun"};
@@ -49,6 +58,15 @@ class WarningCommand implements Runnable {
 		wa.addAll(parent.getInformation().getAutoWarnings());
 		if (types != null && types.length > 0) {
 			wa.removeIf(warning -> Arrays.stream(types).anyMatch(t -> t.equalsIgnoreCase(warning.getType().name())));
+		}
+
+		if (limit != null) {
+			final Map<WarningType, Integer> count = new HashMap<>();
+			wa.removeIf(warning -> {
+				count.putIfAbsent(warning.getType(), 0);
+				count.replace(warning.getType(), count.get(warning.getType()) + 1);
+				return count.get(warning.getType()) > limit;
+			});
 		}
 
 		wa.sort(Comparator.comparing(Warning::getId));
@@ -77,24 +95,23 @@ class WarningCommand implements Runnable {
 					"The auto-detected issues may or may not be problematic.",
 					"It is up to the developer to decide that."
 			})
-	public void check(@CommandLine.Parameters(paramLabel = "<limit>", defaultValue = "10",
-			description = "limit number of incidents per type found") Integer limit) {
+	public void check() {
 
 		parent.getOut().println("Trying to detect problems...");
 
 		List<Warning> warnings = parent.getInformation().getAutoWarnings();
 		warnings.clear();
 
-		warnings.addAll(getTopPackagesNotCached(limit));
-		warnings.addAll(getTopPackagesUsedAndNotTrained(limit));
+		warnings.addAll(getTopPackagesNotCached());
+		warnings.addAll(getTopPackagesUsedAndNotTrained());
 
 		printWarnings();
 		parent.getOut().println("The auto-detected issues may or may not be problematic.");
 		parent.getOut().println("It is up to the developer to decide that.");
 	}
 
-	// Get top ten packages with most methods called but not trained
-	protected List<Warning> getTopPackagesUsedAndNotTrained(Integer limit) {
+	// Get packages with most methods called but not trained
+	protected List<Warning> getTopPackagesUsedAndNotTrained() {
 		var result = new ArrayList<Warning>();
 		var packages = new HashMap<String, Integer>();
 
@@ -109,13 +126,13 @@ class WarningCommand implements Runnable {
 
 		String warningString = " methods that were called during training run but lack full training (don't have" +
 				" some of the TrainingData objects associated to them).";
-		getTopPackages(packages, warningString, result, limit);
+		getTopPackages(packages, warningString, result, WarningType.MethodTraining);
 
 		return result;
 	}
 
-	// Get top ten packages with most classes not cached
-	private List<Warning> getTopPackagesNotCached(Integer limit) {
+	// Get packages with most classes not cached
+	private List<Warning> getTopPackagesNotCached() {
 		var result = new ArrayList<Warning>();
 		var packages = new HashMap<String, Integer>();
 
@@ -127,14 +144,17 @@ class WarningCommand implements Runnable {
 			}
 		}
 
-		getTopPackages(packages, " classes loaded and not cached.", result, limit);
+		//Remove packages with less than 10 classes
+		packages.entrySet().removeIf(entry -> entry.getValue() < 10);
+
+		getTopPackages(packages, " classes loaded and not cached.", result, WarningType.Training);
 
 		return result;
 	}
 
 	private static void getTopPackages(HashMap<String, Integer> packages, String warningString,
-									   ArrayList<Warning> result, Integer limit) {
-		packages.entrySet().stream().sorted((e1, e2) -> e2.getValue() - e1.getValue()).limit(limit)
+									   ArrayList<Warning> result, WarningType warningType) {
+		packages.entrySet().stream().sorted((e1, e2) -> e2.getValue() - e1.getValue())
 				.forEach(entry -> {
 					AttributedStringBuilder sb = new AttributedStringBuilder();
 					sb.append("Package '");
@@ -146,7 +166,7 @@ class WarningCommand implements Runnable {
 					sb.append(entry.getValue().toString());
 					sb.style(AttributedStyle.DEFAULT);
 					sb.append(warningString);
-					result.add(new Warning(null, sb.toAttributedString(), WarningType.Training));
+					result.add(new Warning(null, sb.toAttributedString(), warningType));
 				});
 	}
 

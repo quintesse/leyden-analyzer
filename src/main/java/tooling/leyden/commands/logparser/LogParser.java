@@ -115,7 +115,7 @@ public class LogParser implements Consumer<String> {
 
 	private void processWarning(String trimmedMessage) {
 		if (trimmedMessage.startsWith("The AOT cache was created by a different")) {
-			information.addWarning(null, trimmedMessage, WarningType.LoadingFromAOTCache);
+			information.addWarning(null, trimmedMessage, WarningType.CacheLoad);
 		} else {
 			//Very generic, but at least catch things
 			information.addWarning(null, trimmedMessage, WarningType.Unknown);
@@ -126,7 +126,7 @@ public class LogParser implements Consumer<String> {
 		if (trimmedMessage.startsWith("An error has occurred while processing the AOT cache")
 				|| trimmedMessage.equals("Loading static archive failed.")
 				|| trimmedMessage.equals("Unable to map shared spaces")) {
-			information.addWarning(null, trimmedMessage, WarningType.LoadingFromAOTCache);
+			information.addWarning(null, trimmedMessage, WarningType.CacheLoad);
 		} else {
 			//Very generic, but at least catch things
 			information.addWarning(null, trimmedMessage, WarningType.Unknown);
@@ -179,7 +179,7 @@ public class LogParser implements Consumer<String> {
 			storeConfigurationSplitByCharacter(information.getConfiguration(), trimmedMessage, ":", false);
 		} else if (trimmedMessage.startsWith("JVM_StartThread() ignored:")) {
 //[info][aot       ] JVM_StartThread() ignored: java.lang.ref.Reference$ReferenceHandler
-			this.information.addWarning(null, trimmedMessage, WarningType.StoringIntoAOTCache);
+			this.information.addWarning(null, trimmedMessage, WarningType.CacheCreation);
 		} else if (trimmedMessage.startsWith("Heap range = ")
 				|| trimmedMessage.startsWith("heap range")) {
 //[info][aot       ] Heap range = [0x00000000e0000000 - 0x0000000100000000]
@@ -314,7 +314,7 @@ public class LogParser implements Consumer<String> {
 				element = new ClassObject(className);
 			}
 		}
-		information.addWarning(element, reason, WarningType.StoringIntoAOTCache);
+		information.addWarning(element, reason, WarningType.CacheCreation);
 	}
 
 	private boolean containsTags(String[] tags, String... wantedTags) {

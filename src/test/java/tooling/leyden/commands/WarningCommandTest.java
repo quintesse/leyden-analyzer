@@ -32,12 +32,12 @@ class WarningCommandTest extends DefaultTest {
 
 		WarningCommand warningCommand = new WarningCommand();
 		warningCommand.parent = getDefaultCommand();
-		List<Warning> warningList = warningCommand.getTopPackagesUsedAndNotTrained(100);
+		List<Warning> warningList = warningCommand.getTopPackagesUsedAndNotTrained();
 		assertEquals(1, warningList.size());
 
 		//Now we add the compiledTrainingData
 		aotCacheParser.accept("0x0000000801cd5648: @@ CompileTrainingData 80 1 org.infinispan.xsite.NoOpBackupSender org.infinispan.xsite.NoOpBackupSender.getInstance()");
 
-		assertTrue(warningCommand.getTopPackagesUsedAndNotTrained(100).isEmpty());
+		assertTrue(warningCommand.getTopPackagesUsedAndNotTrained().isEmpty());
 	}
 }

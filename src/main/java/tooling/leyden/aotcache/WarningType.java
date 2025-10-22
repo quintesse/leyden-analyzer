@@ -4,8 +4,9 @@ package tooling.leyden.aotcache;
  * 🐱class WarningType
  */
 public enum WarningType {
-	StoringIntoAOTCache,
-	LoadingFromAOTCache,
+	CacheCreation,
+	CacheLoad,
 	Training,
+	MethodTraining,
 	Unknown
 }
