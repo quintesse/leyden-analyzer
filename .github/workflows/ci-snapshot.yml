@@ -38,3 +38,4 @@ jobs:
         make_latest: true
         prerelease: true
         generate_release_notes: false
+        tag_name: snapshot-${{ github.sha }}
