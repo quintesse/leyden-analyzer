@@ -93,7 +93,7 @@ class DescribeCommand implements Runnable {
 		sb.toAttributedString().println(parent.getTerminal());
 	}
 
-	public List<Element> getElementsReferencingThisOne(Element element) {
+	protected List<Element> getElementsReferencingThisOne(Element element) {
 		return parent.getInformation().getAll().parallelStream()
 				.filter(e -> (e instanceof ReferencingElement))
 				.filter(e -> ((ReferencingElement) e).getReferences().contains(element))

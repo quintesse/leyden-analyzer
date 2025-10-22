@@ -42,13 +42,13 @@ public class CommonParameters {
 			description = "Use array classes if true. True by default.",
 			defaultValue = "true",
 			arity = "0..1")
-	protected Boolean showArrays;
+	protected Boolean showArrays = true;
 
 	@CommandLine.Option(names = {"--useNotCached"},
 			description = "Use elements that are used in your app but were not in the AOT Cache. False by default.",
 			defaultValue = "false",
 			arity = "0..1")
-	protected Boolean useNotCached;
+	protected Boolean useNotCached = false;
 
 	@CommandLine.Option(
 			names = {"-t", "--type"},
@@ -61,8 +61,8 @@ public class CommonParameters {
 
 	public String getName() {
 		if(name != null
-			&& (name.startsWith("'") && name.endsWith("'"))
-				|| (name.startsWith("\"") && name.endsWith("\""))) {
+			&& ((name.startsWith("'") && name.endsWith("'"))
+				|| (name.startsWith("\"") && name.endsWith("\"")))) {
 			name = name.substring(1, name.length() - 1);
 		}
 		return name;

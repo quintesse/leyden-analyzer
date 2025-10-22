@@ -9,6 +9,7 @@ import tooling.leyden.aotcache.MethodObject;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 @Command(name = "ls", mixinStandardHelpOptions = true,
 		version = "1.0",
@@ -20,7 +21,7 @@ class ListCommand implements Runnable {
 	DefaultCommand parent;
 
 	@CommandLine.Mixin
-	private CommonParameters parameters;
+	protected CommonParameters parameters;
 
 	@CommandLine.Option(names = {"--trained"},
 			description = {"Only displays elements with training information.",
@@ -36,7 +37,15 @@ class ListCommand implements Runnable {
 	protected Boolean run;
 
 	public void run() {
-		var elements =
+		final var counter = new AtomicInteger();
+		final var elements = findElements(counter);
+
+		elements.forEach(element -> element.toAttributedString().println(parent.getTerminal()));
+		parent.getOut().println("Found " + counter.get() + " elements.");
+	}
+
+	protected Stream<Element> findElements(AtomicInteger counter) {
+		Stream<Element> elements =
 				parent.getInformation().getElements(parameters.getName(), parameters.packageName,
 						parameters.excludePackageName, parameters.showArrays, parameters.useNotCached,
 						parameters.types);
@@ -51,11 +60,9 @@ class ListCommand implements Runnable {
 					.filter(e -> ((MethodObject) e).getMethodCounters() != null);
 		}
 
-		final var counter = new AtomicInteger();
 		elements = elements.sorted(Comparator.comparing(Element::getKey).thenComparing(Element::getType));
 		elements = elements.peek(item -> counter.incrementAndGet());
 
-		elements.forEach(element -> element.toAttributedString().println(parent.getTerminal()));
-		parent.getOut().println("Found " + counter.get() + " elements.");
+		return elements;
 	}
 }
