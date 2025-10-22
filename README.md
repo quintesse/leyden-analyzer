@@ -20,61 +20,23 @@ You might need to be patient because it uses [JitPack](https://jitpack.io) to bu
 
 The analyzer uses [picocli](https://picocli.info) and [JLine](https://github.com/jline/jline3) to run.
 
-## Colors
+## How to use it
+
+There is a `help` command that is very self-explanatory. Please, use it. 
+
+You can jump to the **[example of usage](#example-of-usage)** if you are in a hurry, but that does not contain all the possiblities this tool offers. Really, use the `help` command. Documentation matters.
+
+### Colors
 
 This tool uses a lot of colors to make reading and understanding of the content easier. As a general guide, this is their meaning:
 
- * `#00FF00` Green: Good, as expected, you can ignore it.
- * `#FF0000` Red: Warning, bad, note this.
- * `#999900` Yellow: Type of asset. Typically, it can be Method, Class, TrainingData,...
- * `#00CCC0` Blue: Identifier for a Class, Method, Warning,...
-
-## How to use it
-
-There is a `help` command:
-```bash
-> help
-Usage:  [COMMAND]
-Interactive shell to explore the contents of the AOT cache. Start by loading an
-AOT map file.
-Commands:
-  clean       Empties the information loaded.
-  count       Count what elements are on the AOT Cache based on the information
-                we have loaded.
-  describe    Describe an object, showing all related info.
-  warning     Help detect and clarify warnings found. By default, it lists
-                incidents detected on the logs.
-  info        Show information and statistics on the AOT Cache based on the
-                information we have loaded.
-  ls          List what is on the cache. By default, it lists everything on the
-                cache.
-  load        Load a file to extract information.
-  cls, clear  Clears the screen
-  tree        Shows a tree with elements that are linked to the root.
-  help        Display help information about the specified command.
-
-Press Ctrl-D to exit.
-```
-
+* Green: Good, as expected, you can ignore it.
+* Red: Warning, bad, note this.
+* Yellow: Type of asset. Typically, it can be Method, Class, TrainingData,...
+* Cyan: Identifier for a Class, Method, Warning,...
 ### Load some information
 
-You should start by using the `load` command to load different files:
-
-```bash
-> load help
-Usage:  load [-hV] [COMMAND]
-Load a file to extract information.
-  -h, --help      Show this help message and exit.
-  -V, --version   Print version information and exit.
-Commands:
-  help      Display help information about the specified command.
-  aotCache  Load an AOT Map cache generated with -Xlog:aot+map=trace:file=aot.
-              map:none:filesize=0
-  log       Load a log generated with -Xlog:class+load,aot*=warning:file=aot.
-              log:level,tags
-```
-
-We can load java logs of our app generated 
+You should start by using the `load` command to load different files. We can load java logs of our app generated 
 with `-Xlog:class+load,aot*=warning:file=aot.log:tags` :
 
 ```bash
@@ -324,3 +286,142 @@ Found 0 elements.
 ### Exiting
 
 Just `exit`.
+
+## Example of Usage
+
+The following section contains examples on how to use this tool to improve your training runs and get better performance thanks to the AOT Cache in Java.
+
+### Detecting classes that should have been trained but were not trained
+
+The title is self-explanatory.
+
+#### Loading the information
+
+We start by loading an aot cache map file to the tool:
+
+```bash
+load aotCache aot.map
+```
+```
+Adding aot.map to our analysis...
+This is a big file. The size of this file is 395 MB. This may take a while.
+Consider using the `--background` option to load this file.
+File aot.map added in 10108ms.
+```
+
+Note that as I haven't load any log file, we only work with information coming from the AOT cache, which is limited.
+
+#### Asking the tool to find potential improvement areas
+
+Then I ask for automatic warning checks:
+
+```bash 
+warning check
+```
+```
+Trying to detect problems...
+000 [Training] Package 'org.infinispan.protostream' contains 42 methods that were called during training run but lack full training (don't have  some of the TrainingData objects associated to them).
+001 [Training] Package 'io.reactivex.rxjava3' contains 31 methods that were called during training run but lack full training (don't have  some of the TrainingData objects associated to them).
+002 [Training] Package 'org.apache.logging' contains 20 methods that were called during training run but lack full training (don't have  some of the TrainingData objects associated to them).
+003 [Training] Package 'org.infinispan.factories' contains 15 methods that were called during training run but lack full training (don't have  some of the TrainingData objects associated to them).
+004 [Training] Package 'org.infinispan.configuration' contains 11 methods that were called during training run but lack full training (don't have  some of the TrainingData objects associated to them).
+005 [Training] Package 'org.infinispan.commons' contains 11 methods that were called during training run but lack full training (don't have  some of the TrainingData objects associated to them).
+006 [Training] Package 'io.micrometer.core' contains 5 methods that were called during training run but lack full training (don't have  some of the TrainingData objects associated to them).
+007 [Training] Package 'org.infinispan.xsite' contains 5 methods that were called during training run but lack full training (don't have  some of the TrainingData objects associated to them).
+008 [Training] Package 'org.infinispan.metrics' contains 5 methods that were called during training run but lack full training (don't have  some of the TrainingData objects associated to them).
+009 [Training] Package 'org.jboss.logging' contains 5 methods that were called during training run but lack full training (don't have  some of the TrainingData objects associated to them).
+Found 10 warnings.
+The auto-detected issues may or may not be problematic.
+It is up to the developer to decide that.
+```
+
+So I take for example warning `007`: the `org.infinispan.xsite` package contains methods that were run but not trained. 
+
+#### Investigating the warning
+
+Now I can list all methods in that package that were run.
+
+```bash
+ls --run -pn=org.infinispan.xsite
+```
+```
+[Trained][Method] void org.infinispan.xsite.ClusteredCacheBackupReceiver.<init>()
+[Trained][Method] org.infinispan.xsite.status.NoOpTakeOfflineManager org.infinispan.xsite.status.NoOpTakeOfflineManager.getInstance()
+[Trained][Method] org.infinispan.xsite.metrics.NoOpXSiteMetricsCollector org.infinispan.xsite.metrics.NoOpXSiteMetricsCollector.getInstance()
+[Trained][Method] org.infinispan.xsite.NoOpBackupSender org.infinispan.xsite.NoOpBackupSender.getInstance()
+[Trained][Method] void org.infinispan.xsite.statetransfer.NoOpXSiteStateTransferManager.<init>()
+Found 5 elements.
+```
+
+And I found five elements. I can take any of them and see what is happening to it:
+
+```bash
+ describe -t=Method -i="org.infinispan.xsite.NoOpBackupSender org.infinispan.xsite.NoOpBackupSender.getInstance()"
+ ```
+```
+-----
+|  Method org.infinispan.xsite.NoOpBackupSender org.infinispan.xsite.NoOpBackupSender.getInstance() on address 0x00000008017116c0 with size 88.
+|  This information comes from: 
+|    > AOT Map
+|  This element refers to 1 other elements.
+|  Belongs to the class org.infinispan.xsite.NoOpBackupSender
+|  It has a MethodCounters associated to it, which means it was called at least once during training run.
+|  It has no CompileTrainingData associated to it.
+|  It has a MethodData associated to it.
+|  It has a MethodTrainingData associated to it.
+-----
+```
+
+So I discover there is no CompileTrainingData associated to it. 
+
+This may mean that this method was not executed enough times during the training run to be worth recompiled and have CompileTrainingData associated to it. Or it may be that the associated data was rejected for some reason. But now I have something to investigate further.
+
+#### Looking for extra information
+
+I can also check what is happening on the main class for that method:
+
+```bash
+ describe -t=Class -i=org.infinispan.xsite.NoOpBackupSender
+ ```
+```
+-----
+|  Class org.infinispan.xsite.NoOpBackupSender on address 0x0000000801711128 with size 624.
+|  This information comes from: 
+|    > AOT Map
+|  This class has 9 Methods, of which 1 have been run and 1 have been trained.
+|  This class doesn't seem to have training data. 
+-----
+```
+
+I can see the list of trained and untrained methods for that class using the `tree` command, where I use level=0 because I don't need any depth on the tree to search for what I am looking for.
+
+```bash
+tree -i=org.infinispan.xsite.NoOpBackupSender --level=0
+```
+```
++ [Untrained][Class] org.infinispan.xsite.NoOpBackupSender
+ \
+  + [Untrained][Method] java.lang.String org.infinispan.xsite.NoOpBackupSender.toString()
+  |
+  + [Untrained][Method] org.infinispan.interceptors.InvocationStage org.infinispan.xsite.NoOpBackupSender.backupPrepar
+e(org.infinispan.commands.tx.PrepareCommand, org.infinispan.transaction.impl.AbstractCacheTransaction, jakarta.transac
+tion.Transaction)
+  |
+  + [Untrained][Method] org.infinispan.interceptors.InvocationStage org.infinispan.xsite.NoOpBackupSender.backupCommit
+(org.infinispan.commands.tx.CommitCommand, jakarta.transaction.Transaction)
+  |
+  + [Untrained][Method] org.infinispan.interceptors.InvocationStage org.infinispan.xsite.NoOpBackupSender.backupRollba
+ck(org.infinispan.commands.tx.RollbackCommand, jakarta.transaction.Transaction)
+  |
+  + [Untrained][Method] org.infinispan.interceptors.InvocationStage org.infinispan.xsite.NoOpBackupSender.backupWrite(
+org.infinispan.commands.write.WriteCommand, org.infinispan.commands.write.WriteCommand)
+  |
+  + [Untrained][Method] org.infinispan.interceptors.InvocationStage org.infinispan.xsite.NoOpBackupSender.backupClear(
+org.infinispan.commands.write.ClearCommand)
+  |
+  + [Untrained][Method] void org.infinispan.xsite.NoOpBackupSender.<init>()
+  |
+  + [Untrained][Method] void org.infinispan.xsite.NoOpBackupSender.<clinit>()
+  |
+  + [Trained][Method] org.infinispan.xsite.NoOpBackupSender org.infinispan.xsite.NoOpBackupSender.getInstance()
+  ```
