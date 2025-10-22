@@ -3,10 +3,11 @@
 name: ci-build
 
 on:
-  pull_request:
+  push:
     branches:
       - main
-  workflow_dispatch:
+    tags-ignore:
+      - 'v*'
 
 jobs:
   build:
@@ -30,9 +31,10 @@ jobs:
     - name: Build
       run: mvn -B package -Dquarkus.package.jar.type=uber-jar --file pom.xml
 
-    - name: Upload
-      uses: actions/upload-artifact@v4
+    - name: Publish Snapshot
+      uses: softprops/action-gh-release@v2
       with:
-        name: leyden-analyzer-runner
-        path: target/*-runner.jar
-        retention-days: 7
+        files: target/*-runner.jar
+        make_latest: true
+        prerelease: true
+        generate_release_notes: false
